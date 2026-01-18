@@ -2,7 +2,7 @@
   "name": "mobile",
   "version": "2.0.0",
   "private": true,
-  "description": "Habit Tracker Mobile App - React Native with Phase 2 Features",
+  "description": "Habit Tracker Mobile App",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -31,6 +31,7 @@
     "expo-notifications": "~0.27.7",
     "expo-sensors": "~12.9.1",
     "expo-sharing": "~11.10.0",
+    "expo-sqlite": "~11.1.1",
     "lottie-react-native": "6.5.1",
     "react": "18.2.0",
     "react-native": "^0.73.6",
