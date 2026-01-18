@@ -22,7 +22,7 @@ config.resolver.disableHierarchicalLookup = true;
 config.resolver.extraNodeModules = {
     '@habit-tracker/shared-types': path.resolve(workspaceRoot, 'packages/shared-types/src'),
     '@habit-tracker/shared-utils': path.resolve(workspaceRoot, 'packages/shared-utils/src'),
-    '@habit-tracker/api-client': path.resolve(workspaceRoot, 'packages/api-client/src'),
+    '@habit-tracker/api-client': path.resolve(workspaceRoot, 'packages/api-client/src/index.ts'),
 };
 
 module.exports = config;

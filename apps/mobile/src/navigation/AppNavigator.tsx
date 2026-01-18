@@ -5,6 +5,9 @@ import { AppTabParamList } from '../types/navigation.types';
 import HomeScreen from '../screens/home/HomeScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
 import HabitsNavigator from './HabitsNavigator';
+import AnalyticsScreen from '../screens/analytics/AnalyticsScreen';
+import BadgesScreen from '../screens/badges/BadgesScreen';
+import StepsScreen from '../screens/steps/StepsScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import { colors, typography } from '../constants/theme';
 
@@ -59,6 +62,36 @@ const AppNavigator = () => {
           tabBarLabel: 'Habits',
           tabBarIcon: ({ color, size }) => (
             <Icon name="format-list-checks" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{
+          tabBarLabel: 'Analytics',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="chart-line" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Badges"
+        component={BadgesScreen}
+        options={{
+          tabBarLabel: 'Badges',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="trophy" size={size} color={color} />
+          ),
+        }}
+      />
+       <Tab.Screen
+        name="Steps"
+        component={StepsScreen}
+        options={{
+          tabBarLabel: 'Steps',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="walk" size={size} color={color} />
           ),
         }}
       />

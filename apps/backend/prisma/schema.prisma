@@ -32,6 +32,8 @@ model User {
   // Relations
   habits           Habit[]
   completions      Completion[]
+  userBadges       UserBadge[]
+  stepData         StepData[]
 
   @@map("users")
 }
@@ -78,4 +80,70 @@ model Completion {
   @@index([userId, date])
   @@index([habitId])
   @@map("completions")
+}
+
+/// Badge model for achievement badges
+model Badge {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String
+  type        String      // 'streak', 'completion', 'step', 'special'
+  tier        String      // 'bronze', 'silver', 'gold', 'platinum'
+  requirement Int         // Threshold value for unlocking
+  iconName    String      // Icon identifier for the badge
+  category    String?     // Optional category for grouping
+
+  // Relations
+  userBadges  UserBadge[]
+
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([type])
+  @@index([tier])
+  @@map("badges")
+}
+
+/// UserBadge model for tracking user's earned badges
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeId   String
+  habitId   String?  // Optional - if badge was earned for specific habit
+  earnedAt  DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  // Unique constraint to prevent duplicate badge awards
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+/// StepData model for tracking daily step counts
+model StepData {
+  id            String   @id @default(uuid())
+  userId        String
+  date          DateTime @db.Date
+  steps         Int
+  distance      Float    // Distance in meters
+  calories      Int?     // Estimated calories burned
+  activeMinutes Int?     // Minutes of activity
+  source        String   @default("manual") // 'pedometer', 'manual', 'healthkit', 'google_fit'
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Unique constraint for one entry per user per day
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("step_data")
 }

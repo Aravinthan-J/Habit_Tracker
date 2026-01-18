@@ -25,6 +25,9 @@ export type AppTabParamList = {
   Home: undefined;
   Calendar: undefined;
   Habits: undefined;
+  Analytics: undefined;
+  Badges: undefined;
+  Steps: undefined;
   Settings: undefined;
 };
 
