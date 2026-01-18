@@ -35,7 +35,7 @@ export class CompletionApiService extends ApiService {
    * @param habitId - Habit ID
    * @param date - Date string (YYYY-MM-DD)
    */
-  async delete(habitId: string, date: string): Promise<void> {
+  async deleteCompletion(habitId: string, date: string): Promise<void> {
     await this.delete<void>(`/completions/${habitId}/${date}`);
   }
 

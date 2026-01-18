@@ -71,7 +71,7 @@ export class HabitApiService extends ApiService {
    *
    * @param habitId - Habit ID
    */
-  async delete(habitId: string): Promise<void> {
+  async deleteHabit(habitId: string): Promise<void> {
     await this.delete<void>(`/habits/${habitId}`);
   }
 

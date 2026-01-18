@@ -20,9 +20,9 @@ config.resolver.disableHierarchicalLookup = true;
 
 // 4. Add the monorepo paths to the resolver.
 config.resolver.extraNodeModules = {
-    '@habit-tracker/shared-types': path.resolve(workspaceRoot, 'packages/shared-types/src'),
+    '@habit-tracker/shared-types': path.resolve(workspaceRoot, 'packages/shared-types/dist'),
     '@habit-tracker/shared-utils': path.resolve(workspaceRoot, 'packages/shared-utils/src'),
-    '@habit-tracker/api-client': path.resolve(workspaceRoot, 'packages/api-client/src/index.ts'),
+    '@habit-tracker/api-client': path.resolve(workspaceRoot, 'packages/api-client/dist'),
 };
 
 module.exports = config;
