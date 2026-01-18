@@ -1,6 +1,7 @@
 module.exports = {
   presets: ['babel-preset-expo'],
   plugins: [
+    '@babel/plugin-transform-private-methods',
     'react-native-reanimated/plugin',
     [
       'module-resolver',
