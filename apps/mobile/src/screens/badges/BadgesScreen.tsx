@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: typography.fontSize.md,
-    color: colors.text_secondary,
+    color: colors.textSecondary,
     marginBottom: spacing.lg,
   },
 });

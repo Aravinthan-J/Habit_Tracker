@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeDefinition } from '../../constants/badges';
-import { UserBadge, BadgeProgress, badgeService } from '@services/badges/BadgeService';
+import { BadgeDefinition } from '../constants/badges';
+import { UserBadge, BadgeProgress, badgeService } from '../services/badges/BadgeService';
 
 export const useBadges = () => {
   const queryClient = useQueryClient();

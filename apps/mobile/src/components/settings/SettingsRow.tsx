@@ -20,7 +20,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children,
           {description && <Text style={styles.description}>{description}</Text>}
         </View>
         {children}
-        {showChevron && <Icon name="chevron-forward-outline" size={20} color={colors.text_light} />}
+        {showChevron && <Icon name="chevron-forward-outline" size={20} color={colors.textLight} />}
       </View>
     </TouchableOpacity>
   );
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: typography.fontSize.sm,
-    color: colors.text_secondary,
+    color: colors.textSecondary,
     marginTop: spacing.xs,
   },
 });

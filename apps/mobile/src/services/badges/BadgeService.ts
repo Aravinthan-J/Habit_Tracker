@@ -56,7 +56,7 @@ class BadgeService {
       const newlyUnlockedBadges = response.data;
 
       for (const badge of newlyUnlockedBadges) {
-        notificationService.sendBadgeUnlock(badge.badge.name, badge.badge.id);
+        notificationService.sendBadgeUnlock(badge.badge.name, badge.badgeId);
       }
 
       return newlyUnlockedBadges;
@@ -70,7 +70,7 @@ class BadgeService {
   public async unlockBadge(userId: string, badgeId: string, habitId?: string): Promise<UserBadge | null> {
     try {
       const response = await apiClient.post<UserBadge>('/badges/unlock', { userId, badgeId, habitId });
-      notificationService.sendBadgeUnlock(response.data.badge.name, response.data.badge.id);
+      notificationService.sendBadgeUnlock(response.data.badge.name, response.data.badgeId);
       return response.data;
     } catch (error) {
       console.error(`Error unlocking badge ${badgeId}:`, error);

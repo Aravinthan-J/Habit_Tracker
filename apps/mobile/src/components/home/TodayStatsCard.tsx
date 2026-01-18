@@ -20,7 +20,7 @@ const TodayStatsCard: React.FC<TodayStatsCardProps> = ({ completed, total }) => 
         showsText={true}
         formatText={() => `${percentage}%`}
         color={colors.primary}
-        unfilledColor={colors.gray_light}
+        unfilledColor={colors.borderDark}
         borderColor={colors.white}
         textStyle={styles.progressText}
       />
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: typography.fontSize.md,
-    color: colors.text_secondary,
+    color: colors.textSecondary,
   },
 });
 

@@ -1,4 +1,4 @@
-import create from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -18,8 +18,19 @@ export const useStepStore = create<StepStoreState>()(
       setLastSynced: (date) => set({ lastSynced: date }),
     }),
     {
-      name: 'step-storage', // name of item in the storage (must be unique)
-      getStorage: () => AsyncStorage, // (optional) by default the 'localStorage' is used
+      name: 'step-storage',
+      storage: {
+        getItem: async (name) => {
+          const value = await AsyncStorage.getItem(name);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: async (name, value) => {
+          await AsyncStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: async (name) => {
+          await AsyncStorage.removeItem(name);
+        },
+      },
     }
   )
 );

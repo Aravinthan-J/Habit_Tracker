@@ -41,6 +41,11 @@ const axiosInstance = createAxiosInstance({
 });
 
 /**
+ * Export axios instance for direct API calls
+ */
+export const apiClient = axiosInstance;
+
+/**
  * API service instances
  */
 export const authApi = new AuthApiService(axiosInstance);
