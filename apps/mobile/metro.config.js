@@ -1,29 +1,29 @@
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const { getDefaultConfig } = require('@expo/metro-config');
 const path = require('path');
 
-/**
- * Metro configuration for monorepo
- * https://facebook.github.io/metro/docs/configuration
- */
-
-const config = {};
-
-// Watch and resolve modules in workspace packages
-const workspaceRoot = path.resolve(__dirname, '../..');
 const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, '../..');
 
+const config = getDefaultConfig(projectRoot);
+
+// 1. Watch all files in the monorepo
 config.watchFolders = [workspaceRoot];
 
-config.resolver = {
-  nodeModulesPaths: [
-    path.resolve(projectRoot, 'node_modules'),
-    path.resolve(workspaceRoot, 'node_modules'),
-  ],
-  extraNodeModules: {
+// 2. Let Metro know where to resolve packages and in what order
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(workspaceRoot, 'node_modules'),
+];
+
+// 3. Force Metro to resolve (sub)dependencies only from the `node_modules` in the monorepo root
+config.resolver.disableHierarchicalLookup = true;
+
+// 4. Add the monorepo paths to the resolver.
+config.resolver.extraNodeModules = {
     '@habit-tracker/shared-types': path.resolve(workspaceRoot, 'packages/shared-types/src'),
     '@habit-tracker/shared-utils': path.resolve(workspaceRoot, 'packages/shared-utils/src'),
     '@habit-tracker/api-client': path.resolve(workspaceRoot, 'packages/api-client/src'),
-  },
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = config;
+
