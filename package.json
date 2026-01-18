@@ -1,0 +1,33 @@
+{
+  "name": "habit-tracker-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ultimate Monthly Habit Tracker - Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "backend:dev": "turbo run dev --filter=backend",
+    "mobile:dev": "turbo run dev --filter=mobile",
+    "backend:migrate": "cd apps/backend && npx prisma migrate dev",
+    "backend:studio": "cd apps/backend && npx prisma studio",
+    "backend:seed": "cd apps/backend && npx prisma db seed",
+    "mobile:ios": "cd apps/mobile && npx react-native run-ios",
+    "mobile:android": "cd apps/mobile && npx react-native run-android"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}

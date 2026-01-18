@@ -1,0 +1,87 @@
+{
+    "success": true,
+    "message": "Habits retrieved successfully",
+    "data": {
+        "habits": [
+            {
+                "id": "0986055d-dcd8-49c1-a766-69b4920459d0",
+                "userId": "03dd5a82-74d1-4e4b-b9ba-1583101018dd",
+                "title": "Morning Exercise",
+                "monthlyGoal": 25,
+                "color": "#FF5722",
+                "icon": "fitness",
+                "notificationsEnabled": true,
+                "reminderTime": "07:00",
+                "createdAt": "2026-01-18T07:49:58.492Z",
+                "updatedAt": "2026-01-18T07:49:58.492Z",
+                "archivedAt": null
+            },
+            {
+                "id": "0c74ff6f-f4b2-4679-80a5-7488ae133ead",
+                "userId": "03dd5a82-74d1-4e4b-b9ba-1583101018dd",
+                "title": "Read for 30 minutes",
+                "monthlyGoal": 20,
+                "color": "#2196F3",
+                "icon": "book",
+                "notificationsEnabled": true,
+                "reminderTime": "20:00",
+                "createdAt": "2026-01-18T07:49:58.492Z",
+                "updatedAt": "2026-01-18T07:49:58.492Z",
+                "archivedAt": null
+            },
+            {
+                "id": "f5fd2f50-b662-41b7-83bc-dfc27a11629c",
+                "userId": "03dd5a82-74d1-4e4b-b9ba-1583101018dd",
+                "title": "Meditate",
+                "monthlyGoal": 30,
+                "color": "#9C27B0",
+                "icon": "spa",
+                "notificationsEnabled": true,
+                "reminderTime": "06:30",
+                "createdAt": "2026-01-18T07:49:58.492Z",
+                "updatedAt": "2026-01-18T07:49:58.492Z",
+                "archivedAt": null
+            },
+            {
+                "id": "7de636c6-52b8-4af2-96c9-aed70ab82fee",
+                "userId": "03dd5a82-74d1-4e4b-b9ba-1583101018dd",
+                "title": "Morning Exercise",
+                "monthlyGoal": 25,
+                "color": "#FF5722",
+                "icon": "fitness",
+                "notificationsEnabled": true,
+                "reminderTime": "07:00",
+                "createdAt": "2026-01-18T07:33:40.499Z",
+                "updatedAt": "2026-01-18T07:33:40.499Z",
+                "archivedAt": null
+            },
+            {
+                "id": "548c9e0c-2c84-4cc0-b4c4-3ae2db912953",
+                "userId": "03dd5a82-74d1-4e4b-b9ba-1583101018dd",
+                "title": "Meditate",
+                "monthlyGoal": 30,
+                "color": "#9C27B0",
+                "icon": "spa",
+                "notificationsEnabled": true,
+                "reminderTime": "06:30",
+                "createdAt": "2026-01-18T07:33:40.499Z",
+                "updatedAt": "2026-01-18T07:33:40.499Z",
+                "archivedAt": null
+            },
+            {
+                "id": "0f636c55-1373-4959-8a37-718b40dd9a2a",
+                "userId": "03dd5a82-74d1-4e4b-b9ba-1583101018dd",
+                "title": "Read for 30 minutes",
+                "monthlyGoal": 20,
+                "color": "#2196F3",
+                "icon": "book",
+                "notificationsEnabled": true,
+                "reminderTime": "20:00",
+                "createdAt": "2026-01-18T07:33:40.499Z",
+                "updatedAt": "2026-01-18T07:33:40.499Z",
+                "archivedAt": null
+            }
+        ],
+        "count": 6
+    }
+}

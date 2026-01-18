@@ -1,0 +1,81 @@
+// Prisma schema for Ultimate Monthly Habit Tracker
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// User model for authentication and user management
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String    // bcrypt hashed
+  name             String?
+
+  // User preferences
+  stepGoal         Int       @default(10000)
+  reminderTime     String    @default("09:00") // HH:MM format
+  timezone         String    @default("UTC")
+  theme            String    @default("light") // light or dark
+
+  // Email and account status
+  isEmailVerified  Boolean   @default(false)
+  isActive         Boolean   @default(true)
+
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  habits           Habit[]
+  completions      Completion[]
+
+  @@map("users")
+}
+
+/// Habit model for tracking monthly habits
+model Habit {
+  id                   String       @id @default(uuid())
+  userId               String
+  title                String
+  monthlyGoal          Int          @default(20) // Target completions per month (1-31)
+  color                String       @default("#4CAF50") // Hex color
+  icon                 String       @default("check-circle") // Icon name
+  notificationsEnabled Boolean      @default(true)
+  reminderTime         String?      // HH:MM format, overrides user default if set
+
+  // Timestamps
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  archivedAt           DateTime?    // Soft delete timestamp
+
+  // Relations
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions          Completion[]
+
+  @@index([userId])
+  @@index([userId, archivedAt])
+  @@map("habits")
+}
+
+/// Completion model for tracking daily habit completions
+model Completion {
+  id          String   @id @default(uuid())
+  habitId     String
+  userId      String
+  date        DateTime @db.Date // Date only (no time component)
+  completedAt DateTime @default(now()) // Full timestamp when marked complete
+
+  // Relations
+  habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Unique constraint to prevent duplicate completions for same habit on same day
+  @@unique([habitId, date])
+  @@index([userId, date])
+  @@index([habitId])
+  @@map("completions")
+}
