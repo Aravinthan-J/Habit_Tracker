@@ -1,130 +1,231 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { colors, spacing, typography } from '../../constants/theme';
+import React, { useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
+import { colors, spacing, typography, shadows } from '../../constants/theme';
 import { useHabits } from '../../hooks/useHabits';
-import { useHaptics } from '../../hooks/useHaptics';
-import TodayStatsCard from '../../components/home/TodayStatsCard';
-import CompletionAnimation from '../../components/celebrations/CompletionAnimation';
-import ConfettiAnimation from '../../components/badges/ConfettiAnimation';
+import { useCompletions } from '../../hooks/useCompletions';
+import { LoadingSpinner, EmptyState } from '../../components/common';
+import HabitCard from '../../components/habits/HabitCard';
+import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
 
-const HomeScreen = () => {
-  const { habits, isLoadingHabits } = useHabits();
-  const haptics = useHaptics();
-  const [filter, setFilter] = useState('All');
-  const [sort, setSort] = useState('Default');
-  const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
+/**
+ * Home Screen - Display today's habits with completion tracking
+ */
+const HomeScreen = ({ navigation }: any) => {
+  const { habits, isLoading, refetch } = useHabits();
+  const { toggleCompletion } = useCompletions();
 
-  const completedHabits = useMemo(() => habits.filter(h => h.isCompletedToday).length, [habits]);
+  // Calculate stats
+  const completedToday = useMemo(
+    () => habits.filter((h) => h.isCompletedToday).length,
+    [habits]
+  );
   const totalHabits = habits.length;
+  const completionPercentage = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+  const activeStreaks = useMemo(
+    () => habits.filter((h) => h.currentStreak > 0).length,
+    [habits]
+  );
 
-  const handleHabitCompletion = (habitId: string) => {
-    // This is a placeholder for the actual completion logic.
-    // In a real app, this would call a mutation from useHabits.
-    console.log(`Habit ${habitId} completed!`);
-    haptics.light();
-
-    // Trigger animations
-    if (completedHabits + 1 === 1) { // First completion of the day
-      setShowCompletionAnimation(true);
-    } else if (completedHabits + 1 === totalHabits) { // All habits completed
-      setShowConfetti(true);
-      haptics.success();
-    }
-  };
-
-  const filteredAndSortedHabits = useMemo(() => {
-    let filtered = habits;
-    if (filter === 'Active Streaks') {
-      filtered = habits.filter(h => h.streak > 0);
-    } else if (filter === 'Not Completed') {
-      filtered = habits.filter(h => !h.isCompletedToday);
-    }
-    
-    if (sort === 'Alphabetical') {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return filtered;
-  }, [habits, filter, sort]);
-
+  // Motivational message
   const getMotivationalMessage = () => {
-    if (completedHabits === 0) return "Let's get the ball rolling!";
-    if (completedHabits / totalHabits < 0.5) return 'Good start, keep it up!';
-    if (completedHabits === totalHabits) return "You're on fire! Great job!";
-    return 'Almost there, you can do it!';
+    if (totalHabits === 0) return 'Start building great habits!';
+    if (completedToday === 0) return "Let's get started!";
+    if (completedToday === totalHabits) return "Amazing! All done for today! 🎉";
+    if (completionPercentage >= 75) return "You're crushing it! Keep going!";
+    if (completionPercentage >= 50) return 'Great progress! Almost there!';
+    return 'Good start! Keep it up!';
   };
 
-  const activeStreaks = useMemo(() => habits.filter(h => h.streak > 0).length, [habits]);
+  // Handle habit completion toggle
+  const handleToggleCompletion = (habitId: string) => {
+    toggleCompletion(habitId);
+  };
+
+  // Handle habit card press (navigate to detail)
+  const handleHabitPress = (habitId: string) => {
+    // TODO: Navigate to habit detail screen
+    console.log('Navigate to habit detail:', habitId);
+  };
+
+  // Handle add habit button
+  const handleAddHabit = () => {
+    // TODO: Navigate to add habit screen
+    console.log('Navigate to add habit screen');
+  };
+
+  // Loading state
+  if (isLoading) {
+    return <LoadingSpinner fullScreen message="Loading habits..." />;
+  }
+
+  // Empty state
+  if (habits.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <EmptyState
+          icon="trophy-outline"
+          title="No habits yet"
+          message="Start building great habits today! Tap the button below to create your first habit."
+          actionLabel="Create Your First Habit"
+          onAction={handleAddHabit}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <TodayStatsCard completed={completedHabits} total={totalHabits} />
-      
-      <View style={styles.header}>
-        <Text style={styles.motivationalMessage}>{getMotivationalMessage()}</Text>
-        <Text style={styles.streakSummary}>🔥 {activeStreaks} active streaks</Text>
-      </View>
-      
-      <View style={styles.controlsContainer}>
-        {/* Add filter and sort buttons here */}
-      </View>
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={habits}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
+        }
+        ListHeaderComponent={
+          <View style={styles.header}>
+            {/* Date and Title */}
+            <View style={styles.titleSection}>
+              <Text style={styles.date}>{format(new Date(), 'EEEE, MMM d, yyyy')}</Text>
+              <Text style={styles.title}>Today's Habits</Text>
+            </View>
 
-      {isLoadingHabits ? (
-        <Text>Loading habits...</Text>
-      ) : (
-        <FlatList
-          data={filteredAndSortedHabits}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => handleHabitCompletion(item.id)}>
-              <Text style={styles.habitItem}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
+            {/* Stats Card */}
+            <View style={styles.statsCard}>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {completedToday}/{totalHabits}
+                  </Text>
+                  <Text style={styles.statLabel}>Completed</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{completionPercentage}%</Text>
+                  <Text style={styles.statLabel}>Progress</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>🔥 {activeStreaks}</Text>
+                  <Text style={styles.statLabel}>Streaks</Text>
+                </View>
+              </View>
 
-      <CompletionAnimation 
-        isVisible={showCompletionAnimation} 
-        onAnimationFinish={() => setShowCompletionAnimation(false)} 
+              {/* Motivational Message */}
+              <Text style={styles.motivationalMessage}>{getMotivationalMessage()}</Text>
+            </View>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <HabitCard
+            id={item.id}
+            title={item.title}
+            icon={item.icon}
+            color={item.color}
+            monthlyGoal={item.monthlyGoal}
+            completedThisMonth={item.completedThisMonth}
+            currentStreak={item.currentStreak}
+            isCompletedToday={item.isCompletedToday}
+            onToggleCompletion={handleToggleCompletion}
+            onPress={() => handleHabitPress(item.id)}
+          />
+        )}
       />
-      <ConfettiAnimation 
-        isVisible={showConfetti} 
-        onAnimationFinish={() => setShowConfetti(false)} 
-      />
-    </View>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} onPress={handleAddHabit} activeOpacity={0.8}>
+        <Ionicons name="add" size={28} color={colors.white} />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.lg,
     backgroundColor: colors.background,
   },
+  listContent: {
+    padding: spacing.lg,
+  },
   header: {
+    marginBottom: spacing.lg,
+  },
+  titleSection: {
     marginBottom: spacing.md,
+  },
+  date: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  title: {
+    fontSize: typography.fontSize.xxxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+  },
+  statsCard: {
+    backgroundColor: colors.white,
+    borderRadius: spacing.md,
+    padding: spacing.lg,
+    ...shadows.md,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginBottom: spacing.md,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: typography.fontSize.xxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.border,
   },
   motivationalMessage: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  streakSummary: {
     fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text,
+    textAlign: 'center',
   },
-  controlsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.lg,
   },
-  habitItem: {
-    padding: spacing.md,
-    backgroundColor: colors.white,
-    borderRadius: spacing.sm,
-    marginBottom: spacing.sm,
-    fontSize: typography.fontSize.md,
-  }
 });
 
 export default HomeScreen;
