@@ -58,8 +58,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Handle add habit button
   const handleAddHabit = () => {
-    // TODO: Navigate to add habit screen
-    console.log('Navigate to add habit screen');
+    navigation.navigate('AddHabit');
   };
 
   // Loading state

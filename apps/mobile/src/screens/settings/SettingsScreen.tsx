@@ -1,75 +1,154 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Button, Alert } from 'react-native';
-import { colors, spacing, typography } from '../../constants/theme';
-import { useSteps } from '../../hooks/useSteps';
-import { useStepStore } from '../../store/stepStore';
-import { notificationService } from '../../services/notifications/ExpoNotificationService';
-import SettingsSection from '../../components/settings/SettingsSection';
-import SettingsRow from '../../components/settings/SettingsRow';
-import Slider from '@react-native-community/slider';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  SafeAreaView,
+} from 'react-native';
+import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { useAuth } from '../../hooks/useAuth';
+import { Ionicons } from '@expo/vector-icons';
+import { Button } from '../../components/common';
 
-const SettingsScreen = () => {
-  const { dailyStepGoal, setDailyStepGoal } = useStepStore();
-  const { isPedometerAvailable } = useSteps();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+/**
+ * Settings Screen - User profile and preferences
+ */
+const SettingsScreen = ({ navigation }: any) => {
+  const { user, logout, isLoggingOut } = useAuth();
 
-  const handleExport = (format: 'CSV' | 'JSON') => {
-    Alert.alert('Export Data', `Exporting data as ${format}...`);
-    // In a real app, this would trigger a file export.
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: () => logout(),
+      },
+    ]);
   };
-  
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Settings</Text>
+        </View>
 
-      <SettingsSection title="Step Tracking">
-        <SettingsRow label="Pedometer" description={isPedometerAvailable ? 'Available' : 'Not available'} />
-        <SettingsRow label="Daily Step Goal">
-          <Text>{dailyStepGoal.toLocaleString()}</Text>
-        </SettingsRow>
-        <Slider
-          style={{width: '100%', height: 40}}
-          minimumValue={1000}
-          maximumValue={50000}
-          step={1000}
-          value={dailyStepGoal}
-          onSlidingComplete={setDailyStepGoal}
-          minimumTrackTintColor={colors.primary}
-          maximumTrackTintColor="#d3d3d3"
-          thumbTintColor={colors.primary}
+        {/* Profile Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Profile</Text>
+          <View style={styles.card}>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatarContainer}>
+                <Ionicons name="person" size={32} color={colors.primary} />
+              </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>{user?.name || 'User'}</Text>
+                <Text style={styles.profileEmail}>{user?.email}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Account Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.card}>
+            <TouchableOpacity style={styles.row} onPress={() => {}} disabled>
+              <View style={styles.rowLeft}>
+                <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.rowLabel}>Edit Profile</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.row} onPress={() => {}} disabled>
+              <View style={styles.rowLeft}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.rowLabel}>Change Password</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Data Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data</Text>
+          <View style={styles.card}>
+            <TouchableOpacity style={styles.row} onPress={() => {}} disabled>
+              <View style={styles.rowLeft}>
+                <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.rowLabel}>Export Data</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.row} onPress={() => {}} disabled>
+              <View style={styles.rowLeft}>
+                <Ionicons name="trash-outline" size={20} color={colors.error} />
+                <Text style={[styles.rowLabel, { color: colors.error }]}>Delete Account</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* About Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.rowLeft}>
+                <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.rowLabel}>Version</Text>
+              </View>
+              <Text style={styles.rowValue}>1.0.0</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.row} onPress={() => {}} disabled>
+              <View style={styles.rowLeft}>
+                <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.rowLabel}>Privacy Policy</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.row} onPress={() => {}} disabled>
+              <View style={styles.rowLeft}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.rowLabel}>Terms of Service</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Logout Button */}
+        <Button
+          title="Logout"
+          onPress={handleLogout}
+          loading={isLoggingOut}
+          disabled={isLoggingOut}
+          variant="outline"
+          fullWidth
+          style={styles.logoutButton}
         />
-        <Button title="Sync Now" onPress={() => pedometerService.syncStepsToBackend()} color={colors.primary} />
-      </SettingsSection>
 
-      <SettingsSection title="Notifications">
-        <SettingsRow label="Enable Notifications">
-            <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} />
-        </SettingsRow>
-        {/* Add more granular notification settings here */}
-      </SettingsSection>
-
-      <SettingsSection title="Data Management">
-        <SettingsRow label="Export Data" showChevron onPress={() => Alert.alert('Export Options', 'Choose a format', [
-          { text: 'CSV', onPress: () => handleExport('CSV') },
-          { text: 'JSON', onPress: () => handleExport('JSON') },
-          { text: 'Cancel', style: 'cancel' }
-        ])}/>
-        <SettingsRow label="Import Data" showChevron onPress={() => Alert.alert('Import Data', 'Importing data...')}/>
-        <SettingsRow label="Clear Cache" showChevron onPress={() => Alert.alert('Clear Cache', 'Cache cleared.')}/>
-        <SettingsRow label="Delete Account" showChevron onPress={() => Alert.alert('Delete Account', 'Are you sure? This action is irreversible.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive' }
-        ])}/>
-      </SettingsSection>
-      
-      <SettingsSection title="About">
-        <SettingsRow label="App Version" description="2.0.0" />
-        <SettingsRow label="Privacy Policy" showChevron onPress={() => {}}/>
-        <SettingsRow label="Terms of Service" showChevron onPress={() => {}}/>
-        <SettingsRow label="Contact Support" showChevron onPress={() => {}}/>
-        <SettingsRow label="Rate App" showChevron onPress={() => {}}/>
-      </SettingsSection>
-    </ScrollView>
+        <Text style={styles.footer}>Made with ❤️ for building great habits</Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -78,10 +157,94 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  title: {
-    fontSize: typography.fontSize.xxl,
-    fontWeight: typography.fontWeight.bold,
+  scrollContent: {
     padding: spacing.lg,
+  },
+  header: {
+    marginBottom: spacing.xl,
+  },
+  title: {
+    fontSize: typography.fontSize.xxxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    ...shadows.md,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  profileEmail: {
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  rowLabel: {
+    fontSize: typography.fontSize.md,
+    color: colors.text,
+    marginLeft: spacing.md,
+  },
+  rowValue: {
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.xs,
+  },
+  logoutButton: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  footer: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textLight,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
   },
 });
 
