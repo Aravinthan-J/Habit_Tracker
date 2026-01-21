@@ -4,7 +4,6 @@
     "slug": "habit-tracker-monorepo",
     "version": "1.0.0",
     "description": "Ultimate Monthly Habit Tracker - Monorepo",
-    "sdkVersion": "50.0.0",
     "platforms": [
       "ios",
       "android"
