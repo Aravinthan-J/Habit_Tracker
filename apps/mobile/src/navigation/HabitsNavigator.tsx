@@ -9,7 +9,7 @@ const Stack = createStackNavigator<HabitsStackParamList>();
 
 /**
  * Habits Stack Navigator
- * Nested in the Habits tab
+ * Nested in the Habits tab - Phase 1
  */
 const HabitsNavigator = () => {
   return (
@@ -27,17 +27,14 @@ const HabitsNavigator = () => {
       <Stack.Screen
         name="AddHabit"
         component={AddHabitScreen}
-        options={{ title: 'Add Habit' }}
+        options={({ route }) => ({
+          title: route.params?.habit ? 'Edit Habit' : 'Add Habit',
+        })}
       />
       <Stack.Screen
         name="HabitDetail"
         component={HabitDetailScreen}
         options={{ title: 'Habit Details' }}
-      />
-      <Stack.Screen
-        name="EditHabit"
-        component={AddHabitScreen}
-        options={{ title: 'Edit Habit' }}
       />
     </Stack.Navigator>
   );

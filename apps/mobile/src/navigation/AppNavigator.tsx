@@ -1,13 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Ionicons } from '@expo/vector-icons';
 import { AppTabParamList } from '../types/navigation.types';
 import HomeScreen from '../screens/home/HomeScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
 import HabitsNavigator from './HabitsNavigator';
-import AnalyticsScreen from '../screens/analytics/AnalyticsScreen';
-import BadgesScreen from '../screens/badges/BadgesScreen';
-import StepsScreen from '../screens/steps/StepsScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import { colors, typography } from '../constants/theme';
 
@@ -15,7 +12,7 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 
 /**
  * Bottom Tab Navigator
- * Main app navigation with Home, Calendar, Habits, and Settings tabs
+ * Phase 1: Main app navigation with Home, Calendar, Habits, and Settings tabs
  */
 const AppNavigator = () => {
   return (
@@ -41,7 +38,7 @@ const AppNavigator = () => {
         options={{
           tabBarLabel: 'Today',
           tabBarIcon: ({ color, size }) => (
-            <Icon name="home" size={size} color={color} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
@@ -51,7 +48,7 @@ const AppNavigator = () => {
         options={{
           tabBarLabel: 'Calendar',
           tabBarIcon: ({ color, size }) => (
-            <Icon name="calendar-month" size={size} color={color} />
+            <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
@@ -61,37 +58,7 @@ const AppNavigator = () => {
         options={{
           tabBarLabel: 'Habits',
           tabBarIcon: ({ color, size }) => (
-            <Icon name="format-list-checks" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Analytics"
-        component={AnalyticsScreen}
-        options={{
-          tabBarLabel: 'Analytics',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="chart-line" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Badges"
-        component={BadgesScreen}
-        options={{
-          tabBarLabel: 'Badges',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="trophy" size={size} color={color} />
-          ),
-        }}
-      />
-       <Tab.Screen
-        name="Steps"
-        component={StepsScreen}
-        options={{
-          tabBarLabel: 'Steps',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="walk" size={size} color={color} />
+            <Ionicons name="list" size={size} color={color} />
           ),
         }}
       />
@@ -101,7 +68,7 @@ const AppNavigator = () => {
         options={{
           tabBarLabel: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <Icon name="cog" size={size} color={color} />
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
         }}
       />

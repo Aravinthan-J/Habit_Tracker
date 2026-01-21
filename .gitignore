@@ -62,6 +62,8 @@ apps/mobile/metro-cache/
 *.tmp
 *.temp
 .cache/
+.claude/
+.expo/
 
 # Lock files (keep package-lock.json in root only)
 apps/*/package-lock.json

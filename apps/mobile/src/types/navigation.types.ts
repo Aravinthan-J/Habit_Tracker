@@ -12,22 +12,18 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
-  Onboarding: undefined;
 };
 
 export type AuthStackScreenProps<T extends keyof AuthStackParamList> =
   StackScreenProps<AuthStackParamList, T>;
 
 /**
- * Main App Bottom Tab Navigator
+ * Main App Bottom Tab Navigator - Phase 1
  */
 export type AppTabParamList = {
   Home: undefined;
   Calendar: undefined;
   Habits: undefined;
-  Analytics: undefined;
-  Badges: undefined;
-  Steps: undefined;
   Settings: undefined;
 };
 
@@ -39,8 +35,7 @@ export type AppTabScreenProps<T extends keyof AppTabParamList> =
  */
 export type HabitsStackParamList = {
   HabitsList: undefined;
-  AddHabit: undefined;
-  EditHabit: { habitId: string };
+  AddHabit: { habit?: any } | undefined;
   HabitDetail: { habitId: string };
 };
 

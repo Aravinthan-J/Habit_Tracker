@@ -2,6 +2,7 @@
   "name": "mobile",
   "version": "2.0.0",
   "private": true,
+  "main": "index.js",
   "description": "Habit Tracker Mobile App",
   "scripts": {
     "start": "expo start",
@@ -12,6 +13,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
     "@habit-tracker/api-client": "*",
     "@habit-tracker/shared-types": "*",
     "@habit-tracker/shared-utils": "*",
