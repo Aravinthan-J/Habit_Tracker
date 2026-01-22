@@ -11,23 +11,19 @@ COPY packages/api-client/package*.json ./packages/api-client/
 COPY packages/shared-types/package*.json ./packages/shared-types/
 COPY packages/shared-utils/package*.json ./packages/shared-utils/
 
-# Install ALL dependencies (root first, then backend)
+# Install dependencies with ts-node
 RUN npm ci
-RUN npm run build:shared
-WORKDIR /app/apps/backend
-RUN npm ci
-RUN npm run generate
+RUN npm install -g ts-node
 
 # Copy source code
-WORKDIR /app
 COPY . .
 
-# Build backend
+# Generate Prisma client
 WORKDIR /app/apps/backend
-RUN npm run build
+RUN npm run generate
 
 # Expose port
 EXPOSE 3000
 
-# Start the server
-CMD ["npm", "start"]
+# Start the server with ts-node
+CMD ["ts-node", "src/server.ts"]

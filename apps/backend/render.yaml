@@ -2,10 +2,10 @@ services:
   # Backend API Service
   - type: web
     name: habit-tracker-api
-    env: node
+    env: docker
     plan: free
-    buildCommand: cd apps/backend && npm install && npm run generate
-    startCommand: cd apps/backend && npm run dev
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     
     # Environment variables (will be set in Render dashboard)
