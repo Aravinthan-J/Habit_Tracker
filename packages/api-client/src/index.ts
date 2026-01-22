@@ -11,7 +11,9 @@ export { AuthApiService } from './services/AuthApiService';
 export { HabitApiService } from './services/HabitApiService';
 export { CompletionApiService } from './services/CompletionApiService';
 export { BadgeApiService } from './services/BadgeApiService';
+export { AnalyticsApiService } from './services/AnalyticsApiService';
 export type { Badge, UserBadge, BadgeProgress, UnlockedBadge } from './services/BadgeApiService';
+export type { OverviewStats, TrendData, Insight } from './services/AnalyticsApiService';
 
 // Config
 export { createApiClient } from './config/axios.config';

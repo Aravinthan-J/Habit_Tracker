@@ -9,6 +9,7 @@ import { AuthApiService } from './AuthApiService';
 import { HabitApiService } from './HabitApiService';
 import { CompletionApiService } from './CompletionApiService';
 import { BadgeApiService } from './BadgeApiService';
+import { AnalyticsApiService } from './AnalyticsApiService';
 
 export class ApiService {
   private api: AxiosInstance;
@@ -17,6 +18,7 @@ export class ApiService {
   public habits: HabitApiService;
   public completions: CompletionApiService;
   public badges: BadgeApiService;
+  public analytics: AnalyticsApiService;
 
   constructor(config: ApiClientConfig) {
     // Create axios instance
@@ -27,6 +29,7 @@ export class ApiService {
     this.habits = new HabitApiService(this.api);
     this.completions = new CompletionApiService(this.api);
     this.badges = new BadgeApiService(this.api);
+    this.analytics = new AnalyticsApiService(this.api);
   }
 
   /**
