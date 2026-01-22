@@ -10,6 +10,7 @@ import completionsRoutes from './completions.routes';
 import badgesRoutes from './badges.routes';
 import analyticsRoutes from './analytics.routes';
 import notificationsRoutes from './notifications.routes';
+import stepsRoutes from './steps.routes';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/completions', completionsRoutes);
 router.use('/badges', badgesRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/notifications', notificationsRoutes);
+router.use('/steps', stepsRoutes);
 
 /**
  * Health check endpoint

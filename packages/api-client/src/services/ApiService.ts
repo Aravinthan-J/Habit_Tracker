@@ -11,6 +11,7 @@ import { CompletionApiService } from './CompletionApiService';
 import { BadgeApiService } from './BadgeApiService';
 import { AnalyticsApiService } from './AnalyticsApiService';
 import { NotificationApiService } from './NotificationApiService';
+import { StepApiService } from './StepApiService';
 
 export class ApiService {
   private api: AxiosInstance;
@@ -21,6 +22,7 @@ export class ApiService {
   public badges: BadgeApiService;
   public analytics: AnalyticsApiService;
   public notifications: NotificationApiService;
+  public steps: StepApiService;
 
   constructor(config: ApiClientConfig) {
     // Create axios instance
@@ -33,6 +35,7 @@ export class ApiService {
     this.badges = new BadgeApiService(this.api);
     this.analytics = new AnalyticsApiService(this.api);
     this.notifications = new NotificationApiService(this.api);
+    this.steps = new StepApiService(this.api);
   }
 
   /**

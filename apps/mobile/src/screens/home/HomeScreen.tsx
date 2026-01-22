@@ -16,20 +16,24 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useHabits, useHabitStats } from '../../hooks/useHabits';
 import { useTodayCompletions, useToggleCompletion } from '../../hooks/useCompletions';
+import { useTodaySteps, useStepStats } from '../../hooks/useSteps';
 import { LoadingSpinner } from '../../components/common';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { StepProgressRing, StepStats } from '../../components/steps';
+import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
 
 export function HomeScreen() {
   const { user } = useAuthStore();
   const { data: habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { data: completions, isLoading: completionsLoading, refetch: refetchCompletions } = useTodayCompletions();
   const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
+  const { data: todaySteps, isLoading: stepsLoading, refetch: refetchSteps } = useTodaySteps();
+  const { data: stepStats, isLoading: statsLoading } = useStepStats();
 
   // Date in YYYY-MM-DD format for API
   const todayISO = new Date().toISOString().split('T')[0];
 
   const onRefresh = async () => {
-    await Promise.all([refetchHabits(), refetchCompletions()]);
+    await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
   };
 
   const toggleHabit = async (habitId: string, isCompleted: boolean) => {
@@ -90,6 +94,56 @@ export function HomeScreen() {
           <Text style={styles.greeting}>{getGreeting()}, {user?.name || 'User'}!</Text>
           <Text style={styles.date}>{todayDate}</Text>
         </View>
+
+        {/* Step Tracking */}
+        {todaySteps && (
+          <View style={styles.stepSection}>
+            <Text style={styles.sectionTitle}>Steps Today</Text>
+            <View style={styles.stepCard}>
+              <StepProgressRing
+                steps={todaySteps.steps || 0}
+                goal={todaySteps.stepGoal || 10000}
+                size={140}
+                strokeWidth={14}
+              />
+              {todaySteps.distance && (
+                <View style={styles.stepDetails}>
+                  <View style={styles.stepDetailItem}>
+                    <Text style={styles.stepDetailIcon}>📍</Text>
+                    <Text style={styles.stepDetailValue}>
+                      {todaySteps.distance >= 1 
+                        ? `${todaySteps.distance.toFixed(2)} km`
+                        : `${(todaySteps.distance * 1000).toFixed(0)} m`}
+                    </Text>
+                  </View>
+                  {todaySteps.calories && (
+                    <View style={styles.stepDetailItem}>
+                      <Text style={styles.stepDetailIcon}>🔥</Text>
+                      <Text style={styles.stepDetailValue}>
+                        {Math.round(todaySteps.calories)} cal
+                      </Text>
+                    </View>
+                  )}
+                  {todaySteps.activeMinutes && (
+                    <View style={styles.stepDetailItem}>
+                      <Text style={styles.stepDetailIcon}>⏱️</Text>
+                      <Text style={styles.stepDetailValue}>
+                        {todaySteps.activeMinutes} min
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Step Statistics */}
+        {stepStats && (
+          <View style={styles.statsSection}>
+            <StepStats stats={stepStats} isLoading={statsLoading} />
+          </View>
+        )}
 
         {/* Today's Habits */}
         <View style={styles.section}>
@@ -288,5 +342,42 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  stepSection: {
+    marginBottom: spacing.xl,
+  },
+  stepCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
+  },
+  stepDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  stepDetailItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepDetailIcon: {
+    fontSize: typography.fontSize.lg,
+    marginBottom: spacing.xs,
+  },
+  stepDetailValue: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+  },
+  statsSection: {
+    marginBottom: spacing.xl,
   },
 });

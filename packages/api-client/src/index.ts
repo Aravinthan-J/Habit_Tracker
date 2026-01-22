@@ -13,8 +13,10 @@ export { CompletionApiService } from './services/CompletionApiService';
 export { BadgeApiService } from './services/BadgeApiService';
 export { AnalyticsApiService } from './services/AnalyticsApiService';
 export { NotificationApiService } from './services/NotificationApiService';
+export { StepApiService } from './services/StepApiService';
 export type { Badge, UserBadge, BadgeProgress, UnlockedBadge } from './services/BadgeApiService';
 export type { OverviewStats, TrendData, Insight } from './services/AnalyticsApiService';
+export type { StepData, StepStats, LogStepsData } from './services/StepApiService';
 
 // Config
 export { createApiClient } from './config/axios.config';
