@@ -25,11 +25,9 @@ export function HomeScreen() {
   const { data: completions, isLoading: completionsLoading, refetch: refetchCompletions } = useTodayCompletions();
   const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric'
-  });
+  // Date in YYYY-MM-DD format for API
+  const todayISO = new Date().toISOString().split('T')[0];
+
   const onRefresh = async () => {
     await Promise.all([refetchHabits(), refetchCompletions()]);
   };
@@ -37,11 +35,12 @@ export function HomeScreen() {
   const toggleHabit = async (habitId: string, isCompleted: boolean) => {
     try {
       if (isCompleted) {
-        await unmarkComplete({ habitId, date: today });
+        await unmarkComplete({ habitId, date: todayISO });
       } else {
-        await markComplete({ habitId, date: today });
+        await markComplete({ habitId, date: todayISO });
       }
     } catch (error: any) {
+      console.error('Toggle error:', error);
       Alert.alert('Error', error.message || 'Failed to update habit');
     }
   };

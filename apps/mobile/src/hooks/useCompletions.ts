@@ -48,7 +48,7 @@ export function useCalendarCompletions(year: number, month: number) {
   return useQuery({
     queryKey: ['completions', 'calendar', year, month],
     queryFn: async () => {
-      const response = await api.completions.getCalendar(year, month);
+      const response = await api.completions.getMonthlyCalendar(year, month);
       return response;
     },
   });
@@ -62,23 +62,33 @@ export function useToggleCompletion() {
 
   const markComplete = useMutation({
     mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
+      console.log('API: Marking complete', { habitId, date });
       return await api.completions.create({ habitId, date });
     },
     onSuccess: () => {
+      console.log('API: Mark complete success');
       // Invalidate all completion queries and habit stats
       queryClient.invalidateQueries({ queryKey: ['completions'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (error: any) => {
+      console.error('API: Mark complete error', error);
     },
   });
 
   const unmarkComplete = useMutation({
     mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
+      console.log('API: Unmarking complete', { habitId, date });
       return await api.completions.delete(habitId, date);
     },
     onSuccess: () => {
+      console.log('API: Unmark complete success');
       // Invalidate all completion queries and habit stats
       queryClient.invalidateQueries({ queryKey: ['completions'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (error: any) => {
+      console.error('API: Unmark complete error', error);
     },
   });
 
