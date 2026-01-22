@@ -34,6 +34,8 @@ model User {
   // Relations
   habits      Habit[]
   completions Completion[]
+  badges      UserBadge[]
+  stepData    StepData[]
 
   @@map("users")
 }
@@ -82,4 +84,52 @@ model Completion {
   @@index([userId, date])
   @@index([habitId, date])
   @@map("completions")
+}
+
+// Badge Model (Badge Definitions)
+model Badge {
+  id          String   @id @default(uuid())
+  name        String   @unique            // "21-Day Warrior"
+  description String                      // "Complete habit 21 days in a row"
+  type        String                      // 'streak' | 'completion' | 'step' | 'special' | 'volume'
+  tier        String                      // 'bronze' | 'silver' | 'gold' | 'platinum'
+  requirement Int                         // 21, 45, 100, etc.
+  iconName    String                      // 'fire', 'trophy', 'star'
+
+  // Relations
+  userBadges  UserBadge[]
+
+  @@map("badges")
+}
+
+// UserBadge Model (User's Earned Badges)
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  habitId   String?                       // Optional: which habit earned this badge
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])            // Can't earn same badge twice
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// StepData Model (Daily Step Counts)
+model StepData {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date          DateTime @db.Date          // Just the date (2026-01-18)
+  steps         Int                        // Number of steps
+  distance      Float                      // Kilometers walked
+  calories      Int?                       // Estimated calories burned
+  activeMinutes Int?                       // Minutes of activity
+  source        String   @default("manual") // 'pedometer' | 'manual'
+
+  @@unique([userId, date])                // One record per user per day
+  @@index([userId, date])
+  @@map("step_data")
 }

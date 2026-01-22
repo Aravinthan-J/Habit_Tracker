@@ -7,6 +7,7 @@ import { Router } from 'express';
 import authRoutes from './auth.routes';
 import habitsRoutes from './habits.routes';
 import completionsRoutes from './completions.routes';
+import badgesRoutes from './badges.routes';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/habits', habitsRoutes);
 router.use('/completions', completionsRoutes);
+router.use('/badges', badgesRoutes);
 
 /**
  * Health check endpoint

@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api/apiClient';
+import { useCheckBadges } from './useBadges';
 
 /**
  * Fetch completions with optional filters
@@ -59,17 +60,21 @@ export function useCalendarCompletions(year: number, month: number) {
  */
 export function useToggleCompletion() {
   const queryClient = useQueryClient();
+  const { mutate: checkBadges } = useCheckBadges();
 
   const markComplete = useMutation({
     mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
       console.log('API: Marking complete', { habitId, date });
       return await api.completions.create({ habitId, date });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       console.log('API: Mark complete success');
       // Invalidate all completion queries and habit stats
       queryClient.invalidateQueries({ queryKey: ['completions'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+
+      // Check for badge unlocks
+      checkBadges(variables.habitId);
     },
     onError: (error: any) => {
       console.error('API: Mark complete error', error);
@@ -104,14 +109,18 @@ export function useToggleCompletion() {
  */
 export function useMarkComplete() {
   const queryClient = useQueryClient();
+  const { mutate: checkBadges } = useCheckBadges();
 
   return useMutation({
     mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
       return await api.completions.create({ habitId, date });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['completions'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+
+      // Check for badge unlocks
+      checkBadges(variables.habitId);
     },
   });
 }

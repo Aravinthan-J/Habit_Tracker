@@ -109,6 +109,270 @@ async function main() {
   await Promise.all(completions);
   console.log(`✅ Created ${completions.length} test completions`);
 
+  // Create badges
+  const badges = [
+    // STREAK BADGES (4 badges)
+    {
+      name: '21-Day Warrior',
+      description: 'Complete any habit for 21 consecutive days',
+      type: 'streak',
+      tier: 'bronze',
+      requirement: 21,
+      iconName: 'fire-bronze'
+    },
+    {
+      name: '45-Day Champion',
+      description: 'Complete any habit for 45 consecutive days',
+      type: 'streak',
+      tier: 'silver',
+      requirement: 45,
+      iconName: 'fire-silver'
+    },
+    {
+      name: '100-Day Legend',
+      description: 'Complete any habit for 100 consecutive days',
+      type: 'streak',
+      tier: 'gold',
+      requirement: 100,
+      iconName: 'fire-gold'
+    },
+    {
+      name: '365-Day Master',
+      description: 'Complete any habit for an entire year',
+      type: 'streak',
+      tier: 'platinum',
+      requirement: 365,
+      iconName: 'fire-platinum'
+    },
+
+    // COMPLETION BADGES (5 badges)
+    {
+      name: 'Perfect Week',
+      description: 'Complete all active habits for 7 consecutive days',
+      type: 'completion',
+      tier: 'bronze',
+      requirement: 7,
+      iconName: 'calendar-check'
+    },
+    {
+      name: 'Perfect Month',
+      description: 'Achieve monthly goal for all habits in one month',
+      type: 'completion',
+      tier: 'silver',
+      requirement: 1,
+      iconName: 'calendar-star'
+    },
+    {
+      name: 'Comeback Kid',
+      description: 'Restart a habit within 3 days of breaking a streak',
+      type: 'completion',
+      tier: 'bronze',
+      requirement: 1,
+      iconName: 'refresh'
+    },
+    {
+      name: 'Early Bird',
+      description: 'Complete 7 check-ins before 9 AM',
+      type: 'completion',
+      tier: 'bronze',
+      requirement: 7,
+      iconName: 'sunrise'
+    },
+    {
+      name: 'Night Owl',
+      description: 'Complete 7 check-ins after 9 PM',
+      type: 'completion',
+      tier: 'bronze',
+      requirement: 7,
+      iconName: 'moon'
+    },
+
+    // VOLUME BADGES (4 badges)
+    {
+      name: '100 Completions Club',
+      description: 'Total 100 habit completions across all habits',
+      type: 'volume',
+      tier: 'bronze',
+      requirement: 100,
+      iconName: 'trophy-bronze'
+    },
+    {
+      name: '500 Completions Club',
+      description: 'Total 500 habit completions',
+      type: 'volume',
+      tier: 'silver',
+      requirement: 500,
+      iconName: 'trophy-silver'
+    },
+    {
+      name: '1000 Completions Club',
+      description: 'Total 1000 habit completions',
+      type: 'volume',
+      tier: 'gold',
+      requirement: 1000,
+      iconName: 'trophy-gold'
+    },
+    {
+      name: '5000 Completions Club',
+      description: 'Total 5000 habit completions',
+      type: 'volume',
+      tier: 'platinum',
+      requirement: 5000,
+      iconName: 'trophy-platinum'
+    },
+
+    // STEP BADGES (8 badges)
+    {
+      name: '10K Walker',
+      description: 'Hit 10,000 steps in a single day',
+      type: 'step',
+      tier: 'bronze',
+      requirement: 10000,
+      iconName: 'walk'
+    },
+    {
+      name: 'Marathon Month',
+      description: 'Average 10,000+ steps for 30 consecutive days',
+      type: 'step',
+      tier: 'silver',
+      requirement: 30,
+      iconName: 'run'
+    },
+    {
+      name: 'Step Streak - Week',
+      description: '7 consecutive days hitting step goal',
+      type: 'step',
+      tier: 'bronze',
+      requirement: 7,
+      iconName: 'footsteps-bronze'
+    },
+    {
+      name: 'Step Streak - 2 Weeks',
+      description: '14 consecutive days hitting step goal',
+      type: 'step',
+      tier: 'silver',
+      requirement: 14,
+      iconName: 'footsteps-silver'
+    },
+    {
+      name: 'Step Streak - Month',
+      description: '30 consecutive days hitting step goal',
+      type: 'step',
+      tier: 'gold',
+      requirement: 30,
+      iconName: 'footsteps-gold'
+    },
+    {
+      name: '100km Milestone',
+      description: 'Walk 100 kilometers total',
+      type: 'step',
+      tier: 'bronze',
+      requirement: 100,
+      iconName: 'map-bronze'
+    },
+    {
+      name: '500km Milestone',
+      description: 'Walk 500 kilometers total',
+      type: 'step',
+      tier: 'silver',
+      requirement: 500,
+      iconName: 'map-silver'
+    },
+    {
+      name: '1000km Milestone',
+      description: 'Walk 1000 kilometers total',
+      type: 'step',
+      tier: 'gold',
+      requirement: 1000,
+      iconName: 'map-gold'
+    },
+
+    // SPECIAL BADGES (9 badges)
+    {
+      name: 'Habit Collector',
+      description: 'Create 10 different habits',
+      type: 'special',
+      tier: 'bronze',
+      requirement: 10,
+      iconName: 'collection'
+    },
+    {
+      name: 'Weekend Warrior',
+      description: 'Complete all habits on 4 consecutive weekends',
+      type: 'special',
+      tier: 'silver',
+      requirement: 4,
+      iconName: 'weekend'
+    },
+    {
+      name: 'Consistency King',
+      description: 'Maintain at least one active habit for 180 days',
+      type: 'special',
+      tier: 'gold',
+      requirement: 180,
+      iconName: 'crown'
+    },
+    {
+      name: 'Morning Person',
+      description: 'Complete habits before 10 AM for 14 consecutive days',
+      type: 'special',
+      tier: 'bronze',
+      requirement: 14,
+      iconName: 'sun'
+    },
+    {
+      name: 'Variety Champion',
+      description: 'Have 5 different habits active simultaneously',
+      type: 'special',
+      tier: 'bronze',
+      requirement: 5,
+      iconName: 'rainbow'
+    },
+    {
+      name: 'Month Master',
+      description: 'Complete all habits for an entire calendar month',
+      type: 'special',
+      tier: 'gold',
+      requirement: 1,
+      iconName: 'star-gold'
+    },
+    {
+      name: 'Rapid Starter',
+      description: 'Complete a habit within 1 hour of creating it',
+      type: 'special',
+      tier: 'bronze',
+      requirement: 1,
+      iconName: 'lightning'
+    },
+    {
+      name: 'Dedicated',
+      description: 'Log in and check habits for 30 consecutive days',
+      type: 'special',
+      tier: 'silver',
+      requirement: 30,
+      iconName: 'medal'
+    },
+    {
+      name: 'Perfectionist',
+      description: 'Complete every habit you created without missing any',
+      type: 'special',
+      tier: 'platinum',
+      requirement: 1,
+      iconName: 'gem'
+    },
+  ];
+
+  const badgePromises = badges.map(badge =>
+    prisma.badge.upsert({
+      where: { name: badge.name },
+      update: {},
+      create: badge,
+    })
+  );
+
+  await Promise.all(badgePromises);
+  console.log(`✅ Created ${badges.length} badges`);
+
   console.log('🎉 Database seed completed successfully!');
   console.log('\n📝 Test credentials:');
   console.log('   Email: test@example.com');

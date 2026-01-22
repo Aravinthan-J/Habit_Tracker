@@ -9,6 +9,7 @@ import { Text } from 'react-native';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { CalendarScreen } from '../screens/calendar/CalendarScreen';
 import { HabitsNavigator } from './HabitsNavigator';
+import { BadgesScreen } from '../screens/badges/BadgesScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { colors } from '../constants/theme';
 
@@ -16,6 +17,7 @@ export type MainTabParamList = {
   HomeTab: undefined;
   Calendar: undefined;
   HabitsTab: undefined;
+  Badges: undefined;
   Settings: undefined;
 };
 
@@ -70,6 +72,16 @@ export function MainNavigator() {
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size }}>📝</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Badges"
+        component={BadgesScreen}
+        options={{
+          title: 'Badges',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size }}>🏆</Text>
           ),
         }}
       />

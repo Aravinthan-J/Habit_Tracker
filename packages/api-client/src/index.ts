@@ -10,6 +10,8 @@ export { ApiService } from './services/ApiService';
 export { AuthApiService } from './services/AuthApiService';
 export { HabitApiService } from './services/HabitApiService';
 export { CompletionApiService } from './services/CompletionApiService';
+export { BadgeApiService } from './services/BadgeApiService';
+export type { Badge, UserBadge, BadgeProgress, UnlockedBadge } from './services/BadgeApiService';
 
 // Config
 export { createApiClient } from './config/axios.config';
