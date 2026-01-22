@@ -1,0 +1,143 @@
+/**
+ * Completions Hook
+ * React Query hooks for habit completion operations
+ */
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../services/api/apiClient';
+import { useCheckBadges } from './useBadges';
+
+/**
+ * Fetch completions with optional filters
+ */
+export function useCompletions(filters?: {
+  habitId?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  return useQuery({
+    queryKey: ['completions', filters],
+    queryFn: async () => {
+      const response = await api.completions.getAll(filters);
+      return response;
+    },
+  });
+}
+
+/**
+ * Fetch today's completions
+ */
+export function useTodayCompletions() {
+  const today = new Date().toISOString().split('T')[0];
+
+  return useQuery({
+    queryKey: ['completions', 'today', today],
+    queryFn: async () => {
+      const response = await api.completions.getAll({
+        startDate: today,
+        endDate: today,
+      });
+      return response;
+    },
+  });
+}
+
+/**
+ * Fetch calendar completions for a month
+ */
+export function useCalendarCompletions(year: number, month: number) {
+  return useQuery({
+    queryKey: ['completions', 'calendar', year, month],
+    queryFn: async () => {
+      const response = await api.completions.getMonthlyCalendar(year, month);
+      return response;
+    },
+  });
+}
+
+/**
+ * Toggle habit completion (mark complete or uncomplete)
+ */
+export function useToggleCompletion() {
+  const queryClient = useQueryClient();
+  const { mutate: checkBadges } = useCheckBadges();
+
+  const markComplete = useMutation({
+    mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
+      console.log('API: Marking complete', { habitId, date });
+      return await api.completions.create({ habitId, date });
+    },
+    onSuccess: (_, variables) => {
+      console.log('API: Mark complete success');
+      // Invalidate all completion queries and habit stats
+      queryClient.invalidateQueries({ queryKey: ['completions'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+
+      // Check for badge unlocks
+      checkBadges(variables.habitId);
+    },
+    onError: (error: any) => {
+      console.error('API: Mark complete error', error);
+    },
+  });
+
+  const unmarkComplete = useMutation({
+    mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
+      console.log('API: Unmarking complete', { habitId, date });
+      return await api.completions.delete(habitId, date);
+    },
+    onSuccess: () => {
+      console.log('API: Unmark complete success');
+      // Invalidate all completion queries and habit stats
+      queryClient.invalidateQueries({ queryKey: ['completions'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (error: any) => {
+      console.error('API: Unmark complete error', error);
+    },
+  });
+
+  return {
+    markComplete: markComplete.mutateAsync,
+    unmarkComplete: unmarkComplete.mutateAsync,
+    isLoading: markComplete.isPending || unmarkComplete.isPending,
+  };
+}
+
+/**
+ * Mark habit complete for specific date
+ */
+export function useMarkComplete() {
+  const queryClient = useQueryClient();
+  const { mutate: checkBadges } = useCheckBadges();
+
+  return useMutation({
+    mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
+      return await api.completions.create({ habitId, date });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['completions'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+
+      // Check for badge unlocks
+      checkBadges(variables.habitId);
+    },
+  });
+}
+
+/**
+ * Unmark habit completion
+ */
+export function useUnmarkComplete() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ habitId, date }: { habitId: string; date: string }) => {
+      return await api.completions.delete(habitId, date);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['completions'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+}
