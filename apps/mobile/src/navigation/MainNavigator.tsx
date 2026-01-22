@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { CalendarScreen } from '../screens/calendar/CalendarScreen';
 import { HabitsNavigator } from './HabitsNavigator';
@@ -13,6 +12,12 @@ import { AnalyticsScreen } from '../screens/analytics/AnalyticsScreen';
 import { BadgesScreen } from '../screens/badges/BadgesScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { colors } from '../constants/theme';
+import { HomeIcon } from './icons/HomeIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
+import { BarChartIcon } from './icons/BarChartIcon';
+import { ListIcon } from './icons/ListIcon';
+import { TrophyIcon } from './icons/TrophyIcon';
+import { SettingsIcon } from './icons/SettingsIcon';
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -52,7 +57,7 @@ export function MainNavigator() {
           title: 'Today',
           tabBarLabel: 'Today',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>🏠</Text>
+            <HomeIcon size={size} color={color} />
           ),
         }}
       />
@@ -62,7 +67,7 @@ export function MainNavigator() {
         options={{
           title: 'Calendar',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>📅</Text>
+            <CalendarIcon size={size} color={color} />
           ),
         }}
       />
@@ -73,7 +78,7 @@ export function MainNavigator() {
           title: 'Analytics',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>📊</Text>
+            <BarChartIcon size={size} color={color} />
           ),
         }}
       />
@@ -84,7 +89,7 @@ export function MainNavigator() {
           title: 'Habits',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>📝</Text>
+            <ListIcon size={size} color={color} />
           ),
         }}
       />
@@ -94,7 +99,7 @@ export function MainNavigator() {
         options={{
           title: 'Badges',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>🏆</Text>
+            <TrophyIcon size={size} color={color} />
           ),
         }}
       />
@@ -104,7 +109,7 @@ export function MainNavigator() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>⚙️</Text>
+            <SettingsIcon size={size} color={color} />
           ),
         }}
       />
