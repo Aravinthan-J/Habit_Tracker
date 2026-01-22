@@ -1,39 +1,164 @@
 /**
- * Home Screen
- * Today's habits (placeholder for now)
+ * Home Screen - Today View
+ * Shows today's habits with checkboxes
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { Button } from '../../components/common';
-import { useAuth } from '../../hooks/useAuth';
-import { colors, spacing, typography } from '../../constants/theme';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { useAuthStore } from '../../store/authStore';
+import { useHabits, useHabitStats } from '../../hooks/useHabits';
+import { useTodayCompletions, useToggleCompletion } from '../../hooks/useCompletions';
+import { LoadingSpinner } from '../../components/common';
+import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 
 export function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuthStore();
+  const { data: habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
+  const { data: completions, isLoading: completionsLoading, refetch: refetchCompletions } = useTodayCompletions();
+  const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
+
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
+  const onRefresh = async () => {
+    await Promise.all([refetchHabits(), refetchCompletions()]);
+  };
+
+  const toggleHabit = async (habitId: string, isCompleted: boolean) => {
+    try {
+      if (isCompleted) {
+        await unmarkComplete({ habitId, date: today });
+      } else {
+        await markComplete({ habitId, date: today });
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update habit');
+    }
+  };
+
+  const isLoading = habitsLoading || completionsLoading;
+  const isRefreshing = isLoading && (habits || completions);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+
+
+  if (isLoading && !habits) {
+    return <LoadingSpinner fullScreen message="Loading habits..." />;
+  }
+
+  const habitsList = habits || [];
+  const completionsList = completions || [];
+  const completedHabitIds = new Set(completionsList.map(c => c.habitId));
+
+  const habitsWithCompletion = habitsList.map(habit => ({
+    ...habit,
+    completed: completedHabitIds.has(habit.id),
+  }));
+
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome, {user?.name || 'User'}!</Text>
-        <Text style={styles.subtitle}>Today's Habits</Text>
-
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>📊</Text>
-          <Text style={styles.emptyTitle}>Coming Soon!</Text>
-          <Text style={styles.emptyMessage}>
-            Habit tracking features will be added here.
-          </Text>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={!!isRefreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.greeting}>{getGreeting()}, {user?.name || 'User'}!</Text>
+          <Text style={styles.date}>{todayDate}</Text>
         </View>
 
-        <Button
-          title="Logout"
-          onPress={logout}
-          variant="outline"
-          style={styles.logoutButton}
-        />
-      </View>
-    </SafeAreaView>
+        {/* Today's Habits */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Today's Habits</Text>
+
+          {habitsWithCompletion.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No habits yet!</Text>
+              <Text style={styles.emptySubtext}>Go to Habits tab to add your first habit</Text>
+            </View>
+          ) : (
+            habitsWithCompletion.map((habit) => (
+              <TouchableOpacity
+                key={habit.id}
+                style={[
+                  styles.habitCard,
+                  habit.completed && styles.habitCardCompleted,
+                ]}
+                onPress={() => toggleHabit(habit.id, habit.completed)}
+                disabled={toggleLoading}
+              >
+                {/* Checkbox */}
+                <View style={styles.checkbox}>
+                  {habit.completed ? (
+                    <View style={[styles.checkboxChecked, { backgroundColor: habit.color }]}>
+                      <Text style={styles.checkmark}>✓</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.checkboxUnchecked, { borderColor: habit.color }]} />
+                  )}
+                </View>
+
+                {/* Habit Info */}
+                <View style={styles.habitInfo}>
+                  <Text style={[
+                    styles.habitTitle,
+                    habit.completed && styles.habitTitleCompleted,
+                  ]}>
+                    {habit.icon} {habit.title}
+                  </Text>
+                </View>
+
+                {/* Color Indicator */}
+                <View style={[styles.colorIndicator, { backgroundColor: habit.color }]} />
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        {/* Progress Summary */}
+        {habitsWithCompletion.length > 0 && (
+          <View style={styles.summary}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryValue}>
+                {habitsWithCompletion.filter(h => h.completed).length}/{habitsWithCompletion.length}
+              </Text>
+              <Text style={styles.summaryLabel}>Completed Today</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryValue}>
+                {Math.round((habitsWithCompletion.filter(h => h.completed).length / habitsWithCompletion.length) * 100) || 0}%
+              </Text>
+              <Text style={styles.summaryLabel}>Completion Rate</Text>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -42,42 +167,127 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  scrollView: {
     flex: 1,
-    padding: spacing.xl,
   },
-  title: {
-    fontSize: typography.fontSize.xxxl,
+  content: {
+    padding: spacing.lg,
+  },
+  header: {
+    marginBottom: spacing.xl,
+  },
+  greeting: {
+    fontSize: typography.fontSize.xxl,
     fontWeight: typography.fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  subtitle: {
-    fontSize: typography.fontSize.lg,
+  date: {
+    fontSize: typography.fontSize.md,
     color: colors.textSecondary,
+  },
+  section: {
     marginBottom: spacing.xl,
   },
-  emptyState: {
-    flex: 1,
+  sectionTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  habitCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  habitCardCompleted: {
+    opacity: 0.6,
+  },
+  checkbox: {
+    marginRight: spacing.md,
+  },
+  checkboxUnchecked: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+  },
+  checkboxChecked: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyText: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    fontSize: typography.fontSize.xl,
+  checkmark: {
+    color: colors.white,
+    fontSize: 16,
     fontWeight: typography.fontWeight.bold,
+  },
+  habitInfo: {
+    flex: 1,
+  },
+  habitTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.medium,
     color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  habitTitleCompleted: {
+    textDecorationLine: 'line-through',
+    color: colors.textSecondary,
+  },
+  streak: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  colorIndicator: {
+    width: 4,
+    height: 40,
+    borderRadius: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: spacing.xxxl,
+  },
+  emptyText: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
-  emptyMessage: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
+  emptySubtext: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textLight,
     textAlign: 'center',
   },
-  logoutButton: {
-    marginTop: spacing.xl,
+  summary: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  summaryValue: {
+    fontSize: typography.fontSize.xxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  summaryLabel: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

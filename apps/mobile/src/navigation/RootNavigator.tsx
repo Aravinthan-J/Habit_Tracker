@@ -6,7 +6,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthNavigator } from './AuthNavigator';
-import { HomeScreen } from '../screens/home/HomeScreen';
+import { MainNavigator } from './MainNavigator';
 import { useAuthStore } from '../store/authStore';
 import { LoadingSpinner } from '../components/common';
 
@@ -20,7 +20,7 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {isAuthenticated ? <HomeScreen /> : <AuthNavigator />}
+      {isAuthenticated ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
