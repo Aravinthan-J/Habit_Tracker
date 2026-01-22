@@ -121,7 +121,7 @@ export function CalendarScreen() {
       .map((habit) => ({
         id: habit.id,
         title: habit.title,
-        icon: habit.icon,
+        icon: habit.icon || "•",
         color: habit.color,
       }));
 
