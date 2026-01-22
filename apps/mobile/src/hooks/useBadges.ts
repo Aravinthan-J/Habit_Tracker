@@ -3,8 +3,10 @@
  * React Query hooks for badge operations
  */
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api/apiClient';
+import type { Badge } from '@habit-tracker/api-client';
 
 export function useAllBadges() {
   return useQuery({
