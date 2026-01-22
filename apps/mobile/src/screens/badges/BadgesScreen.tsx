@@ -19,7 +19,7 @@ import { BadgeUnlockModal } from '../../components/badges/BadgeUnlockModal';
 import { ConfettiAnimation } from '../../components/celebrations/ConfettiAnimation';
 import { LoadingSpinner } from '../../components/common';
 import { BADGE_CATEGORIES } from '../../constants/badges';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
 import type { Badge, UserBadge, BadgeProgress } from '@habit-tracker/api-client';
 
 export function BadgesScreen() {
@@ -54,7 +54,7 @@ export function BadgesScreen() {
         current: prog.current,
         required: prog.required,
         percentage: prog.percentage,
-      } : null,
+      } : undefined,
     };
   });
 
@@ -84,26 +84,32 @@ export function BadgesScreen() {
         style={styles.tabs}
         contentContainerStyle={styles.tabsContent}
       >
-        {BADGE_CATEGORIES.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.tab,
-              selectedCategory === category.id && styles.tabActive,
-            ]}
-            onPress={() => setSelectedCategory(category.id)}
-          >
-            <Text style={styles.tabIcon}>{category.icon}</Text>
-            <Text
+        {BADGE_CATEGORIES.map((category) => {
+          const isActive = selectedCategory === category.id;
+          return (
+            <TouchableOpacity
+              key={category.id}
               style={[
-                styles.tabText,
-                selectedCategory === category.id && styles.tabTextActive,
+                styles.tab,
+                isActive && styles.tabActive,
               ]}
+              onPress={() => setSelectedCategory(category.id)}
+              activeOpacity={0.7}
             >
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
+                {category.icon}
+              </Text>
+              <Text
+                style={[
+                  styles.tabText,
+                  isActive && styles.tabTextActive,
+                ]}
+              >
+                {category.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Badge Grid */}
@@ -157,7 +163,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   tabs: {
-    maxHeight: 60,
+    height: 60,
     marginBottom: spacing.md,
   },
   tabsContent: {
@@ -168,27 +174,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.full,
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     marginRight: spacing.sm,
+    height: 40,
+    opacity: 0.7,
   },
   tabActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    borderWidth: 2,
+    opacity: 1,
+    ...shadows.md,
   },
   tabIcon: {
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.md,
     marginRight: spacing.xs,
+    opacity: 0.8,
+  },
+  tabIconActive: {
+    fontSize: typography.fontSize.md,
+    opacity: 1,
   },
   tabText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text,
+    fontWeight: typography.fontWeight.regular,
+    color: colors.textSecondary,
   },
   tabTextActive: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
     color: colors.white,
   },
   grid: {
