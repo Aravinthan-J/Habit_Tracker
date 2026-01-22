@@ -3,14 +3,28 @@
  * Configured instance of ApiService for the mobile app
  */
 
+import { Platform } from 'react-native';
 import { ApiService } from '@habit-tracker/api-client';
 import { SecureStorageService } from '../storage/SecureStorageService';
 
-// API Base URL - change this to your backend URL
-// For development: use your computer's IP address or localhost
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:3000/api'
-  : 'https://your-production-api.com/api';
+// API Base URL - automatically configured for different platforms
+const getApiBaseUrl = () => {
+  if (!__DEV__) {
+    return 'https://your-production-api.com/api';
+  }
+
+  // Development URLs
+  if (Platform.OS === 'android') {
+    // Android emulator uses 10.0.2.2 to access localhost
+    return 'http://10.0.2.2:3000/api';
+  }
+
+  // iOS Simulator and physical devices
+  // For physical devices, use your computer's IP address
+  return 'http://192.168.2.46:3000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Create API client instance
