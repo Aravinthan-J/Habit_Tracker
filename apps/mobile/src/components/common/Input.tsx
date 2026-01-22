@@ -1,6 +1,6 @@
 /**
  * Input Component
- * Reusable text input with label, error display, and icons
+ * Reusable text input with label and error display
  */
 
 import React, { useState } from 'react';
@@ -12,14 +12,12 @@ import {
   TextInputProps,
   TouchableOpacity,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   touched?: boolean;
-  icon?: keyof typeof Ionicons.glyphMap;
   containerStyle?: any;
 }
 
@@ -27,7 +25,6 @@ export function Input({
   label,
   error,
   touched,
-  icon,
   secureTextEntry,
   containerStyle,
   ...props
@@ -39,16 +36,7 @@ export function Input({
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
 
-      <View style={[styles.inputContainer, showError && styles.inputError]}>
-        {icon && (
-          <Ionicons
-            name={icon}
-            size={20}
-            color={colors.textSecondary}
-            style={styles.icon}
-          />
-        )}
-
+      <View style={[styles.inputContainer, (showError && styles.inputError) || {}]}>
         <TextInput
           style={styles.input}
           placeholderTextColor={colors.textLight}
@@ -61,11 +49,7 @@ export function Input({
             onPress={() => setIsSecure(!isSecure)}
             style={styles.eyeIcon}
           >
-            <Ionicons
-              name={isSecure ? 'eye-off' : 'eye'}
-              size={20}
-              color={colors.textSecondary}
-            />
+            <Text style={styles.eyeText}>{isSecure ? '👁️' : '🙈'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -97,17 +81,17 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: colors.error,
   },
-  icon: {
-    marginRight: spacing.sm,
-  },
   input: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     fontSize: typography.fontSize.md,
     color: colors.text,
   },
   eyeIcon: {
     padding: spacing.xs,
+  },
+  eyeText: {
+    fontSize: 20,
   },
   errorText: {
     fontSize: typography.fontSize.sm,

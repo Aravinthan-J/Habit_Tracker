@@ -75,7 +75,6 @@ export function LoginScreen({ navigation }: any) {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            icon="mail"
           />
 
           <Input
@@ -87,7 +86,6 @@ export function LoginScreen({ navigation }: any) {
             error={errors.password}
             touched={touched.password}
             secureTextEntry
-            icon="lock-closed"
           />
 
           <Button

@@ -97,7 +97,6 @@ export function RegisterScreen({ navigation }: any) {
             onBlur={() => setTouched({ ...touched, name: true })}
             error={errors.name}
             touched={touched.name}
-            icon="person"
           />
 
           <Input
@@ -111,7 +110,6 @@ export function RegisterScreen({ navigation }: any) {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            icon="mail"
           />
 
           <Input
@@ -123,7 +121,6 @@ export function RegisterScreen({ navigation }: any) {
             error={errors.password}
             touched={touched.password}
             secureTextEntry
-            icon="lock-closed"
           />
 
           {password.length > 0 && (
@@ -149,7 +146,6 @@ export function RegisterScreen({ navigation }: any) {
             error={errors.confirmPassword}
             touched={touched.confirmPassword}
             secureTextEntry
-            icon="lock-closed"
           />
 
           <Button
