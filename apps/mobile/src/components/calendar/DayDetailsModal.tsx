@@ -276,7 +276,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   content: {
-    flex: 1,
     padding: spacing.lg,
   },
   section: {

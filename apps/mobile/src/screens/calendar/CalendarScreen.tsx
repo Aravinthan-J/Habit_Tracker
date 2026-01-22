@@ -3,30 +3,35 @@
  * Monthly view of habit completions
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-} from 'react-native';
-import { useHabits } from '../../hooks/useHabits';
-import { useCalendarCompletions } from '../../hooks/useCompletions';
-import { LoadingSpinner } from '../../components/common';
+} from "react-native";
+import { useHabits } from "../../hooks/useHabits";
+import { useCalendarCompletions } from "../../hooks/useCompletions";
+import { LoadingSpinner } from "../../components/common";
 import {
   CalendarHeatmap,
   DayDetailsModal,
   type HeatmapDay,
   type DayDetail,
-} from '../../components/calendar';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+} from "../../components/calendar";
+import {
+  colors,
+  spacing,
+  typography,
+  borderRadius,
+} from "../../constants/theme";
 
-type ViewType = 'grid' | 'heatmap';
+type ViewType = "grid" | "heatmap";
 
 export function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [viewType, setViewType] = useState<ViewType>('grid');
+  const [viewType, setViewType] = useState<ViewType>("grid");
   const [selectedDay, setSelectedDay] = useState<DayDetail | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -34,7 +39,8 @@ export function CalendarScreen() {
   const month = currentMonth.getMonth() + 1; // API expects 1-12
 
   const { data: habits, isLoading: habitsLoading } = useHabits();
-  const { data: calendarData, isLoading: calendarLoading } = useCalendarCompletions(year, month);
+  const { data: calendarData, isLoading: calendarLoading } =
+    useCalendarCompletions(year, month);
 
   // Convert API data to map format for easier lookup
   const completionsMap: { [key: string]: string[] } = {};
@@ -59,12 +65,12 @@ export function CalendarScreen() {
   };
 
   const formatDateKey = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
 
-  const changeMonth = (direction: 'prev' | 'next') => {
+  const changeMonth = (direction: "prev" | "next") => {
     const newMonth = new Date(currentMonth);
-    if (direction === 'prev') {
+    if (direction === "prev") {
       newMonth.setMonth(newMonth.getMonth() - 1);
     } else {
       newMonth.setMonth(newMonth.getMonth() + 1);
@@ -100,19 +106,19 @@ export function CalendarScreen() {
     const dayCompletions = completionsMap[dateKey] || [];
 
     const completedHabits = dayCompletions.map((habitId) => {
-      const habit = habitsList.find(h => h.id === habitId);
+      const habit = habitsList.find((h) => h.id === habitId);
       return {
         id: habitId,
-        title: habit?.title || 'Unknown',
-        icon: habit?.icon || '•',
+        title: habit?.title || "Unknown",
+        icon: habit?.icon || "•",
         color: habit?.color || colors.primary,
         completedAt: new Date(dateKey).toISOString(),
       };
     });
 
     const pendingHabits = habitsList
-      .filter(h => !dayCompletions.includes(h.id))
-      .map(habit => ({
+      .filter((h) => !dayCompletions.includes(h.id))
+      .map((habit) => ({
         id: habit.id,
         title: habit.title,
         icon: habit.icon,
@@ -120,7 +126,7 @@ export function CalendarScreen() {
       }));
 
     const date = new Date(dateKey);
-    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
 
     setSelectedDay({
       date: dateKey,
@@ -145,7 +151,10 @@ export function CalendarScreen() {
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
-  const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthName = currentMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 
   // Generate calendar days
   const calendarDays = [];
@@ -178,15 +187,20 @@ export function CalendarScreen() {
         key={`day-${day}`}
         style={[styles.dayCell, isToday && styles.dayToday]}
       >
-        <Text style={[styles.dayNumber, isToday && styles.dayTodayText]}>{day}</Text>
+        <Text style={[styles.dayNumber, isToday && styles.dayTodayText]}>
+          {day}
+        </Text>
         {dayCompletions.length > 0 && (
           <View style={styles.dotsContainer}>
             {dayCompletions.slice(0, 3).map((habitId) => {
-              const habit = habitsList.find(h => h.id === habitId);
+              const habit = habitsList.find((h) => h.id === habitId);
               return (
                 <View
                   key={habitId}
-                  style={[styles.dot, { backgroundColor: habit?.color || colors.primary }]}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: habit?.color || colors.primary },
+                  ]}
                 />
               );
             })}
@@ -205,45 +219,113 @@ export function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+      >
         {/* Month Navigation */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => changeMonth('prev')} style={styles.navButton}>
+          <TouchableOpacity
+            onPress={() => changeMonth("prev")}
+            style={styles.navButton}
+          >
             <Text style={styles.navButtonText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.monthTitle}>{monthName}</Text>
-          <TouchableOpacity onPress={() => changeMonth('next')} style={styles.navButton}>
+          <TouchableOpacity
+            onPress={() => changeMonth("next")}
+            style={styles.navButton}
+          >
             <Text style={styles.navButtonText}>→</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Weekday Headers */}
-        <View style={styles.weekdayRow}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <View key={day} style={styles.weekdayCell}>
-              <Text style={styles.weekdayText}>{day}</Text>
-            </View>
-          ))}
+        {/* View Toggle */}
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewType === "grid" && styles.toggleButtonActive,
+            ]}
+            onPress={() => setViewType("grid")}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                viewType === "grid" && styles.toggleButtonTextActive,
+              ]}
+            >
+              Grid View
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewType === "heatmap" && styles.toggleButtonActive,
+            ]}
+            onPress={() => setViewType("heatmap")}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                viewType === "heatmap" && styles.toggleButtonTextActive,
+              ]}
+            >
+              Heatmap View
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Calendar Grid */}
-        <View style={styles.calendarGrid}>
-          {calendarDays.map((day, index) => renderDay(day, index))}
-        </View>
+        {viewType === "grid" ? (
+          <>
+            {/* Weekday Headers */}
+            <View style={styles.weekdayRow}>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <View key={day} style={styles.weekdayCell}>
+                  <Text style={styles.weekdayText}>{day}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Calendar Grid */}
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((day, index) => renderDay(day, index))}
+            </View>
+          </>
+        ) : (
+          /* Heatmap View */
+          <CalendarHeatmap
+            data={heatmapData}
+            startDate={getHeatmapDateRange().start}
+            endDate={getHeatmapDateRange().end}
+            onDayPress={handleHeatmapDayPress}
+          />
+        )}
 
         {/* Legend */}
-        {habitsList.length > 0 && (
+        {viewType === "grid" && habitsList.length > 0 && (
           <View style={styles.legend}>
             <Text style={styles.legendTitle}>Habits</Text>
             {habitsList.map((habit) => (
               <View key={habit.id} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: habit.color }]} />
-                <Text style={styles.legendText}>{habit.icon} {habit.title}</Text>
+                <View
+                  style={[styles.legendDot, { backgroundColor: habit.color }]}
+                />
+                <Text style={styles.legendText}>
+                  {habit.icon} {habit.title}
+                </Text>
               </View>
             ))}
           </View>
         )}
       </ScrollView>
+
+      {/* Day Details Modal */}
+      <DayDetailsModal
+        visible={modalVisible}
+        dayDetail={selectedDay}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
@@ -260,9 +342,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: spacing.xl,
   },
   navButton: {
@@ -278,12 +360,12 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   weekdayRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: spacing.sm,
   },
   weekdayCell: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: spacing.sm,
   },
   weekdayText: {
@@ -292,8 +374,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
     padding: spacing.xs,
@@ -301,10 +383,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   dayCell: {
-    width: '14.28%', // 100% / 7 days
+    width: "14.28%", // 100% / 7 days
     aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: spacing.xs,
   },
   dayToday: {
@@ -321,8 +403,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   dotsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
   },
   dot: {
@@ -350,8 +432,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: spacing.sm,
   },
   legendDot: {
@@ -363,5 +445,32 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: typography.fontSize.sm,
     color: colors.text,
+  },
+  viewToggle: {
+    flexDirection: "row",
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: "center",
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  toggleButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+  },
+  toggleButtonTextActive: {
+    color: colors.white,
   },
 });
