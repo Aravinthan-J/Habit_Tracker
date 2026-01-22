@@ -61,6 +61,9 @@ export class AuthService {
       },
     });
 
+    // Create sample habits for new user
+    await this.createSampleHabits(user.id);
+
     // Generate token
     const token = TokenService.generateToken(user.id);
 
@@ -71,6 +74,53 @@ export class AuthService {
       user: userWithoutPassword,
       token,
     };
+  }
+
+  /**
+   * Create sample habits for new users
+   */
+  private static async createSampleHabits(userId: string): Promise<void> {
+    const sampleHabits = [
+      {
+        userId,
+        title: 'Morning Workout',
+        monthlyGoal: 20,
+        color: '#6C63FF',
+        icon: '💪',
+      },
+      {
+        userId,
+        title: 'Read 30 Minutes',
+        monthlyGoal: 25,
+        color: '#48BB78',
+        icon: '📚',
+      },
+      {
+        userId,
+        title: 'Drink Water',
+        monthlyGoal: 30,
+        color: '#4299E1',
+        icon: '💧',
+      },
+      {
+        userId,
+        title: 'Meditation',
+        monthlyGoal: 20,
+        color: '#9F7AEA',
+        icon: '🧘',
+      },
+      {
+        userId,
+        title: 'Sleep 8 Hours',
+        monthlyGoal: 25,
+        color: '#ED8936',
+        icon: '🛌',
+      },
+    ];
+
+    await prisma.habit.createMany({
+      data: sampleHabits,
+    });
   }
 
   /**
