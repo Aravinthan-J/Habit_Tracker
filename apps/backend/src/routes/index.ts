@@ -9,6 +9,7 @@ import habitsRoutes from './habits.routes';
 import completionsRoutes from './completions.routes';
 import badgesRoutes from './badges.routes';
 import analyticsRoutes from './analytics.routes';
+import notificationsRoutes from './notifications.routes';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use('/habits', habitsRoutes);
 router.use('/completions', completionsRoutes);
 router.use('/badges', badgesRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/notifications', notificationsRoutes);
 
 /**
  * Health check endpoint

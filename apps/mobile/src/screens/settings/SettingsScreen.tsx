@@ -3,22 +3,34 @@
  * User profile and app preferences
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Switch,
   Alert,
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useAuth } from '../../hooks/useAuth';
+import { useNotifications } from '../../hooks/useNotifications';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 
 export function SettingsScreen() {
   const { user } = useAuthStore();
   const { logout, isLoggingOut } = useAuth();
+  const {
+    notificationPermission,
+    requestPermissions,
+    sendTestNotification
+  } = useNotifications();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  useEffect(() => {
+    setNotificationsEnabled(notificationPermission);
+  }, [notificationPermission]);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -57,6 +69,33 @@ export function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const handleToggleNotifications = async (value: boolean) => {
+    if (value) {
+      const granted = await requestPermissions();
+      if (granted) {
+        setNotificationsEnabled(true);
+        Alert.alert('Success', 'Notifications enabled successfully');
+      } else {
+        Alert.alert(
+          'Permission Denied',
+          'Please enable notifications in your device settings'
+        );
+      }
+    } else {
+      setNotificationsEnabled(false);
+      Alert.alert('Notifications Disabled', 'You will no longer receive push notifications');
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      await sendTestNotification();
+      Alert.alert('Test Sent', 'Check your notifications!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send test notification');
+    }
   };
 
   return (
@@ -104,6 +143,34 @@ export function SettingsScreen() {
             <Text style={styles.settingLabel}>Theme</Text>
             <Text style={styles.settingValue}>Light</Text>
           </View>
+        </View>
+      </View>
+
+      {/* Notifications Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Push Notifications</Text>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleToggleNotifications}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.white}
+            />
+          </View>
+          {notificationsEnabled && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleTestNotification}
+              >
+                <Text style={styles.menuItemText}>Send Test Notification</Text>
+                <Text style={styles.menuItemArrow}>→</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 

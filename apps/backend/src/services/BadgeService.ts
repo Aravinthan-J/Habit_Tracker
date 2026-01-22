@@ -4,8 +4,21 @@
  */
 
 import { PrismaClient, Badge, UserBadge } from '@prisma/client';
+import { NotificationService } from './NotificationService';
 
 const prisma = new PrismaClient();
+
+// Badge icon mapping for notifications
+const BADGE_ICONS: Record<string, string> = {
+  'fire-bronze': '🔥',
+  'fire-silver': '🔥',
+  'fire-gold': '🔥',
+  'fire-platinum': '🔥',
+  'trophy-bronze': '🥉',
+  'trophy-silver': '🥈',
+  'trophy-gold': '🥇',
+  'trophy-platinum': '🏆',
+};
 
 interface BadgeProgress {
   badge: Badge;
@@ -422,7 +435,7 @@ export class BadgeService {
     if (existing) return null;
 
     // Award badge
-    return await prisma.userBadge.create({
+    const userBadge = await prisma.userBadge.create({
       data: {
         userId,
         badgeId: badge.id,
@@ -430,5 +443,15 @@ export class BadgeService {
       },
       include: { badge: true },
     });
+
+    // Send notification for badge unlock
+    try {
+      const badgeIcon = BADGE_ICONS[badge.iconName] || '🏆';
+      await NotificationService.sendBadgeUnlock(userId, badge.name, badgeIcon);
+    } catch (error) {
+      console.error('Error sending badge unlock notification:', error);
+    }
+
+    return userBadge;
   }
 }

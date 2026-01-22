@@ -32,10 +32,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  habits      Habit[]
-  completions Completion[]
-  badges      UserBadge[]
-  stepData    StepData[]
+  habits            Habit[]
+  completions       Completion[]
+  badges            UserBadge[]
+  stepData          StepData[]
+  notificationTokens NotificationToken[]
 
   @@map("users")
 }
@@ -132,4 +133,19 @@ model StepData {
   @@unique([userId, date])                // One record per user per day
   @@index([userId, date])
   @@map("step_data")
+}
+
+// NotificationToken Model (Push Notification Tokens)
+model NotificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique              // Expo push token
+  deviceId  String?                       // Device identifier
+  platform  String                        // 'ios' | 'android'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("notification_tokens")
 }
