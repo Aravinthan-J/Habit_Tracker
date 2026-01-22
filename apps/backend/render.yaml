@@ -1,0 +1,21 @@
+services:
+  # Backend API Service
+  - type: web
+    name: habit-tracker-api
+    env: node
+    plan: free
+    buildCommand: cd apps/backend && npm install && npm run generate
+    startCommand: cd apps/backend && npm run dev
+    healthCheckPath: /api/health
+    
+    # Environment variables (will be set in Render dashboard)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+databases:
+  # PostgreSQL Database
+  - name: habit-tracker-db
+    plan: free
