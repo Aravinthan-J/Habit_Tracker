@@ -3,7 +3,7 @@
  * Monthly view of habit completions
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,21 @@ import {
 import { useHabits } from '../../hooks/useHabits';
 import { useCalendarCompletions } from '../../hooks/useCompletions';
 import { LoadingSpinner } from '../../components/common';
+import {
+  CalendarHeatmap,
+  DayDetailsModal,
+  type HeatmapDay,
+  type DayDetail,
+} from '../../components/calendar';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+
+type ViewType = 'grid' | 'heatmap';
 
 export function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [viewType, setViewType] = useState<ViewType>('grid');
+  const [selectedDay, setSelectedDay] = useState<DayDetail | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth() + 1; // API expects 1-12
@@ -59,6 +70,78 @@ export function CalendarScreen() {
       newMonth.setMonth(newMonth.getMonth() + 1);
     }
     setCurrentMonth(newMonth);
+  };
+
+  /**
+   * Prepare heatmap data
+   */
+  const heatmapData = useMemo((): HeatmapDay[] => {
+    if (!calendarData?.completions) return [];
+
+    return calendarData.completions.map((completion) => {
+      const totalHabits = habitsList.length;
+      const completedCount = completion.habitIds.length;
+      const completionRate = totalHabits > 0 ? completedCount / totalHabits : 0;
+
+      return {
+        date: completion.date,
+        completionRate,
+        completedCount,
+        totalCount: totalHabits,
+      };
+    });
+  }, [calendarData, habitsList]);
+
+  /**
+   * Handle heatmap day press
+   */
+  const handleHeatmapDayPress = (day: HeatmapDay) => {
+    const dateKey = day.date;
+    const dayCompletions = completionsMap[dateKey] || [];
+
+    const completedHabits = dayCompletions.map((habitId) => {
+      const habit = habitsList.find(h => h.id === habitId);
+      return {
+        id: habitId,
+        title: habit?.title || 'Unknown',
+        icon: habit?.icon || '•',
+        color: habit?.color || colors.primary,
+        completedAt: new Date(dateKey).toISOString(),
+      };
+    });
+
+    const pendingHabits = habitsList
+      .filter(h => !dayCompletions.includes(h.id))
+      .map(habit => ({
+        id: habit.id,
+        title: habit.title,
+        icon: habit.icon,
+        color: habit.color,
+      }));
+
+    const date = new Date(dateKey);
+    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+    setSelectedDay({
+      date: dateKey,
+      dayOfWeek,
+      completedHabits,
+      skippedHabits: [],
+      pendingHabits,
+      totalHabits: habitsList.length,
+      completionRate: Math.round(day.completionRate * 100),
+    });
+    setModalVisible(true);
+  };
+
+  /**
+   * Get heatmap date range (last 90 days)
+   */
+  const getHeatmapDateRange = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 90);
+    return { start, end };
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
