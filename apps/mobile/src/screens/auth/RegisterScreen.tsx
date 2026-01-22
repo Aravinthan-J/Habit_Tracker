@@ -1,0 +1,219 @@
+/**
+ * Register Screen
+ * User registration with validation
+ */
+
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { Button, Input } from '../../components/common';
+import { useAuth } from '../../hooks/useAuth';
+import { colors, spacing, typography } from '../../constants/theme';
+import { validateEmail, validatePassword } from '@habit-tracker/shared-utils';
+
+export function RegisterScreen({ navigation }: any) {
+  const { register, isRegistering } = useAuth();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+
+  // Validation
+  const passwordValidation = validatePassword(password);
+  const errors = {
+    name: name.trim().length < 1 ? 'Name is required' : '',
+    email: !validateEmail(email) ? 'Invalid email format' : '',
+    password: password.length > 0 && !passwordValidation.isValid
+      ? passwordValidation.errors[0]
+      : '',
+    confirmPassword:
+      confirmPassword && password !== confirmPassword ? 'Passwords do not match' : '',
+  };
+
+  const isValid =
+    !errors.name &&
+    !errors.email &&
+    !errors.password &&
+    !errors.confirmPassword &&
+    name &&
+    email &&
+    password &&
+    confirmPassword;
+
+  const handleRegister = () => {
+    if (!isValid) {
+      setTouched({ name: true, email: true, password: true, confirmPassword: true });
+      return;
+    }
+
+    register(
+      {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password,
+      },
+      {
+        onError: (error: any) => {
+          Alert.alert('Registration Failed', error.message || 'Please try again');
+        },
+      }
+    );
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Start building great habits today</Text>
+        </View>
+
+        <View style={styles.form}>
+          <Input
+            label="Name"
+            placeholder="John Doe"
+            value={name}
+            onChangeText={setName}
+            onBlur={() => setTouched({ ...touched, name: true })}
+            error={errors.name}
+            touched={touched.name}
+            icon="person"
+          />
+
+          <Input
+            label="Email"
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            onBlur={() => setTouched({ ...touched, email: true })}
+            error={errors.email}
+            touched={touched.email}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            icon="mail"
+          />
+
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            onBlur={() => setTouched({ ...touched, password: true })}
+            error={errors.password}
+            touched={touched.password}
+            secureTextEntry
+            icon="lock-closed"
+          />
+
+          {password.length > 0 && (
+            <View style={styles.passwordRequirements}>
+              <Text style={styles.requirementText}>
+                {passwordValidation.isValid ? '✓' : '○'} At least 8 characters
+              </Text>
+              <Text style={styles.requirementText}>
+                {/[A-Z]/.test(password) ? '✓' : '○'} One uppercase letter
+              </Text>
+              <Text style={styles.requirementText}>
+                {/[0-9]/.test(password) ? '✓' : '○'} One number
+              </Text>
+            </View>
+          )}
+
+          <Input
+            label="Confirm Password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            onBlur={() => setTouched({ ...touched, confirmPassword: true })}
+            error={errors.confirmPassword}
+            touched={touched.confirmPassword}
+            secureTextEntry
+            icon="lock-closed"
+          />
+
+          <Button
+            title="Create Account"
+            onPress={handleRegister}
+            loading={isRegistering}
+            disabled={!isValid || isRegistering}
+            fullWidth
+            style={styles.registerButton}
+          />
+
+          <Button
+            title="Already have an account? Login"
+            onPress={() => navigation.navigate('Login')}
+            variant="text"
+            style={styles.loginButton}
+          />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xxxl,
+  },
+  title: {
+    fontSize: typography.fontSize.xxxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  form: {
+    width: '100%',
+  },
+  passwordRequirements: {
+    marginBottom: spacing.md,
+    marginTop: -spacing.sm,
+  },
+  requirementText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  registerButton: {
+    marginTop: spacing.lg,
+  },
+  loginButton: {
+    marginTop: spacing.md,
+  },
+});
