@@ -1,11 +1,11 @@
 services:
-  # Backend API Service
   - type: web
     name: habit-tracker-api
-    env: docker
+    env: node
     plan: free
-    dockerfilePath: ./apps/backend/Dockerfile
-    dockerContext: .
+    region: oregon
+    buildCommand: cd apps/backend && npm install && npx prisma generate
+    startCommand: cd apps/backend && node simple-server.js
     healthCheckPath: /api/health
     # Environment variables (will be set in Render dashboard)
     envVars:
@@ -21,6 +21,5 @@ services:
         generateValue: true
 
 databases:
-  # PostgreSQL Database
   - name: habit-tracker-db
     plan: free
