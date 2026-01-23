@@ -59,3 +59,8 @@ yarn-error.log*
 *.tgz
 .npm
 .eslintcache
+
+
+# Build
+apps/mobile/android/
+apps/mobile/ios/
