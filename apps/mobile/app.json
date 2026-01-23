@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "Habit Tracker",
-    "slug": "habit-tracker",
+    "name": "Habity",
+    "slug": "habity",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "description": "Build routines, track streaks, win badges. Your friendly habit tracking companion to build lasting routines and celebrate every win.",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,14 +17,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.habittracker.app"
+      "bundleIdentifier": "com.habity.app",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#6C63FF"
       },
-      "package": "com.habittracker.app"
+      "package": "com.habity.app",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,5 +36,5 @@
         "projectId": "c4034052-7ec1-4df5-8cda-cf6d05be91bb"
       }
     }
-    }
+  }
 }

@@ -1,6 +1,6 @@
-# Habit Tracker Mobile App
+# Habity Mobile App
 
-React Native mobile app built with Expo for the Habit Tracker application.
+Build routines, track streaks, win badges. React Native mobile app built with Expo for the Habity habit tracking application.
 
 ## 🚀 Tech Stack
 
@@ -116,26 +116,33 @@ npx expo start --android
 
 ## 📱 Features Implemented
 
-### ✅ Phase 1 - MVP (Current)
-- [x] User authentication (Login/Register)
+### ✅ Current Features
+- [x] User authentication (Login/Register/Logout)
 - [x] Secure token storage
+- [x] Track unlimited habits with custom icons and colors
+- [x] Daily habit completion tracking
+- [x] Beautiful monthly calendar view
+- [x] Unlock 30+ achievement badges
+- [x] Streak tracking with fire 🔥
+- [x] Step counter integration
+- [x] Monthly goal progress tracking
+- [x] Smart goal completion indicators
+- [x] Habit management (Add/Edit/Delete)
+- [x] Pull-to-refresh
 - [x] Form validation
 - [x] Loading states
 - [x] Error handling
-- [x] Basic navigation
+- [x] Tab navigation
 - [x] Zustand state management
 - [x] React Query integration
-- [x] API client integration
 
 ### 🚧 Coming Soon
-- [ ] Home screen with habit list
-- [ ] Add/Edit habit screens
-- [ ] Habit completion tracking
-- [ ] Calendar view
-- [ ] Settings screen
-- [ ] Offline-first with SQLite
-- [ ] Sync queue
-- [ ] Pull-to-refresh
+- [ ] Push notifications / Smart daily reminders
+- [ ] Offline-first with SQLite sync
+- [ ] Dark mode support
+- [ ] Habit statistics and analytics
+- [ ] Export habit data
+- [ ] Social features (share achievements)
 
 ## 🧪 Testing
 

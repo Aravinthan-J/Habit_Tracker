@@ -1,4 +1,6 @@
-# Ultimate Monthly Habit Tracker
+# Habity - Your Friendly Habit Tracking Companion
+
+Build lasting routines, visualize your progress, and celebrate every win with badges and streaks.
 
 A full-stack habit tracking application built with modern technologies and offline-first architecture.
 
@@ -39,15 +41,18 @@ habit-tracker/
 - **Linting**: ESLint
 - **Formatting**: Prettier
 
-## 📋 Phase 1 Features
+## ✨ Features
 
+- ✅ Track unlimited habits with custom icons and colors
+- ✅ Beautiful calendar view to visualize your progress
+- ✅ Unlock 30+ achievement badges
+- ✅ Streak tracking with fire 🔥
+- ✅ Step counter integration
+- ✅ Monthly goal tracking
 - ✅ User authentication (register, login, logout)
-- ✅ Habit CRUD operations
-- ✅ Daily habit completion tracking
-- ✅ Monthly calendar view
-- ✅ Streak calculation
-- ✅ Offline-first architecture
-- ✅ Real-time sync when online
+- ✅ Offline-first architecture with real-time sync
+- ✅ Dark mode support
+- ✅ Smart daily reminders
 
 ## 🛠️ Development Setup
 

@@ -1,8 +1,8 @@
 {
-  "name": "habit-tracker-monorepo",
+  "name": "habity-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Ultimate Monthly Habit Tracker - Monorepo",
+  "description": "Habity - Your friendly habit tracking companion - Monorepo",
   "workspaces": [
     "apps/*",
     "packages/*"
