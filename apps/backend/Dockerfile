@@ -5,17 +5,19 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files
-COPY apps/backend/package*.json ./apps/backend/
+COPY apps/backend/package*.json ./
 
 # Install dependencies
-WORKDIR /app/apps/backend
-RUN npm install
+RUN npm install --omit=dev
+
+# Copy prisma schema
+COPY apps/backend/prisma ./prisma
 
 # Generate Prisma client
-RUN npm run generate
+RUN npx prisma generate
 
 # Copy the simple server
-COPY simple-server.js ./simple-server.js
+COPY apps/backend/simple-server.js ./
 
 # Expose port
 EXPOSE 3000
