@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useHabits, useHabitStats } from '../../hooks/useHabits';
-import { useTodayCompletions, useToggleCompletion } from '../../hooks/useCompletions';
+import { useTodayCompletions, useToggleCompletion, useCalendarCompletions } from '../../hooks/useCompletions';
 import { useTodaySteps, useStepStats } from '../../hooks/useSteps';
 import { LoadingSpinner } from '../../components/common';
 import { StepProgressRing, StepStats } from '../../components/steps';
@@ -28,6 +28,12 @@ export function HomeScreen() {
   const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
   const { data: todaySteps, isLoading: stepsLoading, refetch: refetchSteps } = useTodaySteps();
   const { data: stepStats, isLoading: statsLoading } = useStepStats();
+
+  // Fetch current month's completions for goal tracking
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1;
+  const { data: calendarData } = useCalendarCompletions(currentYear, currentMonth);
 
   // Date in YYYY-MM-DD format for API
   const todayISO = new Date().toISOString().split('T')[0];
@@ -59,7 +65,22 @@ export function HomeScreen() {
     return 'Good evening';
   };
 
+  // Check if habit has met its monthly goal
+  const hasMetMonthlyGoal = (habit: any) => {
+    if (!calendarData?.completions || !Array.isArray(calendarData.completions)) {
+      return false;
+    }
 
+    // Count how many days this month the habit was completed
+    let completedDays = 0;
+    calendarData.completions.forEach((dayCompletion: any) => {
+      if (dayCompletion.habitIds && dayCompletion.habitIds.includes(habit.id)) {
+        completedDays++;
+      }
+    });
+
+    return completedDays >= habit.monthlyGoal;
+  };
 
   if (isLoading && !habits) {
     return <LoadingSpinner fullScreen message="Loading habits..." />;
@@ -69,7 +90,10 @@ export function HomeScreen() {
   const completionsList = completions || [];
   const completedHabitIds = new Set(completionsList.map(c => c.habitId));
 
-  const habitsWithCompletion = habitsList.map(habit => ({
+  // Filter out habits that have met their monthly goal
+  const activeHabits = habitsList.filter(habit => !hasMetMonthlyGoal(habit));
+
+  const habitsWithCompletion = activeHabits.map(habit => ({
     ...habit,
     completed: completedHabitIds.has(habit.id),
   }));
