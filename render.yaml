@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     region: oregon
-    buildCommand: cd apps/backend && npm install && npx prisma generate
+    buildCommand: cd apps/backend && npm install && npx prisma generate && npx prisma migrate deploy
     startCommand: cd apps/backend && node simple-server.js
     healthCheckPath: /api/health
     # Environment variables (will be set in Render dashboard)
