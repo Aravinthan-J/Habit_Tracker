@@ -9,19 +9,22 @@ import { SecureStorageService } from "../storage/SecureStorageService";
 
 // API Base URL - automatically configured for different platforms
 const getApiBaseUrl = () => {
-  if (!__DEV__) {
-    return "https://habit-tracker-api.onrender.com/api";
+  // Production API (always works)
+  const PRODUCTION_API = "https://habit-tracker-api-4p6m.onrender.com/api";
+
+  // Set to true to use deployed API even in dev mode (for physical devices)
+  const USE_DEPLOYED_API = true;
+
+  if (!__DEV__ || USE_DEPLOYED_API) {
+    return PRODUCTION_API;
   }
 
-  // Development URLs
+  // Development URLs (for emulators/simulators with local backend)
   if (Platform.OS === "android") {
-    // Android emulator uses 10.0.2.2 to access localhost
     return "http://10.0.2.2:3000/api";
   }
 
-  // iOS Simulator and physical devices
-  // For physical devices, use your computer's IP address
-  return "http://10.178.34.135:3000/api";
+  return "http://localhost:3000/api";
 };
 
 const API_BASE_URL = getApiBaseUrl();
