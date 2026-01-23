@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { HabitsStackParamList } from '../../navigation/HabitsNavigator';
 import { useHabits, useDeleteHabit } from '../../hooks/useHabits';
+import { useCalendarCompletions } from '../../hooks/useCompletions';
 import { LoadingSpinner } from '../../components/common';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 
@@ -25,6 +26,12 @@ export function HabitsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: habits, isLoading } = useHabits();
   const { mutateAsync: deleteHabit } = useDeleteHabit();
+
+  // Fetch current month's completions
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+  const { data: calendarData } = useCalendarCompletions(currentYear, currentMonth);
 
   const habitsList = habits || [];
 
@@ -66,13 +73,33 @@ export function HabitsScreen() {
     return <LoadingSpinner fullScreen message="Loading habits..." />;
   }
 
-  // For now, show basic progress without stats API call
-  // TODO: Enhance with useHabitStats for detailed stats
+  // Calculate monthly progress for each habit
   const getCurrentMonthProgress = (habit: any) => {
-    // This will be replaced with real stats from API
+    if (!calendarData?.completions || !Array.isArray(calendarData.completions)) {
+      return {
+        current: 0,
+        percent: 0,
+      };
+    }
+
+    // Count how many days this month the habit was completed
+    let completedDays = 0;
+    // Iterate through all day completions
+    calendarData.completions.forEach((dayCompletion: any) => {
+      // Check if this habit was completed on this day
+      if (dayCompletion.habitIds && dayCompletion.habitIds.includes(habit.id)) {
+        completedDays++;
+      }
+    });
+
+    // Calculate percentage
+    const percent = habit.monthlyGoal > 0
+      ? Math.round((completedDays / habit.monthlyGoal) * 100)
+      : 0;
+
     return {
-      current: 0,
-      percent: 0,
+      current: completedDays,
+      percent: Math.min(percent, 100), // Cap at 100%
     };
   };
 
