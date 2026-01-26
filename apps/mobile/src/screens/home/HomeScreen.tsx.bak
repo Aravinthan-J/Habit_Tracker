@@ -414,3 +414,169 @@ export function HomeScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: spacing.lg,
+  },
+  header: {
+    marginBottom: spacing.xl,
+  },
+  greeting: {
+    fontSize: typography.fontSize.xxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  date: {
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  habitCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  habitCardCompleted: {
+    opacity: 0.6,
+  },
+  checkbox: {
+    marginRight: spacing.md,
+  },
+  checkboxUnchecked: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+  },
+  checkboxChecked: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: typography.fontWeight.bold,
+  },
+  habitInfo: {
+    flex: 1,
+  },
+  habitTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  habitTitleCompleted: {
+    textDecorationLine: 'line-through',
+    color: colors.textSecondary,
+  },
+  streak: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  colorIndicator: {
+    width: 4,
+    height: 40,
+    borderRadius: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: spacing.xxxl,
+  },
+  emptyText: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textLight,
+    textAlign: 'center',
+  },
+  summary: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  summaryValue: {
+    fontSize: typography.fontSize.xxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  summaryLabel: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  stepSection: {
+    marginBottom: spacing.xl,
+  },
+  stepCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
+  },
+  stepDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  stepDetailItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepDetailIcon: {
+    fontSize: typography.fontSize.lg,
+    marginBottom: spacing.xs,
+  },
+  stepDetailValue: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+  },
+  statsSection: {
+    marginBottom: spacing.xl,
+  },
+});

@@ -16,17 +16,20 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { spacing, typography, borderRadius } from '../../constants/theme';
 
 export function SettingsScreen() {
   const { user } = useAuthStore();
-  const { logout, isLoggingOut } = useAuth();
+  const { logout } = useAuth();
   const {
     notificationPermission,
     requestPermissions,
     sendTestNotification
   } = useNotifications();
+  const { theme, setTheme, colors } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     setNotificationsEnabled(notificationPermission);
@@ -38,7 +41,16 @@ export function SettingsScreen() {
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: () => logout(),
+        onPress: async () => {
+          try {
+            setIsLoggingOut(true);
+            await logout();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to logout');
+          } finally {
+            setIsLoggingOut(false);
+          }
+        },
       },
     ]);
   };
@@ -98,6 +110,154 @@ export function SettingsScreen() {
     }
   };
 
+  const handleThemeChange = () => {
+    Alert.alert('Select Theme', 'Choose your preferred theme', [
+      {
+        text: 'Light',
+        onPress: async () => {
+          try {
+            await setTheme('light');
+            Alert.alert('Success', 'Theme changed to Light');
+          } catch (error) {
+            Alert.alert('Error', 'Failed to change theme');
+          }
+        },
+      },
+      {
+        text: 'Dark',
+        onPress: async () => {
+          try {
+            await setTheme('dark');
+            Alert.alert('Success', 'Theme changed to Dark');
+          } catch (error) {
+            Alert.alert('Error', 'Failed to change theme');
+          }
+        },
+      },
+      {
+        text: 'System Default',
+        onPress: async () => {
+          try {
+            await setTheme('system');
+            Alert.alert('Success', 'Theme set to System Default');
+          } catch (error) {
+            Alert.alert('Error', 'Failed to change theme');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const getThemeLabel = () => {
+    if (theme === 'system') return 'System Default';
+    return theme.charAt(0).toUpperCase() + theme.slice(1);
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    section: {
+      marginBottom: spacing.xl,
+    },
+    sectionTitle: {
+      fontSize: typography.fontSize.lg,
+      fontWeight: typography.fontWeight.semibold,
+      color: colors.text,
+      marginBottom: spacing.md,
+    },
+    profileCard: {
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.xl,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    avatar: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    avatarText: {
+      fontSize: typography.fontSize.xxxl,
+      fontWeight: typography.fontWeight.bold,
+      color: '#FFFFFF',
+    },
+    profileName: {
+      fontSize: typography.fontSize.xl,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    profileEmail: {
+      fontSize: typography.fontSize.md,
+      color: colors.textSecondary,
+      marginBottom: spacing.xs,
+    },
+    profileMemberSince: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textLight,
+    },
+    card: {
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+    },
+    settingLabel: {
+      fontSize: typography.fontSize.md,
+      color: colors.text,
+      fontWeight: typography.fontWeight.medium,
+    },
+    settingValue: {
+      fontSize: typography.fontSize.md,
+      color: colors.textSecondary,
+    },
+    settingValueContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+    },
+    menuItemText: {
+      fontSize: typography.fontSize.md,
+      color: colors.text,
+    },
+    menuItemArrow: {
+      fontSize: typography.fontSize.lg,
+      color: colors.textSecondary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    dangerText: {
+      color: colors.error,
+    },
+  });
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Profile Section */}
@@ -139,10 +299,13 @@ export function SettingsScreen() {
             <Text style={styles.settingValue}>UTC</Text>
           </View>
           <View style={styles.divider} />
-          <View style={styles.settingRow}>
+          <TouchableOpacity style={styles.settingRow} onPress={handleThemeChange}>
             <Text style={styles.settingLabel}>Theme</Text>
-            <Text style={styles.settingValue}>Light</Text>
-          </View>
+            <View style={styles.settingValueContainer}>
+              <Text style={styles.settingValue}>{getThemeLabel()}</Text>
+              <Text style={styles.menuItemArrow}>→</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -156,7 +319,7 @@ export function SettingsScreen() {
               value={notificationsEnabled}
               onValueChange={handleToggleNotifications}
               trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colors.white}
+              thumbColor="#FFFFFF"
             />
           </View>
           {notificationsEnabled && (
@@ -240,102 +403,3 @@ export function SettingsScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  profileCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  avatarText: {
-    fontSize: typography.fontSize.xxxl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.white,
-  },
-  profileName: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  profileEmail: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  profileMemberSince: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textLight,
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  settingLabel: {
-    fontSize: typography.fontSize.md,
-    color: colors.text,
-  },
-  settingValue: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.medium,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  menuItemText: {
-    fontSize: typography.fontSize.md,
-    color: colors.text,
-  },
-  menuItemArrow: {
-    fontSize: typography.fontSize.lg,
-    color: colors.textSecondary,
-  },
-  dangerText: {
-    color: colors.error,
-  },
-});

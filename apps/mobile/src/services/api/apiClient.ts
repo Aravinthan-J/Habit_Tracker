@@ -13,7 +13,7 @@ const getApiBaseUrl = () => {
   const PRODUCTION_API = "https://habit-tracker-api-4p6m.onrender.com/api";
 
   // Set to true to use deployed API even in dev mode (for physical devices)
-  const USE_DEPLOYED_API = true;
+  const USE_DEPLOYED_API = false;
 
   if (!__DEV__ || USE_DEPLOYED_API) {
     return PRODUCTION_API;
@@ -21,7 +21,7 @@ const getApiBaseUrl = () => {
 
   // Development URLs (for emulators/simulators with local backend)
   if (Platform.OS === "android") {
-    return "http://10.0.2.2:3000/api";
+    return "http://192.168.2.46:3000/api";
   }
 
   return "http://localhost:3000/api";
