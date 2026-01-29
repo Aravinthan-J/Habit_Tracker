@@ -27,4 +27,10 @@ COPY apps/backend/simple-server.js ./
 EXPOSE 3000
 
 # Run migrations and start server
-CMD npx prisma migrate deploy && node simple-server.js
+CMD echo "=== Checking migrations ===" && \
+    ls -la prisma/ && \
+    ls -la prisma/migrations/ && \
+    echo "=== Running migrations ===" && \
+    npx prisma migrate deploy && \
+    echo "=== Migration complete. Starting server ===" && \
+    node simple-server.js
