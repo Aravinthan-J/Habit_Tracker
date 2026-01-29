@@ -12,10 +12,7 @@ const getApiBaseUrl = () => {
   // Production API (always works)
   const PRODUCTION_API = "https://habit-tracker-api-4p6m.onrender.com/api";
 
-  // Set to true to use deployed API even in dev mode (for physical devices)
-  const USE_DEPLOYED_API = false;
-
-  if (!__DEV__ || USE_DEPLOYED_API) {
+  if (!__DEV__) {
     return PRODUCTION_API;
   }
 
