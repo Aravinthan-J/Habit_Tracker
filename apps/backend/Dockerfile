@@ -10,7 +10,7 @@ COPY apps/backend/package*.json ./
 # Install dependencies
 RUN npm install --omit=dev
 
-# Copy prisma schema
+# Copy entire prisma directory (schema + migrations)
 COPY apps/backend/prisma ./prisma
 
 # Generate Prisma client
