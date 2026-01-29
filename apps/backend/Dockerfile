@@ -4,6 +4,9 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+# Force cache bust - remove this line after first successful deploy
+ENV CACHE_BUST=2026-01-29
+
 # Copy package files
 COPY apps/backend/package*.json ./
 
