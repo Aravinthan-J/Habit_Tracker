@@ -60,6 +60,13 @@ yarn-error.log*
 .npm
 .eslintcache
 
+# TypeScript build artifacts
+*.tsbuildinfo
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts.map
+
 
 # Build
 apps/mobile/android/
