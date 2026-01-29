@@ -20,8 +20,9 @@ import {
   type HeatmapDay,
   type DayDetail,
 } from "../../components/calendar";
+import { useTheme } from "../../contexts/ThemeContext";
 import {
-  colors,
+  colors as defaultColors,
   spacing,
   typography,
   borderRadius,
@@ -30,6 +31,7 @@ import {
 type ViewType = "grid" | "heatmap";
 
 export function CalendarScreen() {
+  const { colors } = useTheme();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewType, setViewType] = useState<ViewType>("grid");
   const [selectedDay, setSelectedDay] = useState<DayDetail | null>(null);
@@ -252,6 +254,159 @@ export function CalendarScreen() {
     );
   };
 
+  // Create themed styles
+  const styles = React.useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: spacing.lg,
+    },
+    navButton: {
+      padding: spacing.sm,
+    },
+    navButtonText: {
+      fontSize: typography.fontSize.xxl,
+      color: colors.primary,
+    },
+    monthTitle: {
+      fontSize: typography.fontSize.xl,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.text,
+    },
+    viewToggleContainer: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    calendar: {
+      marginBottom: spacing.xl,
+    },
+    weekDaysRow: {
+      flexDirection: "row",
+      marginBottom: spacing.sm,
+    },
+    weekDayCell: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: spacing.xs,
+    },
+    weekDayText: {
+      fontSize: typography.fontSize.sm,
+      fontWeight: typography.fontWeight.semibold,
+      color: colors.textSecondary,
+    },
+    calendarGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+    },
+    dayCell: {
+      width: "14.28%",
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.xs,
+    },
+    dayToday: {
+      backgroundColor: colors.primaryLight + "20",
+      borderRadius: borderRadius.md,
+    },
+    dayNumber: {
+      fontSize: typography.fontSize.sm,
+      fontWeight: typography.fontWeight.medium,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    dayTodayText: {
+      color: colors.primary,
+      fontWeight: typography.fontWeight.bold,
+    },
+    dotsContainer: {
+      flexDirection: "row",
+      gap: 2,
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+    },
+    moreDots: {
+      fontSize: 8,
+      color: colors.textSecondary,
+      marginLeft: 2,
+    },
+    legend: {
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    legendTitle: {
+      fontSize: typography.fontSize.md,
+      fontWeight: typography.fontWeight.semibold,
+      color: colors.text,
+      marginBottom: spacing.sm,
+    },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.xs,
+    },
+    legendDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: spacing.sm,
+    },
+    legendText: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text,
+    },
+    heatmapContainer: {
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    toggleButton: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.md,
+      alignItems: "center",
+      backgroundColor: colors.white,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    toggleButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    toggleButtonText: {
+      fontSize: typography.fontSize.sm,
+      fontWeight: typography.fontWeight.medium,
+      color: colors.textSecondary,
+    },
+    toggleButtonTextActive: {
+      color: "#FFFFFF",
+    },
+  }), [colors]);
+
   if (isLoading && !habits) {
     return <LoadingSpinner fullScreen message="Loading calendar..." />;
   }
@@ -372,7 +527,7 @@ export function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: defaultColors.background,
   },
   scrollView: {
     flex: 1,
@@ -391,12 +546,12 @@ const styles = StyleSheet.create({
   },
   navButtonText: {
     fontSize: typography.fontSize.xl,
-    color: colors.primary,
+    color: defaultColors.primary,
   },
   monthTitle: {
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
-    color: colors.text,
+    color: defaultColors.text,
   },
   weekdayRow: {
     flexDirection: "row",
@@ -410,16 +565,16 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
+    color: defaultColors.textSecondary,
   },
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
     borderRadius: borderRadius.lg,
     padding: spacing.xs,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: defaultColors.border,
   },
   dayCell: {
     width: "14.28%", // 100% / 7 days
@@ -429,17 +584,17 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   dayToday: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: defaultColors.primaryLight,
     borderRadius: borderRadius.sm,
   },
   dayNumber: {
     fontSize: typography.fontSize.md,
-    color: colors.text,
+    color: defaultColors.text,
     marginBottom: spacing.xs,
   },
   dayTodayText: {
     fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
+    color: defaultColors.primary,
   },
   dotsContainer: {
     flexDirection: "row",
@@ -453,21 +608,21 @@ const styles = StyleSheet.create({
   },
   moreDots: {
     fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    color: defaultColors.textSecondary,
     marginLeft: 2,
   },
   legend: {
     marginTop: spacing.xl,
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: defaultColors.border,
   },
   legendTitle: {
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
+    color: defaultColors.text,
     marginBottom: spacing.md,
   },
   legendItem: {
@@ -483,15 +638,15 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: typography.fontSize.sm,
-    color: colors.text,
+    color: defaultColors.text,
   },
   viewToggle: {
     flexDirection: "row",
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
     borderRadius: borderRadius.lg,
     padding: spacing.xs,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: defaultColors.border,
     marginBottom: spacing.lg,
   },
   toggleButton: {
@@ -502,14 +657,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   toggleButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
   },
   toggleButtonText: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    color: defaultColors.textSecondary,
   },
   toggleButtonTextActive: {
-    color: colors.white,
+    color: defaultColors.white,
   },
 });

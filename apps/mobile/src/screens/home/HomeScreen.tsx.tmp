@@ -19,10 +19,12 @@ import { useTodayCompletions, useToggleCompletion, useCalendarCompletions } from
 import { useTodaySteps, useStepStats } from '../../hooks/useSteps';
 import { LoadingSpinner } from '../../components/common';
 import { StepProgressRing, StepStats } from '../../components/steps';
-import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { spacing, typography, borderRadius, shadows } from '../../constants/theme';
 
 export function HomeScreen() {
   const { user } = useAuthStore();
+  const { colors } = useTheme();
   const { data: habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { data: completions, isLoading: completionsLoading, refetch: refetchCompletions } = useTodayCompletions();
   const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
@@ -103,6 +105,179 @@ export function HomeScreen() {
     month: 'long',
     day: 'numeric'
   });
+
+  const styles = React.useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    header: {
+      marginBottom: spacing.xl,
+    },
+    greeting: {
+      fontSize: typography.fontSize.xxl,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    date: {
+      fontSize: typography.fontSize.md,
+      color: colors.textSecondary,
+    },
+    stepSection: {
+      marginBottom: spacing.xl,
+    },
+    sectionTitle: {
+      fontSize: typography.fontSize.lg,
+      fontWeight: typography.fontWeight.semibold,
+      color: colors.text,
+      marginBottom: spacing.md,
+    },
+    stepCard: {
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    stepDetails: {
+      flexDirection: 'row',
+      marginTop: spacing.md,
+      gap: spacing.lg,
+    },
+    stepDetailItem: {
+      alignItems: 'center',
+    },
+    stepDetailIcon: {
+      fontSize: typography.fontSize.xl,
+      marginBottom: spacing.xs,
+    },
+    stepDetailValue: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+      fontWeight: typography.fontWeight.semibold,
+    },
+    statsSection: {
+      marginBottom: spacing.xl,
+    },
+    section: {
+      marginBottom: spacing.xl,
+    },
+    habitCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    habitCardCompleted: {
+      opacity: 0.6,
+    },
+    checkbox: {
+      marginRight: spacing.md,
+    },
+    checkboxUnchecked: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      borderWidth: 2,
+    },
+    checkboxChecked: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    checkmark: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: typography.fontWeight.bold,
+    },
+    habitInfo: {
+      flex: 1,
+    },
+    habitTitle: {
+      fontSize: typography.fontSize.md,
+      fontWeight: typography.fontWeight.medium,
+      color: colors.text,
+    },
+    habitTitleCompleted: {
+      textDecorationLine: 'line-through',
+      color: colors.textSecondary,
+    },
+    goalMetBadge: {
+      backgroundColor: colors.success + '20',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+      borderRadius: borderRadius.sm,
+      alignSelf: 'flex-start',
+      marginTop: 4,
+    },
+    goalMetText: {
+      fontSize: typography.fontSize.xs,
+      fontWeight: typography.fontWeight.semibold,
+      color: colors.success,
+    },
+    streak: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+    },
+    colorIndicator: {
+      width: 4,
+      height: 40,
+      borderRadius: 2,
+    },
+    emptyState: {
+      alignItems: 'center',
+      padding: spacing.xxxl,
+    },
+    emptyText: {
+      fontSize: typography.fontSize.lg,
+      fontWeight: typography.fontWeight.semibold,
+      color: colors.textSecondary,
+      marginBottom: spacing.sm,
+    },
+    emptySubtext: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textLight,
+      textAlign: 'center',
+    },
+    summary: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    summaryCard: {
+      flex: 1,
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    summaryValue: {
+      fontSize: typography.fontSize.xxxl,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.primary,
+      marginBottom: spacing.xs,
+    },
+    summaryLabel: {
+      fontSize: typography.fontSize.sm,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+  }), [colors]);
 
   return (
     <View style={styles.container}>
