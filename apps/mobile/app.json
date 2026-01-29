@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundColor": "#6C63FF"
+        "backgroundImage": "./assets/android-icon-background.png"
       },
       "package": "com.habity.app",
       "versionCode": 1
