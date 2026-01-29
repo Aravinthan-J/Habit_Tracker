@@ -41,8 +41,8 @@ export class AnalyticsService {
       where: { userId },
     });
 
-    // Get active habits
-    const activeHabits = allHabits.filter((h: Habit) => !h.archivedAt);
+    // Get active habits (Prisma returns Date objects, not strings)
+    const activeHabits = allHabits.filter((h) => !h.archivedAt);
 
     // Get total completions
     const totalCompletions = await prisma.completion.count({
@@ -249,7 +249,7 @@ export class AnalyticsService {
     });
 
     // Count completions by day of week
-    completions.forEach((comp: Completion) => {
+    completions.forEach((comp) => {
       const day = new Date(comp.date).getDay();
       dayStats[day].completed++;
     });

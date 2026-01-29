@@ -3,7 +3,7 @@
  * Handles JWT token generation and verification
  */
 
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
 
 export interface TokenPayload {
@@ -21,7 +21,7 @@ export class TokenService {
 
     return jwt.sign(payload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRY,
-    });
+    } as SignOptions);
   }
 
   /**
@@ -54,6 +54,6 @@ export class TokenService {
 
     return jwt.sign(payload, env.JWT_SECRET, {
       expiresIn: '30d',
-    });
+    } as SignOptions);
   }
 }

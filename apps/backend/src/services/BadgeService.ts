@@ -415,7 +415,7 @@ export class BadgeService {
     userId: string,
     badgeName: string,
     habitId?: string
-  ): Promise<UserBadge | null> {
+  ): Promise<(UserBadge & { badge: Badge }) | null> {
     const badge = await prisma.badge.findUnique({
       where: { name: badgeName },
     });
