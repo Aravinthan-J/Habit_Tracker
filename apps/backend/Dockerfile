@@ -1,11 +1,12 @@
 # Use Node.js 20 LTS
 FROM node:20-alpine
 
+# Build argument for cache invalidation (optional)
+ARG BUILD_DATE
+ARG GIT_COMMIT
+
 # Set working directory
 WORKDIR /app
-
-# Force cache bust - remove this line after first successful deploy
-ENV CACHE_BUST=2026-01-29
 
 # Copy package files
 COPY apps/backend/package*.json ./
