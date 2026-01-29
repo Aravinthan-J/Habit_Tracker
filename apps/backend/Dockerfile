@@ -22,5 +22,5 @@ COPY apps/backend/simple-server.js ./
 # Expose port
 EXPOSE 3000
 
-# Start the simple JavaScript server
-CMD ["node", "simple-server.js"]
+# Run migrations and start server
+CMD npx prisma migrate deploy && node simple-server.js
