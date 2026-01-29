@@ -3,7 +3,7 @@
  * Monthly view of habit completions
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -15,9 +15,7 @@ import { useHabits } from "../../hooks/useHabits";
 import { useCalendarCompletions } from "../../hooks/useCompletions";
 import { LoadingSpinner } from "../../components/common";
 import {
-  CalendarHeatmap,
   DayDetailsModal,
-  type HeatmapDay,
   type DayDetail,
 } from "../../components/calendar";
 import {
@@ -27,11 +25,8 @@ import {
   borderRadius,
 } from "../../constants/theme";
 
-type ViewType = "grid" | "heatmap";
-
 export function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [viewType, setViewType] = useState<ViewType>("grid");
   const [selectedDay, setSelectedDay] = useState<DayDetail | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -78,77 +73,6 @@ export function CalendarScreen() {
     setCurrentMonth(newMonth);
   };
 
-  /**
-   * Prepare heatmap data
-   */
-  const heatmapData = useMemo((): HeatmapDay[] => {
-    if (!calendarData?.completions) return [];
-
-    return calendarData.completions.map((completion) => {
-      const totalHabits = habitsList.length;
-      const completedCount = completion.habitIds.length;
-      const completionRate = totalHabits > 0 ? completedCount / totalHabits : 0;
-
-      return {
-        date: completion.date,
-        completionRate,
-        completedCount,
-        totalCount: totalHabits,
-      };
-    });
-  }, [calendarData, habitsList]);
-
-  /**
-   * Handle heatmap day press
-   */
-  const handleHeatmapDayPress = (day: HeatmapDay) => {
-    const dateKey = day.date;
-    const dayCompletions = completionsMap[dateKey] || [];
-
-    const completedHabits = dayCompletions.map((habitId) => {
-      const habit = habitsList.find((h) => h.id === habitId);
-      return {
-        id: habitId,
-        title: habit?.title || "Unknown",
-        icon: habit?.icon || "•",
-        color: habit?.color || colors.primary,
-        completedAt: new Date(dateKey).toISOString(),
-      };
-    });
-
-    const pendingHabits = habitsList
-      .filter((h) => !dayCompletions.includes(h.id))
-      .map((habit) => ({
-        id: habit.id,
-        title: habit.title,
-        icon: habit.icon || "•",
-        color: habit.color,
-      }));
-
-    const date = new Date(dateKey);
-    const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
-
-    setSelectedDay({
-      date: dateKey,
-      dayOfWeek,
-      completedHabits,
-      skippedHabits: [],
-      pendingHabits,
-      totalHabits: habitsList.length,
-      completionRate: Math.round(day.completionRate * 100),
-    });
-    setModalVisible(true);
-  };
-
-  /**
-   * Get heatmap date range (last 90 days)
-   */
-  const getHeatmapDateRange = () => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 90);
-    return { start, end };
-  };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
   const monthName = currentMonth.toLocaleDateString("en-US", {
@@ -279,70 +203,22 @@ export function CalendarScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* View Toggle */}
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewType === "grid" && styles.toggleButtonActive,
-            ]}
-            onPress={() => setViewType("grid")}
-          >
-            <Text
-              style={[
-                styles.toggleButtonText,
-                viewType === "grid" && styles.toggleButtonTextActive,
-              ]}
-            >
-              Grid View
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewType === "heatmap" && styles.toggleButtonActive,
-            ]}
-            onPress={() => setViewType("heatmap")}
-          >
-            <Text
-              style={[
-                styles.toggleButtonText,
-                viewType === "heatmap" && styles.toggleButtonTextActive,
-              ]}
-            >
-              Heatmap View
-            </Text>
-          </TouchableOpacity>
+        {/* Weekday Headers */}
+        <View style={styles.weekdayRow}>
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <View key={day} style={styles.weekdayCell}>
+              <Text style={styles.weekdayText}>{day}</Text>
+            </View>
+          ))}
         </View>
 
-        {viewType === "grid" ? (
-          <>
-            {/* Weekday Headers */}
-            <View style={styles.weekdayRow}>
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <View key={day} style={styles.weekdayCell}>
-                  <Text style={styles.weekdayText}>{day}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Calendar Grid */}
-            <View style={styles.calendarGrid}>
-              {calendarDays.map((day, index) => renderDay(day, index))}
-            </View>
-          </>
-        ) : (
-          /* Heatmap View */
-          <CalendarHeatmap
-            data={heatmapData}
-            startDate={getHeatmapDateRange().start}
-            endDate={getHeatmapDateRange().end}
-            onDayPress={handleHeatmapDayPress}
-          />
-        )}
+        {/* Calendar Grid */}
+        <View style={styles.calendarGrid}>
+          {calendarDays.map((day, index) => renderDay(day, index))}
+        </View>
 
         {/* Legend */}
-        {viewType === "grid" && habitsList.length > 0 && (
+        {habitsList.length > 0 && (
           <View style={styles.legend}>
             <Text style={styles.legendTitle}>Habits</Text>
             {habitsList.map((habit) => (
@@ -484,32 +360,5 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: typography.fontSize.sm,
     color: colors.text,
-  },
-  viewToggle: {
-    flexDirection: "row",
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: "center",
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  toggleButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
-  },
-  toggleButtonTextActive: {
-    color: colors.white,
   },
 });
