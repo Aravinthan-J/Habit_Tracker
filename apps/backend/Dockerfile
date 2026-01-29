@@ -11,8 +11,8 @@ WORKDIR /app
 # Copy package files
 COPY apps/backend/package*.json ./
 
-# Install dependencies
-RUN npm install --omit=dev
+# Install ALL dependencies (need TypeScript to build)
+RUN npm install
 
 # Copy entire prisma directory (schema + migrations)
 COPY apps/backend/prisma ./prisma
@@ -20,17 +20,15 @@ COPY apps/backend/prisma ./prisma
 # Generate Prisma client
 RUN npx prisma generate
 
-# Copy the simple server
-COPY apps/backend/simple-server.js ./
+# Copy source code
+COPY apps/backend/src ./src
+COPY apps/backend/tsconfig.json ./
+
+# Build TypeScript
+RUN npm run build
 
 # Expose port
 EXPOSE 3000
 
-# Run migrations and start server
-CMD echo "=== Checking migrations ===" && \
-    ls -la prisma/ && \
-    ls -la prisma/migrations/ && \
-    echo "=== Running migrations ===" && \
-    npx prisma migrate deploy && \
-    echo "=== Migration complete. Starting server ===" && \
-    node simple-server.js
+# Run migrations and start REAL server
+CMD npx prisma migrate deploy && node dist/server.js
