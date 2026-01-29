@@ -19,6 +19,7 @@ const getApiBaseUrl = () => {
   // Development URLs (for emulators/simulators with local backend)
   if (Platform.OS === "android") {
     // return "user ip/api";
+    return PRODUCTION_API;
   }
 
   return "http://localhost:3000/api";
