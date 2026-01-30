@@ -24,5 +24,9 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "metro-resolver": "^0.80.12",
+    "react-native-url-polyfill": "^3.0.0"
   }
 }

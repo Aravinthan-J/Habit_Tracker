@@ -64,3 +64,10 @@ yarn-error.log*
 # Build
 apps/mobile/android/
 apps/mobile/ios/
+
+# TypeScript
+*.tsbuildinfo
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts.map
