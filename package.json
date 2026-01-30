@@ -2,6 +2,7 @@
   "name": "habity-monorepo",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "description": "Habity - Your friendly habit tracking companion - Monorepo",
   "workspaces": [
     "apps/*",
@@ -24,5 +25,8 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "metro-resolver": "^0.83.3"
   }
 }
