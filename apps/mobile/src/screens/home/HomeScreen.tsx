@@ -125,22 +125,22 @@ export function HomeScreen() {
             <Text style={styles.sectionTitle}>Steps Today</Text>
             <View style={styles.stepCard}>
               <StepProgressRing
-                steps={todaySteps.steps || 0}
-                goal={todaySteps.stepGoal || 10000}
+                steps={todaySteps?.steps || 0}
+                goal={todaySteps?.stepGoal || 10000}
                 size={140}
                 strokeWidth={14}
               />
-              {todaySteps.distance && (
+              {(todaySteps?.distance !== undefined && todaySteps?.distance !== null) && (
                 <View style={styles.stepDetails}>
                   <View style={styles.stepDetailItem}>
                     <Text style={styles.stepDetailIcon}>📍</Text>
                     <Text style={styles.stepDetailValue}>
-                      {todaySteps.distance >= 1 
+                      {todaySteps.distance >= 1
                         ? `${todaySteps.distance.toFixed(2)} km`
                         : `${(todaySteps.distance * 1000).toFixed(0)} m`}
                     </Text>
                   </View>
-                  {todaySteps.calories && (
+                  {(todaySteps?.calories !== undefined && todaySteps?.calories !== null) && (
                     <View style={styles.stepDetailItem}>
                       <Text style={styles.stepDetailIcon}>🔥</Text>
                       <Text style={styles.stepDetailValue}>
@@ -148,7 +148,7 @@ export function HomeScreen() {
                       </Text>
                     </View>
                   )}
-                  {todaySteps.activeMinutes && (
+                  {(todaySteps?.activeMinutes !== undefined && todaySteps?.activeMinutes !== null) && (
                     <View style={styles.stepDetailItem}>
                       <Text style={styles.stepDetailIcon}>⏱️</Text>
                       <Text style={styles.stepDetailValue}>
