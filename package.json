@@ -27,6 +27,6 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "metro-resolver": "^0.83.3"
+    "metro-resolver": "^0.80.12"
   }
 }
