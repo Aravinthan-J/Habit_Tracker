@@ -4,6 +4,11 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "base": {
+      "android": {
+        "image": "latest"
+      }
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal"
@@ -15,10 +20,12 @@
       }
     },
     "production": {
+      "extends": "base",
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
-      }
+      },
+      "node": "20.18.0"
     }
   },
   "submit": {
