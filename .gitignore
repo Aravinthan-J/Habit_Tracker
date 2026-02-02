@@ -62,7 +62,7 @@ yarn-error.log*
 
 
 # Build
-apps/mobile/android/
+# apps/mobile/android/
 apps/mobile/ios/
 
 # TypeScript
