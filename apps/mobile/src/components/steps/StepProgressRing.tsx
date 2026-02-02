@@ -23,8 +23,14 @@ export function StepProgressRing({
   strokeWidth = 12,
   showLabel = true,
 }: StepProgressRingProps) {
-  const percentage = Math.min((steps / goal) * 100, 100);
-  const radius = (size - strokeWidth) / 2;
+  // Ensure we have valid numbers
+  const safeSteps = Number(steps) || 0;
+  const safeGoal = Number(goal) || 1; // Prevent division by zero
+  const safeSize = Number(size) || 120;
+  const safeStrokeWidth = Number(strokeWidth) || 12;
+
+  const percentage = Math.min((safeSteps / safeGoal) * 100, 100);
+  const radius = (safeSize - safeStrokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
@@ -38,18 +44,18 @@ export function StepProgressRing({
   };
 
   const progressColor = getProgressColor();
-  const center = size / 2;
+  const center = safeSize / 2;
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      <Svg width={size} height={size} style={styles.svg}>
+    <View style={[styles.container, { width: safeSize, height: safeSize }]}>
+      <Svg width={safeSize} height={safeSize} style={styles.svg}>
         {/* Background circle */}
         <Circle
           cx={center}
           cy={center}
           r={radius}
           stroke={colors.border}
-          strokeWidth={strokeWidth}
+          strokeWidth={safeStrokeWidth}
           fill="none"
         />
         {/* Progress circle */}
@@ -58,7 +64,7 @@ export function StepProgressRing({
           cy={center}
           r={radius}
           stroke={progressColor}
-          strokeWidth={strokeWidth}
+          strokeWidth={safeStrokeWidth}
           fill="none"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -68,9 +74,9 @@ export function StepProgressRing({
       </Svg>
       {showLabel && (
         <View style={styles.labelContainer}>
-          <Text style={styles.stepsText}>{steps.toLocaleString()}</Text>
-          <Text style={styles.goalText}>/ {goal.toLocaleString()}</Text>
-          <Text style={styles.percentageText}>{Math.round(percentage)}%</Text>
+          <Text style={styles.stepsText}>{safeSteps.toLocaleString()}</Text>
+          <Text style={styles.goalText}>/ {safeGoal.toLocaleString()}</Text>
+          <Text style={styles.percentageText}>{Math.round(percentage) || 0}%</Text>
         </View>
       )}
     </View>
