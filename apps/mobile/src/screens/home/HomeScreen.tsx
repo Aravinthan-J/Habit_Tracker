@@ -120,27 +120,27 @@ export function HomeScreen() {
         </View>
 
         {/* Step Tracking */}
-        {todaySteps && (
+         {todaySteps && (
           <View style={styles.stepSection}>
             <Text style={styles.sectionTitle}>Steps Today</Text>
             <View style={styles.stepCard}>
               <StepProgressRing
-                steps={todaySteps.steps || 0}
-                goal={todaySteps.stepGoal || 10000}
+                steps={typeof todaySteps.steps === 'number' ? todaySteps.steps : 0}
+                goal={typeof todaySteps.stepGoal === 'number' ? todaySteps.stepGoal : 10000}
                 size={140}
                 strokeWidth={14}
               />
-              {todaySteps.distance && (
+              {typeof todaySteps.distance === 'number' && todaySteps.distance > 0 && (
                 <View style={styles.stepDetails}>
                   <View style={styles.stepDetailItem}>
                     <Text style={styles.stepDetailIcon}>📍</Text>
                     <Text style={styles.stepDetailValue}>
-                      {todaySteps.distance >= 1 
+                      {todaySteps.distance >= 1
                         ? `${todaySteps.distance.toFixed(2)} km`
                         : `${(todaySteps.distance * 1000).toFixed(0)} m`}
                     </Text>
                   </View>
-                  {todaySteps.calories && (
+                  {typeof todaySteps.calories === 'number' && todaySteps.calories > 0 && (
                     <View style={styles.stepDetailItem}>
                       <Text style={styles.stepDetailIcon}>🔥</Text>
                       <Text style={styles.stepDetailValue}>
@@ -148,7 +148,7 @@ export function HomeScreen() {
                       </Text>
                     </View>
                   )}
-                  {todaySteps.activeMinutes && (
+                  {typeof todaySteps.activeMinutes === 'number' && todaySteps.activeMinutes > 0 && (
                     <View style={styles.stepDetailItem}>
                       <Text style={styles.stepDetailIcon}>⏱️</Text>
                       <Text style={styles.stepDetailValue}>
