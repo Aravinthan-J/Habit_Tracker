@@ -1,7 +1,7 @@
-// Monorepo support: use parent directory for node resolution
-def projectDir = rootDir.getParentFile()
-
 pluginManagement {
+  // Monorepo support: use parent directory for node resolution
+  def projectDir = rootDir.getParentFile()
+
   def version = providers.exec {
     commandLine("node", "-e", "console.log(require('react-native/package.json').version);")
     workingDir(projectDir)
@@ -15,6 +15,9 @@ pluginManagement {
 }
 
 plugins { id("com.facebook.react.settings") }
+
+// Monorepo support: use parent directory for node resolution
+def projectDir = rootDir.getParentFile()
 
 def getRNMinorVersion() {
   def version = providers.exec {
