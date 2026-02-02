@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint .",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "bash eas-build-post-install.sh"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",

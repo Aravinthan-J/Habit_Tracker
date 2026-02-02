@@ -29,10 +29,7 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       },
-      "node": "20.18.0",
-      "hooks": {
-        "postInstall": "./eas-build-post-install.sh"
-      }
+      "node": "20.18.0"
     }
   },
   "submit": {
