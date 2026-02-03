@@ -1,0 +1,26 @@
+diff --git a/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle b/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+index e1cc7f5..d86c9ff 100644
+--- a/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
++++ b/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+@@ -69,21 +69,6 @@ ext.useExpoPublishing = {
+     apply plugin: 'maven-publish'
+   }
+ 
+-  afterEvaluate {
+-    publishing {
+-      publications {
+-        release(MavenPublication) {
+-          from components.release
+-        }
+-      }
+-      repositories {
+-        maven {
+-          url = mavenLocal().url
+-        }
+-      }
+-    }
+-  }
+-
+   android {
+     publishing {
+       singleVariant("release") {
