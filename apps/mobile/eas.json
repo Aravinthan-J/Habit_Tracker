@@ -30,7 +30,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "node": "20.18.0",
-      "prebuildCommand": "echo 'Skipping prebuild - using committed android directory'"
+      "prebuildCommand": "cd ../.. && npm run build:shared"
     }
   },
   "submit": {
