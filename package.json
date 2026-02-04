@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "build:shared": "turbo run build --filter=@habit-tracker/*",
+    "build:shared": "turbo run build --filter=@habit-tracker/* --force",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",
