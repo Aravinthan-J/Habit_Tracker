@@ -34,6 +34,7 @@ config.resolver.extraNodeModules = {
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
 // 5. Custom resolver to force axios to use browser build
+const { resolve: defaultResolve } = require('metro-resolver');
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // Redirect axios imports to the browser build
   if (moduleName === 'axios') {
@@ -43,8 +44,8 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     };
   }
 
-  // Use default resolver for everything else
-  return context.resolveRequest(context, moduleName, platform);
+  // Use default Metro resolver for everything else
+  return defaultResolve(context, moduleName, platform);
 };
 
 module.exports = config;
