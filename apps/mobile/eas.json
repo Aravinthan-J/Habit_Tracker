@@ -30,7 +30,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "node": "20.18.0",
-      "prebuildCommand": "cd ../.. && npm run build:shared"
+      "prebuildCommand": "echo 'Workspace packages built during postinstall'"
     }
   },
   "submit": {
