@@ -3,6 +3,7 @@
     "name": "Habity",
     "slug": "habit-tracker",
     "version": "1.0.0",
+    "icon": "./assets/icon.png",
     "description": "Build routines, track streaks, win badges. Your friendly habit tracking companion to build lasting routines and celebrate every win.",
     "assetBundlePatterns": [
       "**/*"
