@@ -9,10 +9,11 @@ buildscript {
         kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.23'
 
         ndkVersion = "26.1.10909125"
-
-        // Monorepo: Help native modules find react-native
-        REACT_NATIVE_NODE_MODULES_DIR = new File(['node', '--print', "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath()
     }
+
+    // Monorepo: Help native modules find react-native
+    // Must be outside buildscript to be accessible by all subprojects
+    project.ext.REACT_NATIVE_NODE_MODULES_DIR = new File(['node', '--print', "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath()
     repositories {
         google()
         mavenCentral()
@@ -27,6 +28,11 @@ buildscript {
 apply plugin: "com.facebook.react.rootproject"
 
 allprojects {
+    // Monorepo: Ensure all subprojects can find react-native
+    ext {
+        REACT_NATIVE_NODE_MODULES_DIR = new File(['node', '--print', "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath()
+    }
+
     repositories {
         maven {
             // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
