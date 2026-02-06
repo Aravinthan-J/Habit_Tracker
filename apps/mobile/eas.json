@@ -16,7 +16,7 @@
       "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
-      "prebuildCommand": "cd ../.. && npm run build:shared"
+      "prebuildCommand": "bash scripts/build-workspace-packages.sh"
     },
     "preview": {
       "extends": "base",
@@ -24,7 +24,7 @@
       "android": {
         "buildType": "apk"
       },
-      "prebuildCommand": "cd ../.. && npm run build:shared"
+      "prebuildCommand": "bash scripts/build-workspace-packages.sh"
     },
     "production": {
       "extends": "base",
@@ -34,7 +34,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "node": "20.18.0",
-      "prebuildCommand": "cd ../.. && npm run build:shared"
+      "prebuildCommand": "bash scripts/build-workspace-packages.sh"
     }
   },
   "submit": {
