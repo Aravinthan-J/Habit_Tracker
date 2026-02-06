@@ -13,14 +13,18 @@
       }
     },
     "development": {
+      "extends": "base",
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "prebuildCommand": "cd ../.. && npm run build:shared"
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "prebuildCommand": "cd ../.. && npm run build:shared"
     },
     "production": {
       "extends": "base",
@@ -30,7 +34,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "node": "20.18.0",
-      "prebuildCommand": "echo 'Workspace packages built during postinstall'"
+      "prebuildCommand": "cd ../.. && npm run build:shared"
     }
   },
   "submit": {
