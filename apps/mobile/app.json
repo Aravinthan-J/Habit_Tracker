@@ -11,7 +11,12 @@
       "bundleIdentifier": "com.habity.app"
     },
     "android": {
-      "package": "com.habity.app"
+      "package": "com.habity.app",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#8B5CF6"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
