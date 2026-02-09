@@ -15,16 +15,14 @@
     "development": {
       "extends": "base",
       "developmentClient": true,
-      "distribution": "internal",
-      "prebuildCommand": "bash scripts/build-workspace-packages.sh"
+      "distribution": "internal"
     },
     "preview": {
       "extends": "base",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "prebuildCommand": "bash scripts/build-workspace-packages.sh"
+      }
     },
     "production": {
       "extends": "base",
@@ -33,8 +31,7 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       },
-      "node": "20.18.0",
-      "prebuildCommand": "bash scripts/build-workspace-packages.sh"
+      "node": "20.18.0"
     }
   },
   "submit": {

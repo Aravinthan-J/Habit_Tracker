@@ -33,7 +33,7 @@ config.resolver.extraNodeModules = {
 // 4. Force axios to use browser/esm build
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
-// 5. Custom resolver to force axios to use browser build
+// 5. Custom resolver to force axios to use browser build and resolve workspace packages
 const { resolve: defaultResolve } = require('metro-resolver');
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // Redirect axios imports to the browser build
@@ -42,6 +42,19 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       filePath: path.resolve(workspaceRoot, 'node_modules/axios/dist/browser/axios.cjs'),
       type: 'sourceFile',
     };
+  }
+
+  // Resolve workspace packages directly to their source files
+  if (moduleName.startsWith('@habit-tracker/')) {
+    const packageName = moduleName.replace('@habit-tracker/', '');
+    const srcPath = path.resolve(workspaceRoot, 'packages', packageName, 'src/index.ts');
+    const fs = require('fs');
+    if (fs.existsSync(srcPath)) {
+      return {
+        filePath: srcPath,
+        type: 'sourceFile',
+      };
+    }
   }
 
   // Use default Metro resolver for everything else
