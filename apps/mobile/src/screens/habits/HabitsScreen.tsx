@@ -12,19 +12,27 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import type { HabitsStackParamList } from '../../navigation/HabitsNavigator';
 import { useHabits, useDeleteHabit } from '../../hooks/useHabits';
 import { useCalendarCompletions } from '../../hooks/useCompletions';
 import { LoadingSpinner } from '../../components/common';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { useAuthStore } from '../../store/authStore';
+import { syncService } from '../../services/sync/SyncService';
+import { networkMonitor } from '../../services/sync/NetworkMonitor';
 
 export function HabitsScreen() {
   const navigation = useNavigation<NavigationProp<HabitsStackParamList>>();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: habits, isLoading } = useHabits();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data: habits, isLoading, refetch } = useHabits();
   const { mutateAsync: deleteHabit } = useDeleteHabit();
 
   // Fetch current month's completions
@@ -69,6 +77,34 @@ export function HabitsScreen() {
     navigation.navigate('AddEditHabit');
   };
 
+  const handleRefresh = async () => {
+    if (!user?.id) return;
+
+    setIsRefreshing(true);
+    try {
+      if (!networkMonitor.isConnected()) {
+        Alert.alert('No Network', 'Cannot sync without an internet connection');
+        return;
+      }
+
+      // Perform sync with server
+      const result = await syncService.performFullSync(user.id);
+
+      if (result.success) {
+        // Refetch habits from local DB after sync
+        await refetch();
+        console.log(`✅ Sync complete: ${result.synced.habits} habits synced`);
+      } else {
+        Alert.alert('Sync Failed', result.error || 'Failed to sync with server');
+      }
+    } catch (error: any) {
+      console.error('Refresh error:', error);
+      Alert.alert('Error', error.message || 'Failed to refresh habits');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (isLoading) {
     return <LoadingSpinner fullScreen message="Loading habits..." />;
   }
@@ -105,7 +141,17 @@ export function HabitsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TextInput
@@ -124,7 +170,7 @@ export function HabitsScreen() {
             <Text style={styles.emptySubtext}>
               {searchQuery
                 ? 'Try a different search term'
-                : 'Tap + to create your first habit'}
+                : 'Pull to refresh to sync with server, or tap + to create your first habit'}
             </Text>
           </View>
         ) : (

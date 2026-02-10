@@ -47,7 +47,7 @@ export function HomeScreen() {
         await syncService.performFullSync(user.id);
       }
       // Then refetch from local database
-      await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
+    await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
     } catch (error: any) {
       console.error('Refresh error:', error);
     }
@@ -76,6 +76,23 @@ export function HomeScreen() {
     return 'Good evening';
   };
 
+  // Check if habit has met its monthly goal
+  const hasMetMonthlyGoal = (habit: any) => {
+    if (!calendarData?.completions || !Array.isArray(calendarData.completions)) {
+      return false;
+    }
+
+    // Count how many days this month the habit was completed
+    let completedDays = 0;
+    calendarData.completions.forEach((dayCompletion: any) => {
+      if (dayCompletion.habitIds && dayCompletion.habitIds.includes(habit.id)) {
+        completedDays++;
+      }
+    });
+
+    return completedDays >= habit.monthlyGoal;
+  };
+
   if (isLoading && !habits) {
     return <LoadingSpinner fullScreen message="Loading habits..." />;
   }
@@ -83,11 +100,14 @@ export function HomeScreen() {
   const habitsList = habits || [];
   const completionsList = completions || [];
   const completedHabitIds = new Set(completionsList.map(c => c.habitId));
+  
+    console.log(`📊 HomeScreen: habitsList=${habitsList.length}, completions=${completionsList.length}, completedIds=${completedHabitIds.size}`);
 
-  console.log(`📊 HomeScreen: habitsList=${habitsList.length}, completions=${completionsList.length}, completedIds=${completedHabitIds.size}`);
 
-  // Show ALL habits with completion status
-  const habitsWithCompletion = habitsList.map(habit => ({
+  // Filter out habits that have met their monthly goal
+  const activeHabits = habitsList.filter(habit => !hasMetMonthlyGoal(habit));
+
+  const habitsWithCompletion = activeHabits.map(habit => ({
     ...habit,
     completed: completedHabitIds.has(habit.id),
   }));
