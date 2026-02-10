@@ -36,8 +36,8 @@ export function useHabits(): ReturnType<typeof useQuery> {
       return localHabits;
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always fresh, refetch when component mounts
-    gcTime: 60000, // Keep in cache for 1 minute
+    staleTime: 30000, // Keep fresh for 30 seconds - shows cached data immediately
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 

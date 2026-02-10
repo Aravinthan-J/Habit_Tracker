@@ -78,19 +78,13 @@ export default function App() {
           });
 
           if (user?.id) {
-            // Perform initial sync if online (WAIT for it to complete)
-            if (networkMonitor.isConnected()) {
-              try {
-                console.log('Performing initial sync...');
-                const syncResult = await syncService.performFullSync(user.id);
-                console.log('Initial sync completed:', syncResult);
-              } catch (syncError) {
-                console.error('Initial sync failed:', syncError);
-                // Continue anyway, user can manually refresh
-              }
-            } else {
-              console.log('Offline mode - skipping initial sync');
-            }
+            // Don't sync automatically - let user manually sync via pull-to-refresh
+            console.log('Manual sync mode - user can pull to refresh to sync with server');
+
+            // Optional: Perform background sync if needed (commented out for manual-only mode)
+            // if (networkMonitor.isConnected()) {
+            //   syncService.performFullSync(user.id).catch(console.error);
+            // }
 
             // Background tasks disabled - use manual sync instead
             console.log('Background sync disabled. Use manual refresh in UI.');

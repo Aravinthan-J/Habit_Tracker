@@ -113,8 +113,9 @@ export function useToggleCompletion() {
       const isCompleted = await CompletionRepository.toggle(user.id, habitId, date, completionId);
 
       // 2. Queue for sync
+      const completedAt = new Date().toISOString();
       if (isCompleted) {
-        await SyncQueueRepository.add('completion', 'create', { habitId, date }, completionId);
+        await SyncQueueRepository.add('completion', 'create', { habitId, date, completedAt }, completionId);
       } else {
         await SyncQueueRepository.add('completion', 'delete', { habitId, date });
       }
@@ -123,11 +124,11 @@ export function useToggleCompletion() {
       if (networkMonitor.isConnected()) {
         try {
           if (isCompleted) {
-            await api.completions.create({ habitId, date });
+            await api.completions.create({ habitId, date, completedAt });
           } else {
             await api.completions.delete(habitId, date);
           }
-          console.log('Completion synced to server');
+          console.log('Completion synced to server with timestamp:', completedAt);
         } catch (error) {
           console.error('Failed to sync completion immediately:', error);
         }

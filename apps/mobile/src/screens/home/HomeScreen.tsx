@@ -20,6 +20,7 @@ import { useTodaySteps, useStepStats } from '../../hooks/useSteps';
 import { LoadingSpinner } from '../../components/common';
 import { StepProgressRing, StepStats } from '../../components/steps';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
+import { syncService } from '../../services/sync/SyncService';
 
 export function HomeScreen() {
   const { user } = useAuthStore();
@@ -39,7 +40,17 @@ export function HomeScreen() {
   const todayISO = new Date().toISOString().split('T')[0];
 
   const onRefresh = async () => {
-    await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
+    try {
+      // Sync with server first
+      if (user?.id) {
+        console.log('Manual sync triggered via pull-to-refresh');
+        await syncService.performFullSync(user.id);
+      }
+      // Then refetch from local database
+      await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
+    } catch (error: any) {
+      console.error('Refresh error:', error);
+    }
   };
 
   const toggleHabit = async (habitId: string, isCompleted: boolean) => {
@@ -65,23 +76,6 @@ export function HomeScreen() {
     return 'Good evening';
   };
 
-  // Check if habit has met its monthly goal
-  const hasMetMonthlyGoal = (habit: any) => {
-    if (!calendarData?.completions || !Array.isArray(calendarData.completions)) {
-      return false;
-    }
-
-    // Count how many days this month the habit was completed
-    let completedDays = 0;
-    calendarData.completions.forEach((dayCompletion: any) => {
-      if (dayCompletion.habitIds && dayCompletion.habitIds.includes(habit.id)) {
-        completedDays++;
-      }
-    });
-
-    return completedDays >= habit.monthlyGoal;
-  };
-
   if (isLoading && !habits) {
     return <LoadingSpinner fullScreen message="Loading habits..." />;
   }
@@ -90,13 +84,15 @@ export function HomeScreen() {
   const completionsList = completions || [];
   const completedHabitIds = new Set(completionsList.map(c => c.habitId));
 
-  // Filter out habits that have met their monthly goal
-  const activeHabits = habitsList.filter(habit => !hasMetMonthlyGoal(habit));
+  console.log(`📊 HomeScreen: habitsList=${habitsList.length}, completions=${completionsList.length}, completedIds=${completedHabitIds.size}`);
 
-  const habitsWithCompletion = activeHabits.map(habit => ({
+  // Show ALL habits with completion status
+  const habitsWithCompletion = habitsList.map(habit => ({
     ...habit,
     completed: completedHabitIds.has(habit.id),
   }));
+
+  console.log(`📊 Final: ${habitsWithCompletion.length} habits to display`);
 
   const todayDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
