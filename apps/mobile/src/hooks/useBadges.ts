@@ -1,19 +1,26 @@
 /**
  * Badges Hook
  * React Query hooks for badge operations
+ * Badges remain server-authoritative but with local caching
  */
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api/apiClient';
+import { networkMonitor } from '../services/sync/NetworkMonitor';
 import type { Badge } from '@habit-tracker/api-client';
 
 export function useAllBadges() {
   return useQuery({
     queryKey: ['badges', 'all'],
     queryFn: async () => {
+      // Badges are server-authoritative, only fetch if online
+      if (!networkMonitor.isConnected()) {
+        return [];
+      }
       return await api.badges.getAll();
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 }
 
@@ -24,8 +31,12 @@ export function useUserBadges() {
   return useQuery({
     queryKey: ['badges', 'user'],
     queryFn: async () => {
+      if (!networkMonitor.isConnected()) {
+        return [];
+      }
       return await api.badges.getUserBadges();
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 }
 
@@ -36,19 +47,28 @@ export function useBadgeProgress() {
   return useQuery({
     queryKey: ['badges', 'progress'],
     queryFn: async () => {
+      if (!networkMonitor.isConnected()) {
+        return [];
+      }
       return await api.badges.getProgress();
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 }
 
 /**
- * Check for badge unlocks
+ * Check for badge unlocks - only works online
  */
 export function useCheckBadges() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (habitId?: string) => {
+      // Only check badges if online
+      if (!networkMonitor.isConnected()) {
+        console.log('Offline - badge check skipped, will check on next sync');
+        return { newBadges: [] };
+      }
       return await api.badges.checkUnlocks(habitId);
     },
     onSuccess: () => {

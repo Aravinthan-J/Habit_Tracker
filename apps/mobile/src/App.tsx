@@ -13,19 +13,26 @@ import { useAuthStore } from './store/authStore';
 import { SecureStorageService } from './services/storage/SecureStorageService';
 import { api } from './services/api/apiClient';
 import { useNotificationListeners } from './hooks/useNotifications';
+import { databaseService } from './services/database/DatabaseService';
+import { networkMonitor } from './services/sync/NetworkMonitor';
+import { syncService } from './services/sync/SyncService';
+import { BackgroundSyncTask } from './services/background/BackgroundSyncTask';
+import { StepSyncTask } from './services/background/StepSyncTask';
 
 /**
  * React Query Configuration
+ * Updated for offline-first architecture
  */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 0, // Don't retry local DB reads
+      staleTime: Infinity, // Local data never stale
       gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnReconnect: true, // Sync on reconnect
     },
     mutations: {
-      retry: 1,
+      retry: 0, // Don't retry local writes
     },
   },
 });
@@ -34,11 +41,29 @@ export default function App() {
   const { hydrate } = useAuthStore();
 
   /**
-   * Hydrate auth state on app start
+   * Initialize app services and hydrate auth state
    */
   useEffect(() => {
-    const loadAuthState = async () => {
+    const initializeApp = async () => {
       try {
+        // 1. Initialize database
+        console.log('Initializing database...');
+        await databaseService.initialize();
+
+        // 2. Initialize network monitor
+        console.log('Initializing network monitor...');
+        networkMonitor.initialize();
+
+        // 3. Setup auto-sync on reconnection
+        networkMonitor.onReconnection(async () => {
+          console.log('Network reconnected, triggering sync...');
+          const user = await SecureStorageService.getUser();
+          if (user?.id) {
+            syncService.performFullSync(user.id).catch(console.error);
+          }
+        });
+
+        // 4. Load auth state
         const [user, token] = await Promise.all([
           SecureStorageService.getUser(),
           SecureStorageService.getToken(),
@@ -47,17 +72,33 @@ export default function App() {
         if (user && token) {
           // Set token in API client
           api.setToken(token);
+
+          // 5. Perform initial sync if online
+          if (networkMonitor.isConnected()) {
+            console.log('Performing initial sync...');
+            syncService.performFullSync(user.id).catch(console.error);
+          }
+
+          // 6. Register background tasks
+          console.log('Registering background tasks...');
+          await BackgroundSyncTask.register();
+          await StepSyncTask.register();
         }
 
         // Hydrate auth store
         hydrate(user, token);
       } catch (error) {
-        console.error('Error loading auth state:', error);
+        console.error('Error initializing app:', error);
         hydrate(null, null);
       }
     };
 
-    loadAuthState();
+    initializeApp();
+
+    // Cleanup on unmount
+    return () => {
+      networkMonitor.cleanup();
+    };
   }, [hydrate]);
 
   /**

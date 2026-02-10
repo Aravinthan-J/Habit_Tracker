@@ -28,6 +28,9 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
+    "@react-native-community/netinfo": "^11.5.2",
+    "expo-background-fetch": "~11.8.1",
+    "expo-task-manager": "~11.7.3",
     "metro-resolver": "^0.80.12",
     "react-native-url-polyfill": "^3.0.0",
     "turbo": "^1.11.0"
