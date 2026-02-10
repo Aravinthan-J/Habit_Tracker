@@ -104,6 +104,8 @@ class SyncService {
         this.fetchRecentSteps(),
       ]);
 
+      console.log(`📥 Initial migration: fetched ${habits.length} habits, ${completions.length} completions, ${steps.length} steps`);
+
       // Store in local database
       await databaseService.transaction(async () => {
         // Import habits
@@ -253,20 +255,32 @@ class SyncService {
         this.fetchRecentSteps(),
       ]);
 
-      // Sync habits
-      for (const serverHabit of serverHabits) {
-        const localHabit = await HabitRepository.getById(serverHabit.id);
+      console.log(`📥 Fetched from server: ${serverHabits.length} habits, ${serverCompletions.length} completions, ${serverSteps.length} steps`);
 
-        if (!localHabit) {
-          // New habit from server
-          await HabitRepository.upsert(serverHabit, 'synced');
-        } else if (localHabit.sync_status === 'synced') {
-          // Resolve conflict using server-wins strategy
-          const resolution = ConflictResolver.resolveHabit(localHabit, serverHabit);
-          await HabitRepository.upsert(resolution.resolved, 'synced');
+      // Sync habits
+      console.log('💾 Saving habits to local database...');
+      for (const serverHabit of serverHabits) {
+        try {
+          const localHabit = await HabitRepository.getById(serverHabit.id);
+
+          if (!localHabit) {
+            // New habit from server
+            console.log(`  ✅ Saving new habit: ${serverHabit.title}`);
+            await HabitRepository.upsert(serverHabit, 'synced');
+            result.synced.habits++;
+          } else if (localHabit.sync_status === 'synced') {
+            // Resolve conflict using server-wins strategy
+            console.log(`  🔄 Updating existing habit: ${serverHabit.title}`);
+            const resolution = ConflictResolver.resolveHabit(localHabit, serverHabit);
+            await HabitRepository.upsert(resolution.resolved, 'synced');
+            result.synced.habits++;
+          }
+          // Skip if local has pending changes
+        } catch (error) {
+          console.error(`Failed to sync habit ${serverHabit.id}:`, error);
         }
-        // Skip if local has pending changes
       }
+      console.log(`✔️ Habits sync complete: ${result.synced.habits} saved`);
 
       // Sync completions (merge strategy)
       const localCompletions = await CompletionRepository.getByDateRange(

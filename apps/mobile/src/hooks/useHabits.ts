@@ -5,6 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { UseMutationResult } from '@tanstack/react-query';
 import { api } from '../services/api/apiClient';
 import { HabitRepository } from '../services/database/repositories/HabitRepository';
 import { SyncQueueRepository } from '../services/database/repositories/SyncQueueRepository';
@@ -13,10 +14,13 @@ import { networkMonitor } from '../services/sync/NetworkMonitor';
 import { useAuthStore } from '../store/authStore';
 import type { Habit, CreateHabitData, UpdateHabitData } from '@habit-tracker/shared-types';
 
+type LocalHabit = Awaited<ReturnType<typeof HabitRepository.getAll>>[number];
+
+/**
 /**
  * Fetch all habits - reads from local DB first, syncs in background
  */
-export function useHabits() {
+export function useHabits(): ReturnType<typeof useQuery> {
   const { user } = useAuthStore();
 
   return useQuery({
@@ -26,24 +30,22 @@ export function useHabits() {
         return [];
       }
 
-      // 1. Read from local DB (instant)
+      // Read from local DB (refresh on every mount to get latest data)
       const localHabits = await HabitRepository.getAll(user.id);
-
-      // 2. Sync in background (non-blocking)
-      if (networkMonitor.isConnected()) {
-        syncService.performFullSync(user.id).catch(console.error);
-      }
-
+      console.log(`📚 useHabits: loaded ${localHabits.length} habits from DB`);
       return localHabits;
     },
     enabled: !!user?.id,
+    staleTime: 0, // Always fresh, refetch when component mounts
+    gcTime: 60000, // Keep in cache for 1 minute
   });
 }
 
 /**
+/**
  * Fetch single habit by ID - reads from local DB
  */
-export function useHabit(habitId: string) {
+export function useHabit(habitId: string): ReturnType<typeof useQuery> {
   return useQuery({
     queryKey: ['habits', habitId],
     queryFn: async () => {
@@ -69,13 +71,14 @@ export function useHabitStats(habitId: string) {
 }
 
 /**
+/**
  * Create new habit - writes to local DB first, syncs in background
  */
-export function useCreateHabit() {
+export function useCreateHabit(): UseMutationResult<LocalHabit, unknown, CreateHabitData, unknown> {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { user } = useAuthStore() as { user: { id: string } | null };
 
-  return useMutation({
+  return useMutation<LocalHabit, unknown, CreateHabitData>({
     mutationFn: async (data: CreateHabitData) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
@@ -105,9 +108,10 @@ export function useCreateHabit() {
 }
 
 /**
+/**
  * Update habit - writes to local DB first, syncs in background
  */
-export function useUpdateHabit() {
+export function useUpdateHabit(): ReturnType<typeof useMutation<any, unknown, { habitId: string; data: UpdateHabitData }>> {
   const queryClient = useQueryClient();
 
   return useMutation({

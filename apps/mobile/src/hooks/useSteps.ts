@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api/apiClient';
 import { PedometerService } from '../services/health/PedometerService';
 import { StepRepository } from '../services/database/repositories/StepRepository';
-import { StepSyncTask } from '../services/background/StepSyncTask';
 import { networkMonitor } from '../services/sync/NetworkMonitor';
 import { useAuthStore } from '../store/authStore';
 import type { LogStepsData } from '@habit-tracker/api-client';
@@ -211,7 +210,13 @@ export function useSteps() {
 
       // 2. Sync to server if online
       if (networkMonitor.isConnected()) {
-        await StepSyncTask.syncNow(user.id);
+        await api.steps.logSteps({
+          date: new Date().toISOString().split('T')[0],
+          steps,
+          distance,
+          calories,
+          source: 'auto-sync',
+        });
         console.log('Steps synced successfully');
       } else {
         console.log('Offline - steps saved locally, will sync when online');
