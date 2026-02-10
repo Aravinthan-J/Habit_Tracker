@@ -8,7 +8,10 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.habity.app"
+      "bundleIdentifier": "com.habity.app",
+      "infoPlist": {
+        "NSMotionUsageDescription": "We need access to your step count to track your daily activity and help you reach your fitness goals."
+      }
     },
     "android": {
       "package": "com.habity.app",
@@ -21,7 +24,8 @@
       "permissions": [
         "POST_NOTIFICATIONS",
         "NOTIFICATIONS",
-        "VIBRATE"
+        "VIBRATE",
+        "ACTIVITY_RECOGNITION"
       ]
     },
     "web": {
