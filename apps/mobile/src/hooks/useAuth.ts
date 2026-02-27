@@ -1,39 +1,46 @@
 /**
  * useAuth Hook
- * Authentication hook with mutations for login, register, logout
+ * Authentication hook using Supabase Auth
  */
 
+import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
-import { api } from '../services/api/apiClient';
-import { SecureStorageService } from '../services/storage/SecureStorageService';
-import type {
-  LoginCredentials,
-  RegisterData,
-} from '@habit-tracker/shared-types';
+import { supabase } from '../services/supabase/supabaseClient';
+import type { User, LoginCredentials, RegisterData } from '@habit-tracker/shared-types';
+
+const toAppUser = (supabaseUser: any): User => ({
+  id: supabaseUser.id,
+  email: supabaseUser.email!,
+  name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
+  stepGoal: 10000,
+  reminderTime: '20:00',
+  timezone: 'UTC',
+  theme: 'light',
+  isEmailVerified: !!supabaseUser.email_confirmed_at,
+  isActive: true,
+  createdAt: supabaseUser.created_at || new Date().toISOString(),
+  updatedAt: supabaseUser.updated_at || new Date().toISOString(),
+});
 
 export function useAuth() {
-  const { user, token, isAuthenticated, isLoading, setAuth, clearAuth } =
-    useAuthStore();
+  const { user, isAuthenticated, isLoading, setAuth, clearAuth } = useAuthStore();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   /**
    * Login mutation
    */
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await api.auth.login(credentials);
-      return response;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+      if (error) throw new Error(error.message);
+      return data;
     },
-    onSuccess: async (data) => {
-      // Save to secure storage
-      await SecureStorageService.saveToken(data.token);
-      await SecureStorageService.saveUser(data.user);
-
-      // Update auth store
-      setAuth(data.user, data.token);
-
-      // Update API client with token
-      api.setToken(data.token);
+    onSuccess: (data) => {
+      setAuth(toAppUser(data.user), data.session!.access_token);
     },
   });
 
@@ -42,48 +49,41 @@ export function useAuth() {
    */
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterData) => {
-      const response = await api.auth.register(data);
-      return response;
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: { name: data.name },
+        },
+      });
+      if (error) throw new Error(error.message);
+      return authData;
     },
-    onSuccess: async (data) => {
-      // Save to secure storage
-      await SecureStorageService.saveToken(data.token);
-      await SecureStorageService.saveUser(data.user);
-
-      // Update auth store
-      setAuth(data.user, data.token);
-
-      // Update API client with token
-      api.setToken(data.token);
+    onSuccess: (data) => {
+      if (data.user && data.session) {
+        setAuth(toAppUser(data.user), data.session.access_token);
+      }
     },
   });
 
   /**
-   * Logout function
+   * Logout
    */
   const logout = async () => {
+    setIsLoggingOut(true);
     try {
-      // Call API logout (optional)
-      if (token) {
-        await api.auth.logout();
-      }
-    } catch (error) {
-      console.error('Logout API error:', error);
-    } finally {
-      // Clear storage
-      await SecureStorageService.clearAll();
-
-      // Clear auth store
+      await supabase.auth.signOut();
       clearAuth();
-
-      // Clear API token
-      api.clearToken();
+    } catch (error) {
+      console.error('Logout error:', error);
+      clearAuth();
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
   return {
     user,
-    token,
     isAuthenticated,
     isLoading,
     login: loginMutation.mutate,
@@ -93,6 +93,7 @@ export function useAuth() {
     logout,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
+    isLoggingOut,
     loginError: loginMutation.error,
     registerError: registerMutation.error,
   };

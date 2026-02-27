@@ -1,4 +1,4 @@
-import { api } from '../api/apiClient';
+import { supabase } from '../supabase/supabaseClient';
 import { databaseService } from '../database/DatabaseService';
 import { HabitRepository } from '../database/repositories/HabitRepository';
 import { CompletionRepository } from '../database/repositories/CompletionRepository';
@@ -6,7 +6,6 @@ import { StepRepository } from '../database/repositories/StepRepository';
 import { SyncQueueRepository } from '../database/repositories/SyncQueueRepository';
 import { ConflictResolver } from './ConflictResolver';
 import { networkMonitor } from './NetworkMonitor';
-import type { Habit, Completion } from '@habit-tracker/shared-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getMigrationKey = (userId: string) => `initial_sync_${userId}`;
@@ -25,32 +24,21 @@ class SyncService {
   private isSyncing = false;
   private syncPromise: Promise<SyncResult> | null = null;
 
-  /**
-   * Main sync orchestrator - performs bidirectional sync
-   */
   async performFullSync(userId: string): Promise<SyncResult> {
-    // If already syncing, return the existing promise
     if (this.isSyncing && this.syncPromise) {
       console.log('Sync already in progress, waiting...');
       return this.syncPromise;
     }
 
-    // Check network connection
     if (!networkMonitor.isConnected()) {
-      console.log('No network connection, skipping sync');
-      return {
-        success: false,
-        error: 'No network connection',
-        synced: { habits: 0, completions: 0, steps: 0 },
-      };
+      return { success: false, error: 'No network connection', synced: { habits: 0, completions: 0, steps: 0 } };
     }
 
     this.isSyncing = true;
     this.syncPromise = this.executeSyncOperations(userId);
 
     try {
-      const result = await this.syncPromise;
-      return result;
+      return await this.syncPromise;
     } finally {
       this.isSyncing = false;
       this.syncPromise = null;
@@ -59,10 +47,7 @@ class SyncService {
 
   private async executeSyncOperations(userId: string): Promise<SyncResult> {
     console.log('Starting full sync...');
-    const result: SyncResult = {
-      success: true,
-      synced: { habits: 0, completions: 0, steps: 0 },
-    };
+    const result: SyncResult = { success: true, synced: { habits: 0, completions: 0, steps: 0 } };
 
     try {
       // Check if initial migration is needed (user-specific key)
@@ -71,13 +56,8 @@ class SyncService {
         await this.performInitialMigration(userId);
       }
 
-      // Step 1: Push local changes to server (upload)
       await this.pushLocalChanges(userId, result);
-
-      // Step 2: Pull server changes to local (download)
       await this.pullServerData(userId, result);
-
-      // Step 3: Process sync queue (retry failed operations)
       await this.processSyncQueue(userId);
 
       console.log('Full sync completed successfully', result);
@@ -91,56 +71,39 @@ class SyncService {
   }
 
   /**
-   * Initial data migration from server to local DB
+   * Initial migration: fetch all data from Supabase → local SQLite
    */
   private async performInitialMigration(userId: string): Promise<void> {
-    console.log('Performing initial data migration from server...');
+    console.log('Performing initial data migration from Supabase...');
 
     try {
-      // Fetch all data from server
-      const [habits, completions, steps] = await Promise.all([
-        api.habits.getAll(false),
-        api.completions.getAll(),
-        this.fetchRecentSteps(),
+      const [habitsRes, completionsRes, stepsRes] = await Promise.all([
+        supabase.from('habits').select('*').eq('user_id', userId).is('archived_at', null),
+        supabase.from('completions').select('*').eq('user_id', userId),
+        supabase.from('step_data').select('*').eq('user_id', userId)
+          .gte('date', this.getThirtyDaysAgo())
+          .lte('date', this.getToday()),
       ]);
 
-      console.log(`📥 Initial migration: fetched ${habits.length} habits, ${completions.length} completions, ${steps.length} steps`);
+      const habits = habitsRes.data || [];
+      const completions = completionsRes.data || [];
+      const steps = stepsRes.data || [];
 
-      // Store in local database
+      console.log(`📥 Initial migration: ${habits.length} habits, ${completions.length} completions, ${steps.length} steps`);
+
       await databaseService.transaction(async () => {
-        // Import habits
         for (const habit of habits) {
-          await HabitRepository.upsert(habit, 'synced');
+          await HabitRepository.upsert(this.toLocalHabit(habit), 'synced');
         }
-
-        // Import completions
         for (const completion of completions) {
-          await CompletionRepository.upsert(
-            {
-              id: completion.id,
-              habitId: completion.habitId,
-              userId: completion.userId,
-              date: completion.date,
-              completedAt: completion.completedAt,
-            },
-            'synced'
-          );
+          await CompletionRepository.upsert(this.toLocalCompletion(completion), 'synced');
         }
-
-        // Import steps
-        for (const stepData of steps) {
-          await StepRepository.upsert(
-            userId,
-            stepData.date,
-            stepData.steps,
-            stepData.distance,
-            stepData.calories || 0
-          );
-          await StepRepository.markAsSynced(userId, stepData.date);
+        for (const step of steps) {
+          await StepRepository.upsert(userId, step.date, step.steps, step.distance, step.calories || 0);
+          await StepRepository.markAsSynced(userId, step.date);
         }
       });
 
-      // Mark migration as complete (user-specific key)
       await AsyncStorage.setItem(getMigrationKey(userId), 'true');
       console.log('Initial migration completed successfully');
     } catch (error) {
@@ -149,56 +112,29 @@ class SyncService {
     }
   }
 
-  private async fetchRecentSteps(): Promise<any[]> {
-    try {
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(today.getDate() - 30);
-
-      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-      const endDate = today.toISOString().split('T')[0];
-
-      return await api.steps.getSteps(startDate, endDate);
-    } catch (error) {
-      console.error('Failed to fetch recent steps:', error);
-      return [];
-    }
-  }
-
   /**
-   * Push local changes to server
+   * Push pending local changes to Supabase
    */
   private async pushLocalChanges(userId: string, result: SyncResult): Promise<void> {
-    console.log('Pushing local changes to server...');
+    console.log('Pushing local changes to Supabase...');
 
     // Push habits
     const pendingHabits = await HabitRepository.getPendingSync();
     for (const habit of pendingHabits) {
       try {
-        // Determine if this is create or update based on whether it exists on server
-        const serverHabit = await this.fetchHabitFromServer(habit.id);
-
-        if (!serverHabit) {
-          // Create new habit
-          await api.habits.create({
-            title: habit.title,
-            monthlyGoal: habit.monthlyGoal,
-            color: habit.color,
-            icon: habit.icon || undefined,
-            notificationsEnabled: habit.notificationsEnabled,
-            reminderTime: habit.reminderTime || undefined,
-          });
-        } else {
-          // Update existing habit
-          await api.habits.update(habit.id, {
-            title: habit.title,
-            color: habit.color,
-            icon: habit.icon || undefined,
-            notificationsEnabled: habit.notificationsEnabled,
-            reminderTime: habit.reminderTime || undefined,
-          });
-        }
-
+        const { error } = await supabase.from('habits').upsert({
+          id: habit.id,
+          user_id: userId,
+          title: habit.title,
+          monthly_goal: habit.monthlyGoal,
+          color: habit.color,
+          icon: habit.icon,
+          notifications_enabled: habit.notificationsEnabled,
+          reminder_time: habit.reminderTime,
+          updated_at: new Date().toISOString(),
+          archived_at: habit.archivedAt || null,
+        });
+        if (error) throw error;
         await HabitRepository.markAsSynced(habit.id);
         result.synced.habits++;
       } catch (error) {
@@ -211,10 +147,14 @@ class SyncService {
     const pendingCompletions = await CompletionRepository.getPendingSync();
     for (const completion of pendingCompletions) {
       try {
-        await api.completions.create({
-          habitId: completion.habitId,
+        const { error } = await supabase.from('completions').upsert({
+          id: completion.id,
+          habit_id: completion.habitId,
+          user_id: userId,
           date: completion.date,
+          completed_at: completion.completedAt,
         });
+        if (error) throw error;
         await CompletionRepository.markAsSynced(completion.id);
         result.synced.completions++;
       } catch (error) {
@@ -224,124 +164,95 @@ class SyncService {
 
     // Push steps
     const pendingSteps = await StepRepository.getPendingSync(userId);
-    for (const stepData of pendingSteps) {
+    for (const step of pendingSteps) {
       try {
-        await api.steps.logSteps({
-          date: stepData.date,
-          steps: stepData.steps,
-          distance: stepData.distance,
-          calories: stepData.calories,
+        const { error } = await supabase.from('step_data').upsert({
+          user_id: userId,
+          date: step.date,
+          steps: step.steps,
+          distance: step.distance,
+          calories: step.calories,
           source: 'pedometer',
+          updated_at: new Date().toISOString(),
         });
-        await StepRepository.markAsSynced(userId, stepData.date);
+        if (error) throw error;
+        await StepRepository.markAsSynced(userId, step.date);
         result.synced.steps++;
       } catch (error) {
-        console.error(`Failed to push steps for ${stepData.date}:`, error);
+        console.error(`Failed to push steps for ${step.date}:`, error);
       }
     }
   }
 
   /**
-   * Pull server data to local
+   * Pull Supabase data → local SQLite
    */
   private async pullServerData(userId: string, result: SyncResult): Promise<void> {
-    console.log('Pulling server data to local...');
+    console.log('Pulling Supabase data to local...');
 
-    try {
-      // Fetch all data from server
-      const [serverHabits, serverCompletions, serverSteps] = await Promise.all([
-        api.habits.getAll(false),
-        api.completions.getAll(),
-        this.fetchRecentSteps(),
-      ]);
+    const [habitsRes, completionsRes, stepsRes] = await Promise.all([
+      supabase.from('habits').select('*').eq('user_id', userId).is('archived_at', null),
+      supabase.from('completions').select('*').eq('user_id', userId),
+      supabase.from('step_data').select('*').eq('user_id', userId)
+        .gte('date', this.getThirtyDaysAgo())
+        .lte('date', this.getToday()),
+    ]);
 
-      console.log(`📥 Fetched from server: ${serverHabits.length} habits, ${serverCompletions.length} completions, ${serverSteps.length} steps`);
+    const serverHabits = habitsRes.data || [];
+    const serverCompletions = completionsRes.data || [];
+    const serverSteps = stepsRes.data || [];
 
-      // Sync habits
-      console.log('💾 Saving habits to local database...');
-      for (const serverHabit of serverHabits) {
-        try {
-          const localHabit = await HabitRepository.getById(serverHabit.id);
+    console.log(`📥 Fetched from Supabase: ${serverHabits.length} habits, ${serverCompletions.length} completions, ${serverSteps.length} steps`);
 
-          if (!localHabit) {
-            // New habit from server
-            console.log(`  ✅ Saving new habit: ${serverHabit.title}`);
-            await HabitRepository.upsert(serverHabit, 'synced');
-            result.synced.habits++;
-          } else if (localHabit.sync_status === 'synced') {
-            // Resolve conflict using server-wins strategy
-            console.log(`  🔄 Updating existing habit: ${serverHabit.title}`);
-            const resolution = ConflictResolver.resolveHabit(localHabit, serverHabit);
-            await HabitRepository.upsert(resolution.resolved, 'synced');
-            result.synced.habits++;
-          }
-          // Skip if local has pending changes
-        } catch (error) {
-          console.error(`Failed to sync habit ${serverHabit.id}:`, error);
+    // Sync habits
+    for (const serverHabit of serverHabits) {
+      try {
+        const localHabit = await HabitRepository.getById(serverHabit.id);
+        const habitData = this.toLocalHabit(serverHabit);
+        if (!localHabit) {
+          await HabitRepository.upsert(habitData, 'synced');
+          result.synced.habits++;
+        } else if (localHabit.sync_status === 'synced') {
+          const resolution = ConflictResolver.resolveHabit(localHabit, habitData);
+          await HabitRepository.upsert(resolution.resolved, 'synced');
+          result.synced.habits++;
         }
+      } catch (error) {
+        console.error(`Failed to sync habit ${serverHabit.id}:`, error);
       }
-      console.log(`✔️ Habits sync complete: ${result.synced.habits} saved`);
+    }
 
-      // Sync completions (merge strategy)
-      const localCompletions = await CompletionRepository.getByDateRange(
+    // Sync completions
+    const localCompletions = await CompletionRepository.getByDateRange(userId, this.getThirtyDaysAgo(), this.getToday());
+    const mergedCompletions = ConflictResolver.mergeCompletions(
+      localCompletions.map(c => ({ id: c.id, habitId: c.habitId, userId: c.userId, date: c.date, completedAt: c.completedAt })),
+      serverCompletions.map(c => ({ id: c.id, habitId: c.habit_id, userId: c.user_id, date: c.date, completedAt: c.completed_at }))
+    );
+    await CompletionRepository.bulkUpsert(mergedCompletions, 'synced');
+
+    // Sync steps
+    for (const serverStep of serverSteps) {
+      const localStep = await StepRepository.getByDate(userId, serverStep.date);
+      const resolution = ConflictResolver.resolveStepData(localStep, {
         userId,
-        this.getThirtyDaysAgo(),
-        this.getToday()
-      );
-
-      const mergedCompletions = ConflictResolver.mergeCompletions(
-        localCompletions.map((c) => ({
-          id: c.id,
-          habitId: c.habitId,
-          userId: c.userId,
-          date: c.date,
-          completedAt: c.completedAt,
-        })),
-        serverCompletions.map((c) => ({
-          id: c.id,
-          habitId: c.habitId,
-          userId: c.userId,
-          date: c.date,
-          completedAt: c.completedAt,
-        }))
-      );
-
-      await CompletionRepository.bulkUpsert(mergedCompletions, 'synced');
-
-      // Sync steps (max value strategy)
-      for (const serverStep of serverSteps) {
-        const localStep = await StepRepository.getByDate(userId, serverStep.date);
-        const resolution = ConflictResolver.resolveStepData(localStep, {
-          userId,
-          date: serverStep.date,
-          steps: serverStep.steps,
-          distance: serverStep.distance,
-          calories: serverStep.calories || 0,
-          createdAt: serverStep.date,
-          updatedAt: serverStep.date,
-          sync_status: 'synced',
-          last_synced_at: new Date().toISOString(),
-        });
-
-        if (resolution.resolved) {
-          await StepRepository.upsert(
-            userId,
-            resolution.resolved.date,
-            resolution.resolved.steps,
-            resolution.resolved.distance,
-            resolution.resolved.calories
-          );
-          await StepRepository.markAsSynced(userId, resolution.resolved.date);
-        }
+        date: serverStep.date,
+        steps: serverStep.steps,
+        distance: serverStep.distance,
+        calories: serverStep.calories || 0,
+        createdAt: serverStep.created_at,
+        updatedAt: serverStep.updated_at,
+        sync_status: 'synced',
+        last_synced_at: new Date().toISOString(),
+      });
+      if (resolution.resolved) {
+        await StepRepository.upsert(userId, resolution.resolved.date, resolution.resolved.steps, resolution.resolved.distance, resolution.resolved.calories);
+        await StepRepository.markAsSynced(userId, resolution.resolved.date);
       }
-    } catch (error) {
-      console.error('Failed to pull server data:', error);
-      throw error;
     }
   }
 
   /**
-   * Process sync queue (retry failed operations)
+   * Retry failed sync queue items
    */
   private async processSyncQueue(userId: string): Promise<void> {
     const pendingItems = await SyncQueueRepository.getPending();
@@ -352,25 +263,21 @@ class SyncService {
 
         switch (item.entityType) {
           case 'habit':
-            if (item.operation === 'create') {
-              await api.habits.create(payload);
-            } else if (item.operation === 'update') {
-              await api.habits.update(item.entityId!, payload);
+            if (item.operation === 'create' || item.operation === 'update') {
+              await supabase.from('habits').upsert({ ...payload, user_id: userId });
             } else if (item.operation === 'delete') {
-              await api.habits.delete(item.entityId!);
+              await supabase.from('habits').update({ archived_at: new Date().toISOString() }).eq('id', item.entityId!);
             }
             break;
-
           case 'completion':
             if (item.operation === 'create') {
-              await api.completions.create(payload);
+              await supabase.from('completions').upsert({ ...payload, user_id: userId });
             } else if (item.operation === 'delete') {
-              await api.completions.delete(payload.habitId, payload.date);
+              await supabase.from('completions').delete().eq('habit_id', payload.habitId).eq('date', payload.date);
             }
             break;
-
           case 'step':
-            await api.steps.logSteps(payload);
+            await supabase.from('step_data').upsert({ ...payload, user_id: userId });
             break;
         }
 
@@ -382,68 +289,12 @@ class SyncService {
     }
   }
 
-  /**
-   * Helper: Fetch habit from server
-   */
-  private async fetchHabitFromServer(habitId: string): Promise<Habit | null> {
-    try {
-      return await api.habits.getById(habitId);
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  }
-
-  private getToday(): string {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  private getThirtyDaysAgo(): string {
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    return date.toISOString().split('T')[0];
-  }
-
-  /**
-   * Quick sync for specific entity
-   */
-  async syncEntity(entityType: 'habit' | 'completion' | 'step', entityId: string): Promise<void> {
-    if (!networkMonitor.isConnected()) {
-      console.log('No network connection, skipping entity sync');
-      return;
-    }
-
-    try {
-      switch (entityType) {
-        case 'habit':
-          const habit = await HabitRepository.getById(entityId);
-          if (habit && habit.sync_status === 'pending') {
-            await api.habits.update(entityId, {
-              title: habit.title,
-              color: habit.color,
-              icon: habit.icon || undefined,
-            });
-            await HabitRepository.markAsSynced(entityId);
-          }
-          break;
-        // Add other entity types as needed
-      }
-    } catch (error) {
-      console.error(`Failed to sync ${entityType} ${entityId}:`, error);
-    }
-  }
-
-  /**
-   * Sync steps to server
-   */
   async syncStepsToServer(userId: string): Promise<void> {
     const pendingSteps = await StepRepository.getPendingSync(userId);
-
     for (const stepData of pendingSteps) {
       try {
-        await api.steps.logSteps({
+        await supabase.from('step_data').upsert({
+          user_id: userId,
           date: stepData.date,
           steps: stepData.steps,
           distance: stepData.distance,
@@ -455,6 +306,67 @@ class SyncService {
         console.error(`Failed to sync steps for ${stepData.date}:`, error);
       }
     }
+  }
+
+  async syncEntity(entityType: 'habit' | 'completion' | 'step', entityId: string): Promise<void> {
+    if (!networkMonitor.isConnected()) return;
+
+    try {
+      if (entityType === 'habit') {
+        const habit = await HabitRepository.getById(entityId);
+        if (habit && habit.sync_status === 'pending') {
+          await supabase.from('habits').upsert({
+            id: habit.id,
+            user_id: habit.userId,
+            title: habit.title,
+            monthly_goal: habit.monthlyGoal,
+            color: habit.color,
+            icon: habit.icon,
+            updated_at: new Date().toISOString(),
+          });
+          await HabitRepository.markAsSynced(entityId);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to sync ${entityType} ${entityId}:`, error);
+    }
+  }
+
+  // Map Supabase snake_case to local camelCase
+  private toLocalHabit(h: any) {
+    return {
+      id: h.id,
+      userId: h.user_id,
+      title: h.title,
+      monthlyGoal: h.monthly_goal,
+      color: h.color,
+      icon: h.icon,
+      notificationsEnabled: h.notifications_enabled,
+      reminderTime: h.reminder_time,
+      createdAt: h.created_at,
+      updatedAt: h.updated_at,
+      archivedAt: h.archived_at,
+    };
+  }
+
+  private toLocalCompletion(c: any) {
+    return {
+      id: c.id,
+      habitId: c.habit_id,
+      userId: c.user_id,
+      date: c.date,
+      completedAt: c.completed_at,
+    };
+  }
+
+  private getToday(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  private getThirtyDaysAgo(): string {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date.toISOString().split('T')[0];
   }
 }
 

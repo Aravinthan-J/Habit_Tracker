@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
-import type { StepStats as StepStatsType } from '@habit-tracker/api-client';
+type StepStatsType = any;
 
 interface StepStatsProps {
   stats: StepStatsType | null;

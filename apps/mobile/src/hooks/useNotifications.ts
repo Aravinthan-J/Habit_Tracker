@@ -8,27 +8,30 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useMutation } from '@tanstack/react-query';
 import { ExpoNotificationService } from '../services/notifications/ExpoNotificationService';
-import { api } from '../services/api/apiClient';
+import { supabase } from '../services/supabase/supabaseClient';
+import { useAuthStore } from '../store/authStore';
 
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
+  const { user } = useAuthStore();
 
-  // Register token with backend
+  // Register token with Supabase
   const registerTokenMutation = useMutation({
     mutationFn: async (token: string) => {
-      await api.notifications.registerToken(
+      if (!user?.id) return;
+      await supabase.from('notification_tokens').upsert({
+        user_id: user.id,
         token,
-        Platform.OS as 'ios' | 'android',
-        Platform.OS
-      );
+        platform: Platform.OS,
+      });
     },
   });
 
-  // Unregister token from backend
+  // Unregister token from Supabase
   const unregisterTokenMutation = useMutation({
     mutationFn: async (token: string) => {
-      await api.notifications.unregisterToken(token);
+      await supabase.from('notification_tokens').delete().eq('token', token);
     },
   });
 
@@ -83,7 +86,7 @@ export function useNotifications() {
    * Send test notification
    */
   const sendTestNotification = async () => {
-    await api.notifications.sendTestNotification();
+    await ExpoNotificationService.scheduleHabitReminder('test', 'Test Notification', new Date().getHours(), new Date().getMinutes() + 1);
   };
 
   /**

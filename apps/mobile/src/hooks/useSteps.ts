@@ -6,12 +6,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { api } from '../services/api/apiClient';
+import { supabase } from '../services/supabase/supabaseClient';
 import { PedometerService } from '../services/health/PedometerService';
 import { StepRepository } from '../services/database/repositories/StepRepository';
 import { networkMonitor } from '../services/sync/NetworkMonitor';
 import { useAuthStore } from '../store/authStore';
-import type { LogStepsData } from '@habit-tracker/api-client';
 
 /**
  * Fetch today's steps - reads from local DB and pedometer
@@ -73,23 +72,32 @@ export function useStepsRange(startDate: string, endDate: string) {
  * Fetch step statistics
  */
 export function useStepStats() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: ['steps', 'stats'],
     queryFn: async () => {
-      return await api.steps.getStats();
+      if (!user?.id) return null;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return await StepRepository.getByDateRange(user.id, thirtyDaysAgo.toISOString().split('T')[0], new Date().toISOString().split('T')[0]);
     },
+    enabled: !!user?.id,
   });
 }
 
 /**
- * Fetch step goal
+ * Fetch step goal from profiles
  */
 export function useStepGoal() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: ['steps', 'goal'],
     queryFn: async () => {
-      return await api.steps.getStepGoal();
+      if (!user?.id) return 10000;
+      const { data } = await supabase.from('profiles').select('step_goal').eq('id', user.id).single();
+      return data?.step_goal || 10000;
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -98,10 +106,15 @@ export function useStepGoal() {
  */
 export function useLogSteps() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: async (data: LogStepsData) => {
-      return await api.steps.logSteps(data);
+    mutationFn: async (data: { date: string; steps: number; distance: number; calories: number; source: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      await StepRepository.upsert(user.id, data.date, data.steps, data.distance, data.calories);
+      if (networkMonitor.isConnected()) {
+        await supabase.from('step_data').upsert({ user_id: user.id, ...data, updated_at: new Date().toISOString() });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['steps'] });
@@ -114,10 +127,12 @@ export function useLogSteps() {
  */
 export function useUpdateStepGoal() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: async (stepGoal: number) => {
-      return await api.steps.updateStepGoal(stepGoal);
+      if (!user?.id) throw new Error('Not authenticated');
+      await supabase.from('profiles').update({ step_goal: stepGoal }).eq('id', user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['steps', 'goal'] });
@@ -138,7 +153,6 @@ export function useSteps() {
   const { data: todayData, isLoading: isLoadingToday, refetch } = useTodaySteps();
   const { data: stats, isLoading: isLoadingStats } = useStepStats();
   const { data: stepGoal = 10000 } = useStepGoal();
-  const logStepsMutation = useLogSteps();
 
   /**
    * Check pedometer availability and setup with AUTO-SYNC
@@ -210,12 +224,14 @@ export function useSteps() {
 
       // 2. Sync to server if online
       if (networkMonitor.isConnected()) {
-        await api.steps.logSteps({
+        await supabase.from('step_data').upsert({
+          user_id: user.id,
           date: new Date().toISOString().split('T')[0],
           steps,
           distance,
           calories,
           source: 'auto-sync',
+          updated_at: new Date().toISOString(),
         });
         console.log('Steps synced successfully');
       } else {
@@ -244,12 +260,14 @@ export function useSteps() {
 
     // 2. Sync to server if online
     if (networkMonitor.isConnected()) {
-      await logStepsMutation.mutateAsync({
+      await supabase.from('step_data').upsert({
+        user_id: user.id,
         date: new Date().toISOString().split('T')[0],
         steps,
         distance,
         calories,
         source: 'manual',
+        updated_at: new Date().toISOString(),
       });
     }
 

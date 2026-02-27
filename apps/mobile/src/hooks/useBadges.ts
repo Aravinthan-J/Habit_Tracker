@@ -1,128 +1,80 @@
 /**
  * Badges Hook
- * React Query hooks for badge operations
- * Badges remain server-authoritative but with local caching
+ * React Query hooks for badge operations via Supabase
  */
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api/apiClient';
+import { supabase } from '../services/supabase/supabaseClient';
 import { networkMonitor } from '../services/sync/NetworkMonitor';
-import type { Badge } from '@habit-tracker/api-client';
+import { useAuthStore } from '../store/authStore';
 
 export function useAllBadges() {
   return useQuery({
     queryKey: ['badges', 'all'],
     queryFn: async () => {
-      // Badges are server-authoritative, only fetch if online
-      if (!networkMonitor.isConnected()) {
-        return [];
-      }
-      return await api.badges.getAll();
+      if (!networkMonitor.isConnected()) return [];
+      const { data, error } = await supabase.from('badges').select('*');
+      if (error) throw error;
+      return data || [];
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-/**
- * Fetch user's earned badges
- */
 export function useUserBadges() {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: ['badges', 'user'],
     queryFn: async () => {
-      if (!networkMonitor.isConnected()) {
-        return [];
-      }
-      return await api.badges.getUserBadges();
+      if (!networkMonitor.isConnected() || !user?.id) return [];
+      const { data, error } = await supabase
+        .from('user_badges')
+        .select('*, badge:badges(*)')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data || [];
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-/**
- * Fetch badge progress
- */
 export function useBadgeProgress() {
   return useQuery({
     queryKey: ['badges', 'progress'],
-    queryFn: async () => {
-      if (!networkMonitor.isConnected()) {
-        return [];
-      }
-      return await api.badges.getProgress();
-    },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    queryFn: async () => [],
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-/**
- * Check for badge unlocks - only works online
- */
 export function useCheckBadges() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async (habitId?: string) => {
-      // Only check badges if online
-      if (!networkMonitor.isConnected()) {
-        console.log('Offline - badge check skipped, will check on next sync');
-        return { newBadges: [] };
-      }
-      return await api.badges.checkUnlocks(habitId);
+    mutationFn: async (_habitId?: string) => {
+      // Badge checking will be handled server-side via Edge Functions in future
+      return { newBadges: [] };
     },
     onSuccess: () => {
-      // Invalidate badge queries to refetch
       queryClient.invalidateQueries({ queryKey: ['badges'] });
     },
   });
 }
 
-/**
- * Comprehensive badges hook with modal management
- */
 export function useBadges() {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
-  const [unlockedBadge, setUnlockedBadge] = useState<Badge | null>(null);
+  const [unlockedBadge, setUnlockedBadge] = useState<any | null>(null);
   const [unlockMessage, setUnlockMessage] = useState<string>('');
-
   const queryClient = useQueryClient();
 
-  // Fetch all badges
-  const {
-    data: allBadges = [],
-    isLoading: isLoadingAll,
-    refetch: refetchAll,
-  } = useAllBadges();
+  const { data: allBadges = [], isLoading: isLoadingAll, refetch: refetchAll } = useAllBadges();
+  const { data: earnedBadges = [], isLoading: isLoadingEarned, refetch: refetchEarned } = useUserBadges();
+  const { data: progress = [], isLoading: isLoadingProgress, refetch: refetchProgress } = useBadgeProgress();
 
-  // Fetch earned badges
-  const {
-    data: earnedBadges = [],
-    isLoading: isLoadingEarned,
-    refetch: refetchEarned,
-  } = useUserBadges();
-
-  // Fetch progress
-  const {
-    data: progress = [],
-    isLoading: isLoadingProgress,
-    refetch: refetchProgress,
-  } = useBadgeProgress();
-
-  // Check badges mutation
   const checkBadgesMutation = useMutation({
-    mutationFn: (habitId?: string) => api.badges.checkUnlocks(habitId),
-    onSuccess: (data) => {
-      if (data.newBadges && data.newBadges.length > 0) {
-        // Show unlock modal for first badge
-        const firstBadge = data.newBadges[0];
-        setUnlockedBadge(firstBadge.badge);
-        setUnlockMessage(firstBadge.message);
-        setShowUnlockModal(true);
-
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ['badges'] });
-      }
+    mutationFn: async (_habitId?: string) => ({ newBadges: [] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['badges'] });
     },
   });
 
@@ -133,23 +85,12 @@ export function useBadges() {
   };
 
   return {
-    // Data
     allBadges,
     earnedBadges,
     progress,
-
-    // Loading states
     isLoading: isLoadingAll || isLoadingEarned || isLoadingProgress,
-
-    // Actions
     checkBadges: checkBadgesMutation.mutate,
-    refetch: () => {
-      refetchAll();
-      refetchEarned();
-      refetchProgress();
-    },
-
-    // Modal state
+    refetch: () => { refetchAll(); refetchEarned(); refetchProgress(); },
     showUnlockModal,
     unlockedBadge,
     unlockMessage,
