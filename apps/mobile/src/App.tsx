@@ -65,6 +65,15 @@ export default function App() {
         await databaseService.initialize();
         networkMonitor.initialize();
 
+        // Test basic connectivity first
+        console.log('Testing Supabase connectivity...');
+        try {
+          const res = await fetch('https://pybpalvrtjsxfadtjusx.supabase.co/rest/v1/');
+          console.log('Supabase reachable, status:', res.status);
+        } catch (e: any) {
+          console.error('Supabase not reachable:', e.message);
+        }
+
         // Load Supabase session
         const { data: { session } } = await supabase.auth.getSession();
 
