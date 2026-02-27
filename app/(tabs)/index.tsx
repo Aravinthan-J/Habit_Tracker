@@ -4,12 +4,9 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
-  SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHabits } from '@/hooks/useHabits';
 import { useCompletions } from '@/hooks/useCompletions';
@@ -19,17 +16,16 @@ import { HabitCard } from '@/components/habits/HabitCard';
 import { StepProgressRing } from '@/components/steps/StepProgressRing';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
 import { useAuthStore } from '@/store/authStore';
 
 export default function HomeScreen() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const { habits, isLoading: habitsLoading, refetch } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
-  const { todaySteps, isPedometerAvailable } = useSteps();
+  const { todaySteps, liveSteps, isPedometerAvailable } = useSteps();
   const { checkForNewBadges } = useBadges();
 
   const todayStr = today();
@@ -73,13 +69,6 @@ export default function HomeScreen() {
                 <Text style={styles.greeting}>{greeting},</Text>
                 <Text style={styles.name}>{user?.user_metadata?.name ?? 'there'} 👋</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => router.push('/habit/new')}
-                style={styles.addBtn}
-                accessibilityLabel="Add new habit"
-              >
-                <Ionicons name="add" size={28} color={COLORS.textPrimary} />
-              </TouchableOpacity>
             </LinearGradient>
 
             {/* Progress banner */}
@@ -106,16 +95,17 @@ export default function HomeScreen() {
             )}
 
             {/* Step ring */}
-            {isPedometerAvailable && (
-              <View style={styles.stepSection}>
-                <Text style={styles.sectionTitle}>Steps Today</Text>
-                <StepProgressRing
-                  steps={todaySteps?.steps ?? 0}
-                  goal={stepGoal}
-                  size={160}
-                />
-              </View>
-            )}
+            <View style={styles.stepSection}>
+              <Text style={styles.sectionTitle}>Steps Today</Text>
+              <StepProgressRing
+                steps={liveSteps || todaySteps?.steps || 0}
+                goal={stepGoal}
+                size={160}
+              />
+              {!isPedometerAvailable && (
+                <Text style={styles.pedometerHint}>Pedometer not available on this device</Text>
+              )}
+            </View>
 
             <Text style={styles.habitsTitle}>Today's Habits</Text>
 
@@ -132,7 +122,7 @@ export default function HomeScreen() {
               isCompleted={completedTodayIds.has(item.id)}
               streak={calculateCurrentStreak(completionDates)}
               onToggle={() => handleToggle(item.id)}
-              onPress={() => router.push(`/habit/${item.id}`)}
+              onPress={() => {}}
             />
           );
         }}
@@ -141,7 +131,7 @@ export default function HomeScreen() {
             <EmptyState
               icon="add-circle-outline"
               title="No habits yet"
-              subtitle="Tap the + button to create your first habit and start building your routine."
+              subtitle="Go to the Habits tab to create your first habit and start building your routine."
             />
           ) : null
         }
@@ -162,15 +152,6 @@ const styles = StyleSheet.create({
   },
   greeting: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm },
   name: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxl, fontWeight: TYPOGRAPHY.bold },
-  addBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.small,
-  },
   progressBanner: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.lg,
@@ -200,6 +181,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  pedometerHint: {
+    color: COLORS.textMuted,
+    fontSize: TYPOGRAPHY.xs,
+    marginTop: SPACING.sm,
+    textAlign: 'center',
   },
   habitsTitle: {
     color: COLORS.textPrimary,

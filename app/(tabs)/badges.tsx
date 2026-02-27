@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBadges } from '@/hooks/useBadges';
 import { BadgeCard } from '@/components/badges/BadgeCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';

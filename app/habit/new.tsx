@@ -3,15 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { HabitForm } from '@/components/habits/HabitForm';
 import { useHabits } from '@/hooks/useHabits';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
-import { ScrollView } from 'react-native';
 
 export default function NewHabitScreen() {
   const { createHabit } = useHabits();
