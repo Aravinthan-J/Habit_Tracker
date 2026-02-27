@@ -14,13 +14,9 @@ services:
       - key: PORT
         value: 3000
       - key: DATABASE_URL
-        fromDatabase:
-          name: habit-tracker-db
-          property: connectionString
+        # Set this in Render dashboard to an external Postgres
+        # (e.g. Neon/Supabase). We avoid binding to a Render DB
+        # so the backend won't break when free DB expires.
+        sync: false
       - key: JWT_SECRET
         generateValue: true
-
-databases:
-  # PostgreSQL Database
-  - name: habit-tracker-db
-    plan: free
