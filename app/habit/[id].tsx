@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useHabits } from '@/hooks/useHabits';
@@ -21,7 +21,7 @@ import { calculateCurrentStreak, calculateLongestStreak, completionRate } from '
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { habits, updateHabit, archiveHabit } = useHabits();
+  const { habits, updateHabit, deleteHabit } = useHabits();
   const { completions } = useCompletions();
   const [editing, setEditing] = useState(false);
 
@@ -38,14 +38,14 @@ export default function HabitDetailScreen() {
     setEditing(false);
   };
 
-  const handleArchive = () => {
-    Alert.alert('Archive Habit', `Archive "${habit.title}"? It will be hidden from your list.`, [
+  const handleDelete = () => {
+    Alert.alert('Delete Habit', `Delete "${habit.title}"? This cannot be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Archive',
+        text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await archiveHabit.mutateAsync(habit.id);
+          await deleteHabit.mutateAsync(habit.id);
           router.back();
         },
       },
@@ -88,12 +88,12 @@ export default function HabitDetailScreen() {
             />
 
             <TouchableOpacity
-              style={styles.archiveBtn}
-              onPress={handleArchive}
-              accessibilityLabel="Archive habit"
+              style={styles.deleteBtn}
+              onPress={handleDelete}
+              accessibilityLabel="Delete habit"
             >
-              <Ionicons name="archive-outline" size={18} color={COLORS.error} />
-              <Text style={styles.archiveBtnText}>Archive Habit</Text>
+              <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+              <Text style={styles.deleteBtnText}>Delete Habit</Text>
             </TouchableOpacity>
           </>
         )}
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.semibold,
     marginBottom: SPACING.md,
   },
-  archiveBtn: {
+  deleteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: SPACING.md,
   },
-  archiveBtnText: {
+  deleteBtnText: {
     color: COLORS.error,
     fontSize: TYPOGRAPHY.md,
     fontWeight: TYPOGRAPHY.medium,
