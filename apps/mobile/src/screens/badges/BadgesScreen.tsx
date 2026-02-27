@@ -20,7 +20,9 @@ import { ConfettiAnimation } from '../../components/celebrations/ConfettiAnimati
 import { LoadingSpinner } from '../../components/common';
 import { BADGE_CATEGORIES } from '../../constants/badges';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
-import type { Badge, UserBadge, BadgeProgress } from '@habit-tracker/api-client';
+type Badge = { id: string; name: string; description: string; type: string; tier: string; requirement: number; icon_name: string; iconName?: string };
+type UserBadge = { id: string; badge: Badge; earned_at: string };
+type BadgeProgress = { badge: Badge; current: number; required: number; percentage: number };
 
 export function BadgesScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -43,13 +45,14 @@ export function BadgesScreen() {
 
   // Combine earned and unearned badges with progress
   const badgesWithStatus = filteredBadges.map((badge: Badge) => {
-    const earned = earnedBadges.find((eb: UserBadge) => eb.badgeId === badge.id);
-    const prog = progress.find((p: BadgeProgress) => p.badge.id === badge.id);
+    const earned = (earnedBadges as any[]).find((eb) => eb.badge?.id === badge.id);
+    const prog = (progress as any[]).find((p) => p.badge?.id === badge.id);
 
     return {
       ...badge,
+      iconName: badge.icon_name,
       isEarned: !!earned,
-      earnedAt: earned?.earnedAt,
+      earnedAt: earned?.earned_at,
       progress: prog ? {
         current: prog.current,
         required: prog.required,

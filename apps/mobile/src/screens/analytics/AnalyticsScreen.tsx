@@ -100,7 +100,7 @@ export function AnalyticsScreen() {
       {insights.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Insights</Text>
-          {insights.map((insight: unknown, index: React.Key | null | undefined) => (
+          {(insights as any[]).map((insight, index) => (
             <InsightCard key={index} insight={insight} />
           ))}
         </View>

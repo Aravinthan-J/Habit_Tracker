@@ -37,15 +37,17 @@ export function CalendarScreen() {
   const { data: calendarData, isLoading: calendarLoading } =
     useCalendarCompletions(year, month);
 
-  // Convert API data to map format for easier lookup
+  // Convert local DB completions to map: date → [habitId, ...]
   const completionsMap: { [key: string]: string[] } = {};
   if (calendarData?.completions) {
-    calendarData.completions.forEach((completion) => {
-      completionsMap[completion.date] = completion.habitIds;
+    (calendarData.completions as any[]).forEach((completion) => {
+      const date = completion.date as string;
+      if (!completionsMap[date]) completionsMap[date] = [];
+      completionsMap[date].push(completion.habitId as string);
     });
   }
 
-  const habitsList = habits || [];
+  const habitsList = (habits as any[]) || [];
   const isLoading = habitsLoading || calendarLoading;
 
   const getDaysInMonth = (date: Date) => {

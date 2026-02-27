@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
-import type { Insight } from '@habit-tracker/api-client';
+type Insight = { type: string; message: string; icon?: string };
 
 interface InsightCardProps {
   insight: Insight;
@@ -31,7 +31,7 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export function InsightCard({ insight }: InsightCardProps) {
-  const icon = ICON_MAP[insight.icon] || '💡';
+  const icon = (insight.icon ? ICON_MAP[insight.icon] : null) || '💡';
   const color = COLOR_MAP[insight.type] || colors.primary;
 
   return (

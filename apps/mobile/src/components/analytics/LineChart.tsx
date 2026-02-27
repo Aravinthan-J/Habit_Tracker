@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Line, Circle, Path, Text as SvgText } from 'react-native-svg';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
-import type { TrendData } from '@habit-tracker/api-client';
+type TrendData = { date: string; count?: number; completionRate?: number };
 
 interface LineChartProps {
   data: TrendData[];
@@ -33,17 +33,18 @@ export function LineChart({ data, title, height = 200 }: LineChartProps) {
   }
 
   // Calculate scales
-  const maxValue = Math.max(...data.map((d) => d.completionRate), 100);
+  const maxValue = Math.max(...data.map((d) => d.completionRate ?? 0), 100);
   const minValue = 0;
 
   // Generate path points
   const points = data.map((d, i) => {
     const x = padding.left + (i / (data.length - 1)) * chartWidth;
+    const rate = d.completionRate ?? 0;
     const y =
       padding.top +
       chartHeight -
-      ((d.completionRate - minValue) / (maxValue - minValue)) * chartHeight;
-    return { x, y, value: d.completionRate };
+      ((rate - minValue) / (maxValue - minValue)) * chartHeight;
+    return { x, y, value: rate };
   });
 
   // Create SVG path

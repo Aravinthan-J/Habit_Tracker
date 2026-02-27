@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from 'expo-sqlite/next';
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   console.log('Running database migrations...');

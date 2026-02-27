@@ -1,7 +1,7 @@
 import { databaseService, SyncStatus } from '../DatabaseService';
 import type { Habit, CreateHabitData, UpdateHabitData } from '@habit-tracker/shared-types';
 
-interface LocalHabit extends Habit {
+export interface LocalHabit extends Habit {
   sync_status: SyncStatus;
   last_synced_at: string | null;
 }

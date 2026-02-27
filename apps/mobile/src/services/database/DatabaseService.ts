@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from 'expo-sqlite/next';
 import { runMigrations } from './migrations';
 
 export type SyncStatus = 'synced' | 'pending' | 'error';

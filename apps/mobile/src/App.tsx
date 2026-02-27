@@ -10,8 +10,22 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './navigation/RootNavigator';
 import { useAuthStore } from './store/authStore';
-import { SecureStorageService } from './services/storage/SecureStorageService';
-import { api } from './services/api/apiClient';
+import { supabase } from './services/supabase/supabaseClient';
+import type { User } from '@habit-tracker/shared-types';
+
+const toAppUser = (supabaseUser: any): User => ({
+  id: supabaseUser.id,
+  email: supabaseUser.email!,
+  name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
+  stepGoal: 10000,
+  reminderTime: '20:00',
+  timezone: 'UTC',
+  theme: 'light',
+  isEmailVerified: !!supabaseUser.email_confirmed_at,
+  isActive: true,
+  createdAt: supabaseUser.created_at || new Date().toISOString(),
+  updatedAt: supabaseUser.updated_at || new Date().toISOString(),
+});
 import { useNotificationListeners } from './hooks/useNotifications';
 import { databaseService } from './services/database/DatabaseService';
 import { networkMonitor } from './services/sync/NetworkMonitor';
@@ -47,49 +61,23 @@ export default function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Load auth state first
-        const [user, token] = await Promise.all([
-          SecureStorageService.getUser(),
-          SecureStorageService.getToken(),
-        ]);
+        // Initialize local database and network monitor first
+        await databaseService.initialize();
+        networkMonitor.initialize();
 
-        if (user && token) {
-          // Set token in API client
-          api.setToken(token);
-        }
+        // Load Supabase session
+        const { data: { session } } = await supabase.auth.getSession();
 
-        // Hydrate auth store
-        hydrate(user, token);
-
-        // Initialize services after auth is ready
-        try {
-          console.log('Initializing database...');
-          await databaseService.initialize();
-
-          console.log('Initializing network monitor...');
-          networkMonitor.initialize();
+        if (session?.user) {
+          hydrate(toAppUser(session.user), session.access_token);
 
           // Setup auto-sync on reconnection
           networkMonitor.onReconnection(async () => {
             console.log('Network reconnected, triggering sync...');
-            if (user?.id) {
-              syncService.performFullSync(user.id).catch(console.error);
-            }
+            syncService.performFullSync(session.user.id).catch(console.error);
           });
-
-          if (user?.id) {
-            // Initial sync handled by useInitialSync hook in HabitsScreen
-            // This allows cache invalidation with QueryClient
-            console.log('Services initialized. Initial sync will be handled by screen components.');
-
-            // Background tasks disabled - use manual sync instead
-            console.log('Background sync disabled. Use manual refresh in UI.');
-            // await BackgroundSyncTask.register();
-            // await StepSyncTask.register();
-          }
-        } catch (syncError) {
-          console.error('Error initializing sync services:', syncError);
-          // Don't crash the app, sync is optional
+        } else {
+          hydrate(null, null);
         }
       } catch (error) {
         console.error('Error initializing app:', error);
@@ -99,13 +87,18 @@ export default function App() {
 
     initializeApp();
 
-    // Cleanup on unmount
-    return () => {
-      try {
-        networkMonitor.cleanup();
-      } catch (e) {
-        // Ignore cleanup errors
+    // Listen for auth state changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        hydrate(toAppUser(session.user), session.access_token);
+      } else {
+        hydrate(null, null);
       }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      networkMonitor.cleanup();
     };
   }, [hydrate]);
 

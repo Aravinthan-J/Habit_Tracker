@@ -5,7 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api/apiClient';
+import { supabase } from '../services/supabase/supabaseClient';
 import { CompletionRepository } from '../services/database/repositories/CompletionRepository';
 import { SyncQueueRepository } from '../services/database/repositories/SyncQueueRepository';
 import { syncService } from '../services/sync/SyncService';
@@ -139,11 +139,11 @@ export function useToggleCompletion() {
       if (networkMonitor.isConnected()) {
         try {
           if (isCompleted) {
-            await api.completions.create({ habitId, date, completedAt });
+            await supabase.from('completions').upsert({ id: completionId, habit_id: habitId, user_id: user.id, date, completed_at: completedAt });
           } else {
-            await api.completions.delete(habitId, date);
+            await supabase.from('completions').delete().eq('habit_id', habitId).eq('date', date);
           }
-          console.log('Completion synced to server with timestamp:', completedAt);
+          console.log('Completion synced to Supabase');
         } catch (error) {
           console.error('Failed to sync completion immediately:', error);
         }
@@ -203,7 +203,7 @@ export function useMarkComplete() {
 
       // 3. Try immediate sync if online
       if (networkMonitor.isConnected()) {
-        api.completions.create({ habitId, date }).catch(console.error);
+        supabase.from('completions').upsert({ id: completionId, habit_id: habitId, user_id: user.id, date, completed_at: new Date().toISOString() }).then(({ error }) => { if (error) console.error(error); });
       }
 
       return completion;
@@ -234,7 +234,7 @@ export function useUnmarkComplete() {
 
       // 3. Try immediate sync if online
       if (networkMonitor.isConnected()) {
-        api.completions.delete(habitId, date).catch(console.error);
+        supabase.from('completions').delete().eq('habit_id', habitId).eq('date', date).then(({ error }) => { if (error) console.error(error); });
       }
     },
     onSuccess: () => {

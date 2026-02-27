@@ -1,7 +1,7 @@
 import { databaseService, SyncStatus } from '../DatabaseService';
 import type { Completion, CreateCompletionData } from '@habit-tracker/shared-types';
 
-interface LocalCompletion extends Completion {
+export interface LocalCompletion extends Completion {
   sync_status: SyncStatus;
   last_synced_at: string | null;
 }

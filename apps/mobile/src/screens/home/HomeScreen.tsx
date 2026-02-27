@@ -17,7 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import { useHabits, useHabitStats } from '../../hooks/useHabits';
 import { useTodayCompletions, useToggleCompletion, useCalendarCompletions } from '../../hooks/useCompletions';
-import { useTodaySteps, useStepStats } from '../../hooks/useSteps';
+import { useTodaySteps, useStepStats, useStepGoal } from '../../hooks/useSteps';
 import { useInitialSync } from '../../hooks/useInitialSync';
 import { LoadingSpinner } from '../../components/common';
 import { StepProgressRing, StepStats } from '../../components/steps';
@@ -33,6 +33,7 @@ export function HomeScreen() {
   const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
   const { data: todaySteps, isLoading: stepsLoading, refetch: refetchSteps } = useTodaySteps();
   const { data: stepStats, isLoading: statsLoading } = useStepStats();
+  const { data: stepGoal = 10000 } = useStepGoal();
 
   // Handle initial sync on component mount
   useInitialSync();
@@ -162,7 +163,7 @@ export function HomeScreen() {
             <View style={styles.stepCard}>
               <StepProgressRing
                 steps={typeof todaySteps.steps === 'number' ? todaySteps.steps : 0}
-                goal={typeof todaySteps.stepGoal === 'number' ? todaySteps.stepGoal : 10000}
+                goal={stepGoal}
                 size={140}
                 strokeWidth={14}
               />
@@ -184,11 +185,11 @@ export function HomeScreen() {
                       </Text>
                     </View>
                   )}
-                  {typeof todaySteps.activeMinutes === 'number' && todaySteps.activeMinutes > 0 && (
+                  {typeof (todaySteps as any).activeMinutes === 'number' && (todaySteps as any).activeMinutes > 0 && (
                     <View style={styles.stepDetailItem}>
                       <Text style={styles.stepDetailIcon}>⏱️</Text>
                       <Text style={styles.stepDetailValue}>
-                        {todaySteps.activeMinutes} min
+                        {(todaySteps as any).activeMinutes} min
                       </Text>
                     </View>
                   )}

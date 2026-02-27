@@ -6,8 +6,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseMutationResult } from '@tanstack/react-query';
-import { api } from '../services/api/apiClient';
 import { HabitRepository } from '../services/database/repositories/HabitRepository';
+import { CompletionRepository } from '../services/database/repositories/CompletionRepository';
 import { SyncQueueRepository } from '../services/database/repositories/SyncQueueRepository';
 import { syncService } from '../services/sync/SyncService';
 import { networkMonitor } from '../services/sync/NetworkMonitor';
@@ -20,7 +20,7 @@ type LocalHabit = Awaited<ReturnType<typeof HabitRepository.getAll>>[number];
  * Fetch all habits - reads from local DB first, syncs in background
  * Optimized for fast load times on home screen
  */
-export function useHabits(): ReturnType<typeof useQuery> {
+export function useHabits() {
   const { user } = useAuthStore();
 
   return useQuery({
@@ -45,7 +45,7 @@ export function useHabits(): ReturnType<typeof useQuery> {
 /**
  * Fetch single habit by ID - reads from local DB
  */
-export function useHabit(habitId: string): ReturnType<typeof useQuery> {
+export function useHabit(habitId: string) {
   return useQuery({
     queryKey: ['habits', habitId],
     queryFn: async () => {
@@ -63,8 +63,10 @@ export function useHabitStats(habitId: string) {
   return useQuery({
     queryKey: ['habits', habitId, 'stats'],
     queryFn: async () => {
-      const response = await api.habits.getStats(habitId);
-      return response;
+      const today = new Date().toISOString().split('T')[0];
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const completions = await CompletionRepository.getByHabitAndDateRange(habitId, thirtyDaysAgo, today);
+      return { totalCompletions: completions.length, last30Days: completions };
     },
     enabled: !!habitId,
   });
@@ -154,7 +156,8 @@ export function useDeleteHabit() {
 
       // 3. Try immediate sync if online
       if (networkMonitor.isConnected()) {
-        api.habits.delete(habitId).catch(console.error);
+        const { supabase } = require('../services/supabase/supabaseClient');
+        supabase.from('habits').update({ archived_at: new Date().toISOString() }).eq('id', habitId).then(({ error }: any) => { if (error) console.error(error); });
       }
     },
     onSuccess: () => {

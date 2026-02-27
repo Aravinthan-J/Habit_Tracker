@@ -54,7 +54,7 @@ export function AddEditHabitScreen() {
       setTitle(existingHabit.title);
       setMonthlyGoal(String(existingHabit.monthlyGoal));
       setColor(existingHabit.color);
-      setIcon(existingHabit.icon);
+      setIcon(existingHabit.icon || '💪');
     }
   }, [existingHabit]);
 
