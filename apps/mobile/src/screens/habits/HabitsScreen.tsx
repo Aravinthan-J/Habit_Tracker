@@ -20,6 +20,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { HabitsStackParamList } from '../../navigation/HabitsNavigator';
 import { useHabits, useDeleteHabit } from '../../hooks/useHabits';
 import { useCalendarCompletions } from '../../hooks/useCompletions';
+import { useInitialSync } from '../../hooks/useInitialSync';
 import { LoadingSpinner } from '../../components/common';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 import { useAuthStore } from '../../store/authStore';
@@ -34,6 +35,9 @@ export function HabitsScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { data: habits, isLoading, refetch } = useHabits();
   const { mutateAsync: deleteHabit } = useDeleteHabit();
+
+  // Handle initial sync on component mount
+  useInitialSync();
 
   // Fetch current month's completions
   const currentDate = new Date();
@@ -91,6 +95,10 @@ export function HabitsScreen() {
       const result = await syncService.performFullSync(user.id);
 
       if (result.success) {
+        // Invalidate all related queries to force fresh data from local DB
+        await queryClient.invalidateQueries({ queryKey: ['habits'] });
+        await queryClient.invalidateQueries({ queryKey: ['completions'] });
+
         // Refetch habits from local DB after sync
         await refetch();
         console.log(`✅ Sync complete: ${result.synced.habits} habits synced`);

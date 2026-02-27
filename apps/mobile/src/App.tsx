@@ -78,13 +78,9 @@ export default function App() {
           });
 
           if (user?.id) {
-            // Don't sync automatically - let user manually sync via pull-to-refresh
-            console.log('Manual sync mode - user can pull to refresh to sync with server');
-
-            // Optional: Perform background sync if needed (commented out for manual-only mode)
-            // if (networkMonitor.isConnected()) {
-            //   syncService.performFullSync(user.id).catch(console.error);
-            // }
+            // Initial sync handled by useInitialSync hook in HabitsScreen
+            // This allows cache invalidation with QueryClient
+            console.log('Services initialized. Initial sync will be handled by screen components.');
 
             // Background tasks disabled - use manual sync instead
             console.log('Background sync disabled. Use manual refresh in UI.');

@@ -36,6 +36,10 @@ class DatabaseService {
     return this.db;
   }
 
+  isReady(): boolean {
+    return this.isInitialized;
+  }
+
   async executeQuery<T = any>(
     query: string,
     params?: any[]

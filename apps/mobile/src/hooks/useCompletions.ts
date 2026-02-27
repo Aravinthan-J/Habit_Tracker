@@ -77,15 +77,30 @@ export function useTodayCompletions() {
 }
 
 /**
- * Fetch calendar completions for a month
+ * Fetch calendar completions for a month - reads from local DB for instant load
  */
 export function useCalendarCompletions(year: number, month: number) {
+  const { user } = useAuthStore();
+
   return useQuery({
     queryKey: ['completions', 'calendar', year, month],
     queryFn: async () => {
-      const response = await api.completions.getMonthlyCalendar(year, month);
-      return response;
+      if (!user?.id) {
+        return { completions: [] };
+      }
+
+      // Get first and last day of the month
+      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+      // Read from local DB for fast loading
+      const completions = await CompletionRepository.getByDateRange(user.id, startDate, endDate);
+
+      return { completions };
     },
+    enabled: !!user?.id,
+    staleTime: 30000, // Keep fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 }
 

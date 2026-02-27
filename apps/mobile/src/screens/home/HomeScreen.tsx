@@ -13,22 +13,29 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import { useHabits, useHabitStats } from '../../hooks/useHabits';
 import { useTodayCompletions, useToggleCompletion, useCalendarCompletions } from '../../hooks/useCompletions';
 import { useTodaySteps, useStepStats } from '../../hooks/useSteps';
+import { useInitialSync } from '../../hooks/useInitialSync';
 import { LoadingSpinner } from '../../components/common';
 import { StepProgressRing, StepStats } from '../../components/steps';
 import { colors, spacing, typography, borderRadius, shadows } from '../../constants/theme';
 import { syncService } from '../../services/sync/SyncService';
+import { networkMonitor } from '../../services/sync/NetworkMonitor';
 
 export function HomeScreen() {
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { data: habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { data: completions, isLoading: completionsLoading, refetch: refetchCompletions } = useTodayCompletions();
   const { markComplete, unmarkComplete, isLoading: toggleLoading } = useToggleCompletion();
   const { data: todaySteps, isLoading: stepsLoading, refetch: refetchSteps } = useTodaySteps();
   const { data: stepStats, isLoading: statsLoading } = useStepStats();
+
+  // Handle initial sync on component mount
+  useInitialSync();
 
   // Fetch current month's completions for goal tracking
   const currentDate = new Date();
@@ -41,15 +48,28 @@ export function HomeScreen() {
 
   const onRefresh = async () => {
     try {
+      if (!networkMonitor.isConnected()) {
+        Alert.alert('No Network', 'Cannot sync without an internet connection');
+        return;
+      }
+
       // Sync with server first
       if (user?.id) {
         console.log('Manual sync triggered via pull-to-refresh');
-        await syncService.performFullSync(user.id);
+        const result = await syncService.performFullSync(user.id);
+
+        if (result.success) {
+          // Invalidate all related queries to force fresh data from local DB
+          await queryClient.invalidateQueries({ queryKey: ['habits'] });
+          await queryClient.invalidateQueries({ queryKey: ['completions'] });
+        }
       }
+
       // Then refetch from local database
-    await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
+      await Promise.all([refetchHabits(), refetchCompletions(), refetchSteps()]);
     } catch (error: any) {
       console.error('Refresh error:', error);
+      Alert.alert('Error', error.message || 'Failed to refresh');
     }
   };
 

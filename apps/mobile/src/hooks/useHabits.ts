@@ -17,8 +17,8 @@ import type { Habit, CreateHabitData, UpdateHabitData } from '@habit-tracker/sha
 type LocalHabit = Awaited<ReturnType<typeof HabitRepository.getAll>>[number];
 
 /**
-/**
  * Fetch all habits - reads from local DB first, syncs in background
+ * Optimized for fast load times on home screen
  */
 export function useHabits(): ReturnType<typeof useQuery> {
   const { user } = useAuthStore();
@@ -36,8 +36,8 @@ export function useHabits(): ReturnType<typeof useQuery> {
       return localHabits;
     },
     enabled: !!user?.id,
-    staleTime: 30000, // Keep fresh for 30 seconds - shows cached data immediately
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    staleTime: Infinity, // Don't refetch unless explicitly invalidated
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 }
 
