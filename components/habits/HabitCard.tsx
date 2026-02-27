@@ -47,8 +47,6 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
         accessibilityLabel={`${habit.title}, ${isCompleted ? 'completed' : 'not completed'}, ${streak} day streak`}
       >
         <View style={[styles.card, { borderLeftColor: habit.color }]}>
-          {/* Color accent */}
-          <View style={[styles.colorAccent, { backgroundColor: habit.color + '22' }]} />
 
           <View style={styles.content}>
             <View style={styles.left}>
@@ -88,13 +86,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     overflow: 'hidden',
     ...SHADOWS.small,
-  },
-  colorAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '30%',
   },
   content: {
     flexDirection: 'row',
