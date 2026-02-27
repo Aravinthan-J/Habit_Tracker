@@ -4,6 +4,7 @@
  */
 
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import { ApiService } from "@habit-tracker/api-client";
 import { SecureStorageService } from "../storage/SecureStorageService";
 
@@ -16,7 +17,18 @@ const getApiBaseUrl = () => {
     return PRODUCTION_API;
   }
 
-  // Development URLs (for emulators/simulators with local backend)
+  // Get dev machine IP from Expo's runtime manifest
+  // manifest2 = new Expo Go format, manifest = legacy format
+  const debuggerHost =
+    (Constants.manifest2 as any)?.extra?.expoGo?.debuggerHost ||
+    (Constants.manifest as any)?.debuggerHost;
+  const localIP = debuggerHost ? debuggerHost.split(":")[0] : null;
+
+  if (localIP) {
+    return `http://${localIP}:3000/api`;
+  }
+
+  // Fallbacks when not running through Expo Go
   if (Platform.OS === "android") {
     // return "user ip/api";
     return PRODUCTION_API;
@@ -26,6 +38,7 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+export const DEBUG_API_URL = API_BASE_URL;
 
 /**
  * Create API client instance

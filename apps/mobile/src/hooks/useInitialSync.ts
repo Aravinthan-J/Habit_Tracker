@@ -12,13 +12,10 @@ import { databaseService } from '../services/database/DatabaseService';
 import { HabitRepository } from '../services/database/repositories/HabitRepository';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const MIGRATION_KEY = 'initial_data_migration_complete';
-
 export function useInitialSync() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const syncInProgressRef = useRef(false);
-  const syncAttemptedRef = useRef(false);
 
   useEffect(() => {
     console.log('🔍 useInitialSync effect triggered. user?.id:', user?.id);
@@ -29,12 +26,11 @@ export function useInitialSync() {
         return;
       }
 
-      if (syncInProgressRef.current || syncAttemptedRef.current) {
-        console.log('⚠️ Sync already in progress or attempted, skipping');
+      if (syncInProgressRef.current) {
+        console.log('⚠️ Sync already in progress, skipping');
         return;
       }
 
-      syncAttemptedRef.current = true;
       syncInProgressRef.current = true;
 
       try {
@@ -54,18 +50,20 @@ export function useInitialSync() {
           return;
         }
 
-        // Check if initial migration already done
-        const migrationDone = await AsyncStorage.getItem(MIGRATION_KEY);
+        // Use user-specific migration key so switching accounts triggers fresh sync
+        const migrationKey = `initial_sync_${user.id}`;
+        const migrationDone = await AsyncStorage.getItem(migrationKey);
 
         if (migrationDone) {
-          // Migration was marked complete, but check if DB is actually populated
           const habits = await HabitRepository.getAll(user.id);
 
           if (habits.length > 0) {
-            console.log(`✓ Initial migration already completed and DB has ${habits.length} habits, skipping sync`);
+            console.log(`✓ Already synced and DB has ${habits.length} habits, skipping`);
             return;
           } else {
-            console.log('⚠️ Migration marked complete but DB is empty. Re-syncing...');
+            console.log('⚠️ Sync marked complete but DB is empty. Re-syncing...');
+            // Clear stale flag so SyncService runs full migration again
+            await AsyncStorage.removeItem(migrationKey);
           }
         }
 
@@ -78,7 +76,7 @@ export function useInitialSync() {
         const result = await syncService.performFullSync(user.id);
 
         if (result.success) {
-          // Invalidate all queries to force fresh load from local DB
+          await AsyncStorage.setItem(migrationKey, 'true');
           console.log('🔄 Invalidating query cache after initial sync');
           await queryClient.invalidateQueries({ queryKey: ['habits'] });
           await queryClient.invalidateQueries({ queryKey: ['completions'] });

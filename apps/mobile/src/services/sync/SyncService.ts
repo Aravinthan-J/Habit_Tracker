@@ -9,7 +9,7 @@ import { networkMonitor } from './NetworkMonitor';
 import type { Habit, Completion } from '@habit-tracker/shared-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const MIGRATION_KEY = 'initial_data_migration_complete';
+const getMigrationKey = (userId: string) => `initial_sync_${userId}`;
 
 export interface SyncResult {
   success: boolean;
@@ -65,8 +65,8 @@ class SyncService {
     };
 
     try {
-      // Check if initial migration is needed
-      const migrationComplete = await AsyncStorage.getItem(MIGRATION_KEY);
+      // Check if initial migration is needed (user-specific key)
+      const migrationComplete = await AsyncStorage.getItem(getMigrationKey(userId));
       if (!migrationComplete) {
         await this.performInitialMigration(userId);
       }
@@ -140,8 +140,8 @@ class SyncService {
         }
       });
 
-      // Mark migration as complete
-      await AsyncStorage.setItem(MIGRATION_KEY, 'true');
+      // Mark migration as complete (user-specific key)
+      await AsyncStorage.setItem(getMigrationKey(userId), 'true');
       console.log('Initial migration completed successfully');
     } catch (error) {
       console.error('Initial migration failed:', error);

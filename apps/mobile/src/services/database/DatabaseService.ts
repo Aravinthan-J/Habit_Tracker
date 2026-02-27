@@ -19,7 +19,7 @@ class DatabaseService {
     }
 
     try {
-      this.db = SQLite.openDatabase('habit_tracker.db');
+      this.db = await SQLite.openDatabaseAsync('habit_tracker.db');
       await runMigrations(this.db);
       this.isInitialized = true;
       console.log('Database initialized successfully');
@@ -45,34 +45,15 @@ class DatabaseService {
     params?: any[]
   ): Promise<T[]> {
     const db = this.getDatabase();
-    return new Promise((resolve, reject) => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          query,
-          params || [],
-          (_, result) => {
-            const rows: T[] = [];
-            for (let i = 0; i < result.rows.length; i++) {
-              rows.push(result.rows.item(i));
-            }
-            resolve(rows);
-          },
-          (_, error) => {
-            console.error('Query execution failed:', query, params, error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    return db.getAllAsync<T>(query, params || []);
   }
 
   async executeQuerySingle<T = any>(
     query: string,
     params?: any[]
   ): Promise<T | null> {
-    const results = await this.executeQuery<T>(query, params);
-    return results.length > 0 ? results[0] : null;
+    const db = this.getDatabase();
+    return db.getFirstAsync<T>(query, params || []);
   }
 
   async executeUpdate(
@@ -80,48 +61,23 @@ class DatabaseService {
     params?: any[]
   ): Promise<QueryResult> {
     const db = this.getDatabase();
-    return new Promise((resolve, reject) => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          query,
-          params || [],
-          (_, result) => {
-            resolve({
-              insertId: result.insertId,
-              rowsAffected: result.rowsAffected,
-              lastInsertRowId: result.insertId,
-            });
-          },
-          (_, error) => {
-            console.error('Update execution failed:', query, params, error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    const result = await db.runAsync(query, params || []);
+    return {
+      insertId: result.lastInsertRowId,
+      rowsAffected: result.changes,
+      lastInsertRowId: result.lastInsertRowId,
+    };
   }
 
   async transaction<T>(
-    callback: (tx: any) => Promise<T>
+    callback: (db: SQLite.SQLiteDatabase) => Promise<T>
   ): Promise<T> {
     const db = this.getDatabase();
-    return new Promise((resolve, reject) => {
-      db.transaction(
-        async (tx) => {
-          try {
-            const result = await callback(tx);
-            resolve(result);
-          } catch (error) {
-            reject(error);
-          }
-        },
-        (error) => {
-          console.error('Transaction failed:', error);
-          reject(error);
-        }
-      );
+    let result: T;
+    await db.withTransactionAsync(async () => {
+      result = await callback(db);
     });
+    return result!;
   }
 
   async clearAllData(): Promise<void> {
