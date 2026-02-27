@@ -17,23 +17,23 @@ export function useHabits() {
         queryKey: ['habits', user?.id],
         queryFn: async () => {
             if (!user) return [];
-            const { data, error } = await supabase
-                .from('habits')
-                .select('*')
-                .eq('user_id', user.id)
-                .is('archived_at', null)
-                .order('created_at', { ascending: false });
+            try {
+                const { data, error } = await supabase
+                    .from('habits')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .is('archived_at', null)
+                    .order('created_at', { ascending: false });
 
-            if (error) {
-                // Fall back to local cache
-                return await getLocalHabits(user.id);
-            }
+                if (error) throw error;
 
-            // Cache locally
-            for (const habit of data ?? []) {
-                await saveHabitLocally(habit);
+                for (const habit of data ?? []) {
+                    await saveHabitLocally(habit);
+                }
+                return data ?? [];
+            } catch {
+                return getLocalHabits(user.id);
             }
-            return data ?? [];
         },
         enabled: !!user,
         staleTime: 1000 * 30,
@@ -43,25 +43,27 @@ export function useHabits() {
         mutationFn: async (input: Omit<HabitInsert, 'user_id'>) => {
             if (!user) throw new Error('Not authenticated');
 
-            const { data, error } = await supabase
-                .from('habits')
-                .insert({ ...input, user_id: user.id })
-                .select()
-                .single();
+            try {
+                const { data, error } = await supabase
+                    .from('habits')
+                    .insert({ ...input, user_id: user.id })
+                    .select()
+                    .single();
 
-            if (error) {
-                // Queue for sync if offline
+                if (error) throw error;
+                await saveHabitLocally(data);
+                return data;
+            } catch {
+                // Queue for sync when back online
+                const payload = { ...input, user_id: user.id };
                 await queueOperation({
                     operation: 'INSERT',
                     table_name: 'habits',
                     record_id: 'pending',
-                    payload: JSON.stringify({ ...input, user_id: user.id }),
+                    payload: JSON.stringify(payload),
                 });
-                throw error;
+                throw new Error('Saved locally. Will sync when online.');
             }
-
-            if (data) await saveHabitLocally(data);
-            return data;
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
     });
@@ -76,20 +78,8 @@ export function useHabits() {
                 .single();
 
             if (error) throw error;
-            if (data) await saveHabitLocally(data);
+            await saveHabitLocally(data);
             return data;
-        },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
-    });
-
-    const archiveHabit = useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await supabase
-                .from('habits')
-                .update({ archived_at: new Date().toISOString() })
-                .eq('id', id);
-            if (error) throw error;
-            await deleteLocalHabit(id);
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
     });
@@ -109,7 +99,6 @@ export function useHabits() {
         error: habitsQuery.error,
         createHabit,
         updateHabit,
-        archiveHabit,
         deleteHabit,
         refetch: habitsQuery.refetch,
     };

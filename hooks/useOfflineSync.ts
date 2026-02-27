@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { processQueue } from '@/services/sync/SyncService';
 import { useSyncStore } from '@/store/syncStore';
@@ -6,18 +6,23 @@ import { useSyncStore } from '@/store/syncStore';
 export function useOfflineSync() {
     const [isOnline, setIsOnline] = useState(true);
     const { isSyncing, setSyncing, setLastSync } = useSyncStore();
+    const isSyncingRef = useRef(isSyncing);
+
+    useEffect(() => {
+        isSyncingRef.current = isSyncing;
+    }, [isSyncing]);
 
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener((state) => {
             const online = state.isConnected === true && state.isInternetReachable !== false;
             setIsOnline(online);
 
-            if (online && !isSyncing) {
+            if (online && !isSyncingRef.current) {
                 runSync();
             }
         });
         return () => unsubscribe();
-    }, [isSyncing]);
+    }, []);
 
     const runSync = async () => {
         setSyncing(true);

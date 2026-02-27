@@ -1,10 +1,7 @@
 import getDatabase from '@/lib/database';
-import { Habit, HabitInsert, Completion, SyncOperation } from '@/types/habit.types';
-import { today } from '@/utils/dateHelpers';
-import { v4 as uuidv4 } from 'crypto';
+import { Habit, Completion, SyncOperation } from '@/types/habit.types';
 
-// Simple UUID generator without external deps
-function generateId(): string {
+export function generateId(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
         return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);

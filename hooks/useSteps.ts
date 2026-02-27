@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import * as PedometerService from '@/services/health/PedometerService';
-import { formatDate, getLastNDays, today } from '@/utils/dateHelpers';
-import { STEPS_PER_KM, CALORIES_PER_STEP } from '@/lib/constants';
+import { getLastNDays, today } from '@/utils/dateHelpers';
 
 export function useSteps() {
     const { user } = useAuthStore();
-    const qc = useQueryClient();
     const [liveSteps, setLiveSteps] = useState(0);
     const [isPedometerAvailable, setIsPedometerAvailable] = useState(false);
 
@@ -16,7 +14,6 @@ export function useSteps() {
         PedometerService.isPedometerAvailable().then(setIsPedometerAvailable);
     }, []);
 
-    // Live step subscription
     useEffect(() => {
         if (!isPedometerAvailable) return;
         const sub = PedometerService.subscribeToPedometer(setLiveSteps);
@@ -27,10 +24,12 @@ export function useSteps() {
         queryKey: ['steps', user?.id, today()],
         queryFn: async () => {
             if (!user) return null;
+
             const pedData = await PedometerService.getTodaySteps();
+
             if (pedData) {
-                // Upsert to Supabase
-                await supabase.from('step_data').upsert({
+                // Fire-and-forget sync to Supabase
+                supabase.from('step_data').upsert({
                     user_id: user.id,
                     date: pedData.date,
                     steps: pedData.steps,
@@ -38,20 +37,13 @@ export function useSteps() {
                     calories: pedData.calories,
                     active_minutes: pedData.activeMinutes,
                     source: 'pedometer',
-                }, { onConflict: 'user_id,date' });
+                }, { onConflict: 'user_id,date' }).then();
             }
 
-            // Return from Supabase
-            const { data } = await supabase
-                .from('step_data')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('date', today())
-                .single();
-            return data ?? pedData;
+            return pedData;
         },
-        enabled: !!user,
-        refetchInterval: 60000, // refresh every minute
+        enabled: !!user && isPedometerAvailable,
+        refetchInterval: 60000,
     });
 
     const weeklyStepsQuery = useQuery({

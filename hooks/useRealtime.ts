@@ -12,35 +12,20 @@ export function useRealtime() {
 
         const habitsChannel = supabase
             .channel('habits-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` },
-                () => {
-                    qc.invalidateQueries({ queryKey: ['habits', user.id] });
-                }
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` },
+                () => qc.invalidateQueries({ queryKey: ['habits', user.id] }))
             .subscribe();
 
         const completionsChannel = supabase
             .channel('completions-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'completions', filter: `user_id=eq.${user.id}` },
-                () => {
-                    qc.invalidateQueries({ queryKey: ['completions', user.id] });
-                }
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'completions', filter: `user_id=eq.${user.id}` },
+                () => qc.invalidateQueries({ queryKey: ['completions', user.id] }))
             .subscribe();
 
         const badgesChannel = supabase
             .channel('badges-channel')
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'user_badges', filter: `user_id=eq.${user.id}` },
-                () => {
-                    qc.invalidateQueries({ queryKey: ['badges', user.id] });
-                }
-            )
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_badges', filter: `user_id=eq.${user.id}` },
+                () => qc.invalidateQueries({ queryKey: ['badges', user.id] }))
             .subscribe();
 
         return () => {
@@ -48,5 +33,5 @@ export function useRealtime() {
             completionsChannel.unsubscribe();
             badgesChannel.unsubscribe();
         };
-    }, [user?.id, qc]);
+    }, [user?.id]);
 }

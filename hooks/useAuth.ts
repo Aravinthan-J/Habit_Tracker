@@ -48,12 +48,7 @@ export function useAuth() {
         });
 
         if (!error && data.user) {
-            // Create profile
-            await supabase.from('profiles').insert({
-                id: data.user.id,
-                email,
-                name,
-            });
+            await supabase.from('profiles').insert({ id: data.user.id, email, name });
         }
 
         return { data, error };

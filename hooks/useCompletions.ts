@@ -6,8 +6,10 @@ import {
     saveCompletionLocally,
     deleteCompletionLocally,
     getLocalCompletions,
+    generateId,
     queueOperation,
 } from '@/services/storage/LocalStorageService';
+import { Completion } from '@/types/habit.types';
 
 export function useCompletions(startDate?: string, endDate?: string) {
     const { user } = useAuthStore();
@@ -15,25 +17,29 @@ export function useCompletions(startDate?: string, endDate?: string) {
     const ed = endDate ?? today();
     const qc = useQueryClient();
 
+    const queryKey = ['completions', user?.id, sd, ed];
+
     const completionsQuery = useQuery({
-        queryKey: ['completions', user?.id, sd, ed],
+        queryKey,
         queryFn: async () => {
             if (!user) return [];
-            const { data, error } = await supabase
-                .from('completions')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('date', sd)
-                .lte('date', ed);
+            try {
+                const { data, error } = await supabase
+                    .from('completions')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gte('date', sd)
+                    .lte('date', ed);
 
-            if (error) {
-                return await getLocalCompletions(user.id, sd, ed);
-            }
+                if (error) throw error;
 
-            for (const c of data ?? []) {
-                await saveCompletionLocally(c);
+                for (const c of data ?? []) {
+                    await saveCompletionLocally(c);
+                }
+                return data ?? [];
+            } catch {
+                return getLocalCompletions(user.id, sd, ed);
             }
-            return data ?? [];
         },
         enabled: !!user,
         staleTime: 1000 * 15,
@@ -52,33 +58,75 @@ export function useCompletions(startDate?: string, endDate?: string) {
             if (!user) throw new Error('Not authenticated');
 
             if (isCompleted) {
-                // Un-complete: delete
-                const { error } = await supabase
-                    .from('completions')
-                    .delete()
-                    .eq('habit_id', habitId)
-                    .eq('date', date);
-                if (error) throw error;
+                try {
+                    const { error } = await supabase
+                        .from('completions')
+                        .delete()
+                        .eq('habit_id', habitId)
+                        .eq('date', date);
+                    if (error) throw error;
+                } catch {
+                    await queueOperation({
+                        operation: 'DELETE',
+                        table_name: 'completions',
+                        record_id: `${habitId}-${date}`,
+                        payload: JSON.stringify({ habit_id: habitId, date }),
+                    });
+                }
                 await deleteCompletionLocally(habitId, date);
             } else {
-                // Complete: insert
-                const newCompletion = {
+                const newCompletion: Completion = {
+                    id: generateId(),
                     habit_id: habitId,
                     user_id: user.id,
                     date,
                     completed_at: new Date().toISOString(),
                 };
-                const { data, error } = await supabase
-                    .from('completions')
-                    .insert(newCompletion)
-                    .select()
-                    .single();
-                if (error) throw error;
-                if (data) await saveCompletionLocally(data);
-                return data;
+                try {
+                    const { data, error } = await supabase
+                        .from('completions')
+                        .insert(newCompletion)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    await saveCompletionLocally(data);
+                    return data;
+                } catch {
+                    await saveCompletionLocally(newCompletion);
+                    await queueOperation({
+                        operation: 'INSERT',
+                        table_name: 'completions',
+                        record_id: newCompletion.id,
+                        payload: JSON.stringify(newCompletion),
+                    });
+                    return newCompletion;
+                }
             }
         },
-        onSuccess: () => {
+        // Optimistic update — checkbox feels instant
+        onMutate: async ({ habitId, date, isCompleted }) => {
+            await qc.cancelQueries({ queryKey });
+            const prev = qc.getQueryData<Completion[]>(queryKey) ?? [];
+
+            qc.setQueryData<Completion[]>(queryKey, (old = []) => {
+                if (isCompleted) {
+                    return old.filter((c) => !(c.habit_id === habitId && c.date === date));
+                }
+                return [...old, {
+                    id: `optimistic-${habitId}-${date}`,
+                    habit_id: habitId,
+                    user_id: user?.id ?? '',
+                    date,
+                    completed_at: new Date().toISOString(),
+                }];
+            });
+
+            return { prev };
+        },
+        onError: (_err, _vars, ctx) => {
+            if (ctx?.prev) qc.setQueryData(queryKey, ctx.prev);
+        },
+        onSettled: () => {
             qc.invalidateQueries({ queryKey: ['completions', user?.id] });
         },
     });
