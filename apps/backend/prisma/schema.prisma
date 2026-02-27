@@ -37,6 +37,7 @@ model User {
   badges            UserBadge[]
   stepData          StepData[]
   notificationTokens NotificationToken[]
+  refreshTokens     RefreshToken[]
 
   @@map("users")
 }
