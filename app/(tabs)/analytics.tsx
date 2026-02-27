@@ -1,11 +1,8 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import { ScrollView, RefreshControl, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useUIStore } from '@/store/uiStore';
 import { StatsCard } from '@/components/analytics/StatsCard';
@@ -16,10 +13,13 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { getLast30Days } from '@/utils/dateHelpers';
 import { formatCompletionRateData, formatStepData } from '@/utils/chartDataFormatter';
+import { PdfGeneratorService } from '@/services/export/PdfGeneratorService';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AnalyticsScreen() {
   const { data, isLoading } = useAnalytics();
-  const { incrementAnalyticsView } = useUIStore();
+  const { incrementAnalyticsView, premiumTheme } = useUIStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     incrementAnalyticsView();
@@ -44,6 +44,8 @@ export default function AnalyticsScreen() {
   };
 
   // Generate insights
+  const themeColors = premiumTheme?.colors || COLORS;
+
   const insights: Array<{ text: string; type: 'positive' | 'warning' | 'info' }> = [];
   if (data.avgCompletionRate >= 80) {
     insights.push({ text: `You're crushing it with a ${data.avgCompletionRate}% completion rate this month! 🔥`, type: 'positive' });
@@ -60,42 +62,63 @@ export default function AnalyticsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Analytics</Text>
-          <Text style={styles.subtitle}>Last 30 days</Text>
-        </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} tintColor={themeColors.primary} />
+        }
+      >
+        <LinearGradient
+          colors={[themeColors.surface, themeColors.background]}
+          style={styles.header}
+        >
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={[styles.title, { color: themeColors.textPrimary }]}>Analytics</Text>
+              <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>Last 30 days dashboard</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.exportBtn, { borderColor: themeColors.primary + '40' }]}
+              onPress={() => PdfGeneratorService.generateAnalyticsReport(data, user?.email || 'User')}
+            >
+              <Ionicons name="share-outline" size={20} color={themeColors.primary} />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
 
         {/* Summary stats */}
         <View style={styles.statsRow}>
-          <StatsCard icon="checkmark-circle-outline" value={`${data.avgCompletionRate}%`} label="Avg Rate" color={COLORS.primary} />
-          <StatsCard icon="flame-outline" value={data.bestStreak} label="Best Streak" color={COLORS.secondary} />
+          <StatsCard icon="checkmark-circle-outline" value={`${data.avgCompletionRate}%`} label="Avg Rate" color={themeColors.primary} />
+          <StatsCard icon="flame-outline" value={data.bestStreak} label="Best Streak" color={themeColors.secondary} />
           <StatsCard icon="trophy-outline" value={data.totalCompletions} label="Total Done" color={COLORS.gold} />
-          <StatsCard icon="list-outline" value={data.activeHabits} label="Habits" color={COLORS.accent} />
+          <StatsCard icon="list-outline" value={data.activeHabits} label="Habits" color={themeColors.accent || COLORS.accent} />
         </View>
 
         {/* Charts */}
         <View style={styles.section}>
           <LineChart
             data={lineData}
-            title="Completion Rate Trend (%)"
+            title="Completion Trend"
+            color={themeColors.primary}
           />
           <BarChart
             data={weeklyRateData}
-            title="This Week — Completion Rate (%)"
+            title="Weekly Consistency"
             suffix="%"
+            color={themeColors.secondary}
           />
           <BarChart
             data={weeklyStepData}
-            title="This Week — Steps (thousands)"
+            title="Activity Summary"
             suffix="k"
+            color={themeColors.accent || COLORS.accent}
           />
         </View>
 
         {/* Insights */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Insights</Text>
+          <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Intelligent Insights</Text>
           {insights.map((ins, i) => (
             <InsightCard key={i} insight={ins.text} type={ins.type} />
           ))}
@@ -106,14 +129,33 @@ export default function AnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
-  header: { padding: SPACING.xl },
-  title: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxxl, fontWeight: TYPOGRAPHY.bold },
-  subtitle: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
+  safe: { flex: 1 },
+  header: {
+    padding: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  exportBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  title: { fontSize: TYPOGRAPHY.xxxl, fontWeight: TYPOGRAPHY.bold },
+  subtitle: { fontSize: TYPOGRAPHY.sm, marginTop: 2, opacity: 0.8 },
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
     marginBottom: SPACING.md,
   },
   section: {
@@ -121,9 +163,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   sectionTitle: {
-    color: COLORS.textPrimary,
     fontSize: TYPOGRAPHY.lg,
-    fontWeight: TYPOGRAPHY.semibold,
+    fontWeight: TYPOGRAPHY.bold,
     marginBottom: SPACING.md,
+    letterSpacing: 0.3,
   },
 });

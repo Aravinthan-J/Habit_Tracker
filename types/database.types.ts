@@ -189,6 +189,97 @@ export interface Database {
                     source?: 'pedometer' | 'manual';
                 };
             };
+            custom_metrics: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    habit_id: string | null;
+                    name: string;
+                    unit: string;
+                    target_value: number | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    habit_id?: string | null;
+                    name: string;
+                    unit: string;
+                    target_value?: number | null;
+                    created_at?: string;
+                };
+                Update: {
+                    name?: string;
+                    unit?: string;
+                    target_value?: number | null;
+                };
+            };
+            metric_logs: {
+                Row: {
+                    id: string;
+                    metric_id: string;
+                    user_id: string;
+                    value: number;
+                    date: string;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    metric_id: string;
+                    user_id: string;
+                    value: number;
+                    date: string;
+                    created_at?: string;
+                };
+                Update: {
+                    value?: number;
+                    date?: string;
+                };
+            };
+            focus_sessions: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    duration: number;
+                    started_at: string;
+                    ended_at: string;
+                    interrupted: boolean;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    duration: number;
+                    started_at: string;
+                    ended_at: string;
+                    interrupted: boolean;
+                };
+                Update: {
+                    interrupted?: boolean;
+                };
+            };
+            achievements: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    title: string;
+                    description: string;
+                    icon: string;
+                    earned_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    title: string;
+                    description: string;
+                    icon: string;
+                    earned_at?: string;
+                };
+                Update: {
+                    title?: string;
+                    description?: string;
+                    icon?: string;
+                };
+            };
         };
     };
 }

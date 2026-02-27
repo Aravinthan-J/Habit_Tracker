@@ -46,7 +46,7 @@ export function useHabits() {
             try {
                 const { data, error } = await supabase
                     .from('habits')
-                    .insert({ ...input, user_id: user.id })
+                    .insert({ ...input, user_id: user.id } as any)
                     .select()
                     .single();
 

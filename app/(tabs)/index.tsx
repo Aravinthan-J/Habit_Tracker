@@ -14,19 +14,27 @@ import { useSteps } from '@/hooks/useSteps';
 import { useBadges } from '@/hooks/useBadges';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { StepProgressRing } from '@/components/steps/StepProgressRing';
+import AchievementPreview from '@/components/home/AchievementPreview';
+import FocusHighlights from '@/components/home/FocusHighlights';
+import MetricHighlights from '@/components/home/MetricHighlights';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
+import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
-  const { habits, isLoading: habitsLoading, refetch } = useHabits();
+  const { premiumTheme } = useUIStore();
+  const colors = premiumTheme?.colors || COLORS;
+  const { habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
   const { todaySteps, liveSteps, isPedometerAvailable } = useSteps();
   const { checkForNewBadges } = useBadges();
+  const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
 
   const todayStr = today();
   const completedTodayIds = useMemo(
@@ -50,24 +58,30 @@ export default function HomeScreen() {
     }
   };
 
+  const handleRefresh = async () => {
+    await Promise.all([refetchHabits(), refetchAdvanced()]);
+  };
+
+  const totalFocusMinutes = focusSessions.reduce((acc, s) => acc + s.duration, 0);
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <FlatList
         data={habits}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={habitsLoading} onRefresh={refetch} tintColor={COLORS.primary} />
+          <RefreshControl refreshing={habitsLoading || advancedLoading} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
         ListHeaderComponent={() => (
           <View>
             {/* Header */}
             <LinearGradient
-              colors={[COLORS.surface, COLORS.background]}
+              colors={[colors.surface, colors.background]}
               style={styles.header}
             >
               <View>
-                <Text style={styles.greeting}>{greeting},</Text>
-                <Text style={styles.name}>{user?.user_metadata?.name ?? 'there'} 👋</Text>
+                <Text style={[styles.greeting, { color: colors.textMuted }]}>{greeting},</Text>
+                <Text style={[styles.name, { color: colors.textPrimary }]}>{user?.user_metadata?.name ?? 'there'} 👋</Text>
               </View>
             </LinearGradient>
 
@@ -75,18 +89,18 @@ export default function HomeScreen() {
             {totalCount > 0 && (
               <View style={styles.progressBanner}>
                 <View style={styles.progressTextRow}>
-                  <Text style={styles.progressText}>
+                  <Text style={[styles.progressText, { color: colors.textSecondary }]}>
                     {completedCount}/{totalCount} habits done
                   </Text>
-                  {allDone && <Text style={styles.allDone}>All done! 🎉</Text>}
+                  {allDone && <Text style={[styles.allDone, { color: colors.success || COLORS.success }]}>All done! 🎉</Text>}
                 </View>
-                <View style={styles.progressTrack}>
+                <View style={[styles.progressTrack, { backgroundColor: colors.surface }]}>
                   <View
                     style={[
                       styles.progressFill,
                       {
                         width: `${(completedCount / totalCount) * 100}%`,
-                        backgroundColor: allDone ? COLORS.success : COLORS.primary,
+                        backgroundColor: allDone ? (colors.success || COLORS.success) : colors.primary,
                       },
                     ]}
                   />
@@ -95,19 +109,27 @@ export default function HomeScreen() {
             )}
 
             {/* Step ring */}
-            <View style={styles.stepSection}>
-              <Text style={styles.sectionTitle}>Steps Today</Text>
+            <View style={[styles.stepSection, { backgroundColor: colors.card, borderColor: colors.cardBorder || COLORS.cardBorder }]}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Steps Today</Text>
               <StepProgressRing
                 steps={liveSteps || todaySteps?.steps || 0}
                 goal={stepGoal}
                 size={160}
               />
               {!isPedometerAvailable && (
-                <Text style={styles.pedometerHint}>Pedometer not available on this device</Text>
+                <Text style={[styles.pedometerHint, { color: colors.textMuted }]}>Pedometer not available on this device</Text>
               )}
             </View>
 
-            <Text style={styles.habitsTitle}>Today's Habits</Text>
+            {/* Achievement Preview */}
+            <AchievementPreview achievements={recentAchievements as any} />
+
+            {/* Focus Highlights */}
+            {totalFocusMinutes > 0 && (
+              <FocusHighlights totalMinutes={totalFocusMinutes} sessionsCount={focusSessions.length} />
+            )}
+
+            <Text style={[styles.habitsTitle, { color: colors.textPrimary }]}>Today's Habits</Text>
 
             {habitsLoading && <LoadingState count={3} />}
           </View>
@@ -122,7 +144,7 @@ export default function HomeScreen() {
               isCompleted={completedTodayIds.has(item.id)}
               streak={calculateCurrentStreak(completionDates)}
               onToggle={() => handleToggle(item.id)}
-              onPress={() => {}}
+              onPress={() => { }}
             />
           );
         }}

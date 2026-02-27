@@ -15,11 +15,16 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 import { Card } from '@/components/ui/Card';
+import { PREMIUM_THEMES } from '@/constants/Themes';
+import { HABIT_TEMPLATES } from '@/constants/templates';
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
   const { user } = useAuthStore();
+  const { theme, setTheme, premiumTheme } = useUIStore();
+  const colors = premiumTheme?.colors || COLORS;
   const { requestAndScheduleDaily, cancelAll } = useNotifications();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('20:00');
@@ -53,7 +58,7 @@ export default function SettingsScreen() {
     color?: string;
   }> = ({ icon, label, value, onPress, right, color = COLORS.textPrimary }) => (
     <TouchableOpacity
-      style={styles.row}
+      style={[styles.row, { borderBottomColor: colors.cardBorder || COLORS.cardBorder }]}
       onPress={onPress}
       disabled={!onPress}
       accessibilityLabel={label}
@@ -64,38 +69,83 @@ export default function SettingsScreen() {
       </View>
       {right ?? (
         <View style={styles.rowRight}>
-          {value && <Text style={styles.rowValue}>{value}</Text>}
-          {onPress && <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />}
+          {value && <Text style={[styles.rowValue, { color: colors.textMuted }]}>{value}</Text>}
+          {onPress && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
         </View>
       )}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Settings</Text>
         </View>
 
         {/* Profile */}
-        <Card style={styles.section}>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.profileRow}>
-            <View style={styles.avatar}>
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
               <Text style={styles.avatarText}>
                 {user?.user_metadata?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
               </Text>
             </View>
             <View>
-              <Text style={styles.profileName}>{user?.user_metadata?.name ?? 'Habity User'}</Text>
-              <Text style={styles.profileEmail}>{user?.email}</Text>
+              <Text style={[styles.profileName, { color: colors.textPrimary }]}>{user?.user_metadata?.name ?? 'Habity User'}</Text>
+              <Text style={[styles.profileEmail, { color: colors.textMuted }]}>{user?.email}</Text>
             </View>
           </View>
         </Card>
 
+        {/* Themes */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Premium Themes</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeScroll}>
+          <TouchableOpacity
+            style={[styles.themeBadge, theme === 'dark' && styles.themeBadgeActive, { backgroundColor: COLORS.surface }]}
+            onPress={() => setTheme('dark')}
+          >
+            <Text style={[styles.themeText, { color: COLORS.textPrimary }]}>Default</Text>
+          </TouchableOpacity>
+          {Object.values(PREMIUM_THEMES).map((t) => (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.themeBadge, theme === t.id && styles.themeBadgeActive, { backgroundColor: t.colors.surface }]}
+              onPress={() => setTheme(t.id as any)}
+            >
+              <Text style={[styles.themeText, { color: t.colors.textPrimary }]}>{t.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Habit Templates */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Habit Templates</Text>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+          {HABIT_TEMPLATES.map((template, idx) => (
+            <SettingsRow
+              key={idx}
+              icon={template.icon as any}
+              label={template.title}
+              color={template.color}
+              onPress={() => Alert.alert('Add Habit', `Would you like to add "${template.title}" to your habits?`)}
+            />
+          ))}
+        </Card>
+
+        {/* Focus Mode */}
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Productivity</Text>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+          <SettingsRow
+            icon="timer-outline"
+            label="Focus Mode"
+            onPress={() => { }} // Navigate to focus screen
+            color={colors.primary}
+          />
+        </Card>
+
         {/* Notifications */}
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <Card style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Notifications</Text>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
           <SettingsRow
             icon="notifications-outline"
             label="Daily Reminder"
@@ -103,8 +153,8 @@ export default function SettingsScreen() {
               <Switch
                 value={notificationsEnabled}
                 onValueChange={toggleNotifications}
-                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
-                thumbColor={notificationsEnabled ? COLORS.primary : COLORS.textMuted}
+                trackColor={{ false: colors.surface, true: colors.primary + '88' }}
+                thumbColor={notificationsEnabled ? colors.primary : colors.textMuted}
                 accessibilityLabel="Toggle daily reminder"
               />
             }
@@ -119,15 +169,15 @@ export default function SettingsScreen() {
         </Card>
 
         {/* About */}
-        <Text style={styles.sectionTitle}>About</Text>
-        <Card style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>About</Text>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
           <SettingsRow icon="information-circle-outline" label="Version" value="1.0.0" />
-          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => {}} />
-          <SettingsRow icon="help-circle-outline" label="Help & Support" onPress={() => {}} />
+          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => { }} />
+          <SettingsRow icon="help-circle-outline" label="Help & Support" onPress={() => { }} />
         </Card>
 
         {/* Sign Out */}
-        <Card style={styles.section}>
+        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
           <SettingsRow
             icon="log-out-outline"
             label="Sign Out"
@@ -185,5 +235,9 @@ const styles = StyleSheet.create({
   rowIcon: { marginRight: SPACING.md },
   rowLabel: { fontSize: TYPOGRAPHY.md },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  rowValue: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm },
+  rowValue: { fontSize: TYPOGRAPHY.sm },
+  themeScroll: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.lg, flexDirection: 'row' },
+  themeBadge: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.md, marginRight: SPACING.sm, borderWidth: 2, borderColor: 'transparent' },
+  themeBadgeActive: { borderColor: '#FFFFFF' },
+  themeText: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.bold },
 });

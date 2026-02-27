@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useUIStore } from '@/store/uiStore';
 
 interface StatsCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,47 +18,62 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   label,
   color = COLORS.primary,
   subtitle,
-}) => (
-  <View style={[styles.card, { borderColor: color + '33' }]}>
-    <View style={[styles.iconBox, { backgroundColor: color + '22' }]}>
-      <Ionicons name={icon} size={22} color={color} />
+}) => {
+  const { premiumTheme } = useUIStore();
+  const themeColors = premiumTheme?.colors || COLORS;
+
+  return (
+    <View style={[
+      styles.card,
+      {
+        backgroundColor: themeColors.surface + '66', // Glass effect
+        borderColor: color + '44',
+      }
+    ]}>
+      <View style={[styles.iconBox, { backgroundColor: color + '22' }]}>
+        <Ionicons name={icon} size={22} color={color} />
+      </View>
+      <View style={styles.content}>
+        <Text style={[styles.value, { color: themeColors.textPrimary }]}>{value}</Text>
+        <Text style={[styles.label, { color: themeColors.textSecondary }]}>{label}</Text>
+        {subtitle && <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>{subtitle}</Text>}
+      </View>
     </View>
-    <Text style={[styles.value, { color }]}>{value}</Text>
-    <Text style={styles.label}>{label}</Text>
-    {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: COLORS.card,
     borderRadius: RADIUS.lg,
     padding: SPACING.md,
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     margin: SPACING.xs,
+    ...SHADOWS.small,
   },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.sm,
+  },
+  content: {
+    alignItems: 'center',
   },
   value: {
     fontSize: TYPOGRAPHY.xxl,
     fontWeight: TYPOGRAPHY.bold,
   },
   label: {
-    color: COLORS.textMuted,
     fontSize: TYPOGRAPHY.xs,
     textAlign: 'center',
     marginTop: 2,
+    fontWeight: TYPOGRAPHY.medium,
   },
   subtitle: {
-    color: COLORS.textMuted,
     fontSize: 10,
     textAlign: 'center',
     marginTop: 2,

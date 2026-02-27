@@ -12,6 +12,16 @@ export function generateId(): string {
 
 export async function saveHabitLocally(habit: Habit): Promise<void> {
     const db = await getDatabase();
+    // Conflict resolution: only update if the new habit is newer than the existing one
+    const existing = await db.getFirstAsync<any>(
+        `SELECT updated_at FROM local_habits WHERE id = ?`,
+        [habit.id]
+    );
+
+    if (existing && new Date(existing.updated_at) > new Date(habit.updated_at)) {
+        return; // Existing is newer
+    }
+
     await db.runAsync(
         `INSERT OR REPLACE INTO local_habits
      (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time, created_at, updated_at, archived_at, synced)
@@ -57,8 +67,11 @@ function rowToHabit(row: any): Habit {
 
 export async function saveCompletionLocally(completion: Completion): Promise<void> {
     const db = await getDatabase();
+    // For completions, we usually just want to make sure we don't overwrite a manual local edit
+    // with an older server state, but usually date is enough. 
+    // Here we use INSERT OR REPLACE to ensure we have the latest server ID if it changed.
     await db.runAsync(
-        `INSERT OR IGNORE INTO local_completions (id, habit_id, user_id, date, completed_at, synced)
+        `INSERT OR REPLACE INTO local_completions (id, habit_id, user_id, date, completed_at, synced)
      VALUES (?, ?, ?, ?, ?, 1)`,
         [completion.id, completion.habit_id, completion.user_id, completion.date, completion.completed_at]
     );

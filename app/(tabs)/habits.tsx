@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useHabits } from '@/hooks/useHabits';
@@ -15,15 +17,26 @@ import { HabitCard } from '@/components/habits/HabitCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button } from '@/components/ui/Button';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '@/constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { useUIStore } from '@/store/uiStore';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
 
 export default function HabitsScreen() {
   const router = useRouter();
-  const { habits, isLoading, archiveHabit } = useHabits();
+  const { habits, isLoading } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
+  const { premiumTheme } = useUIStore();
+  const themeColors = premiumTheme?.colors || COLORS;
   const todayStr = today();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredHabits = useMemo(() => {
+    if (!searchQuery) return habits;
+    return habits.filter(h =>
+      h.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [habits, searchQuery]);
 
   const completedTodayIds = new Set(
     completions.filter((c) => c.date === todayStr).map((c) => c.habit_id)
@@ -35,19 +48,45 @@ export default function HabitsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Habits</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/habit/new')}
-          style={styles.addBtn}
-          accessibilityLabel="Create new habit"
-        >
-          <Ionicons name="add" size={28} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]}>
+      <LinearGradient
+        colors={[themeColors.surface, themeColors.background]}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={[styles.title, { color: themeColors.textPrimary }]}>My Habits</Text>
+            <Text style={[styles.count, { color: themeColors.textSecondary }]}>
+              {habits.length} routines active
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/habit/new')}
+            style={[styles.addBtn, { backgroundColor: themeColors.primary }]}
+            accessibilityLabel="Create new habit"
+          >
+            <Ionicons name="add" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
 
-      <Text style={styles.count}>{habits.length} active habits</Text>
+        {habits.length > 5 && (
+          <View style={[styles.searchContainer, { backgroundColor: themeColors.surface + '88', borderColor: themeColors.cardBorder || COLORS.cardBorder }]}>
+            <Ionicons name="search-outline" size={18} color={themeColors.textMuted} style={styles.searchIcon} />
+            <TextInput
+              placeholder="Search habits..."
+              placeholderTextColor={themeColors.textMuted}
+              style={[styles.searchInput, { color: themeColors.textPrimary }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={themeColors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </LinearGradient>
 
       {isLoading ? (
         <LoadingState count={4} />
@@ -62,8 +101,11 @@ export default function HabitsScreen() {
         />
       ) : (
         <FlatList
-          data={habits}
+          data={filteredHabits}
           keyExtractor={(item) => item.id}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={({ item }) => {
             const completionDates = completions
               .filter((c) => c.habit_id === item.id)
@@ -87,27 +129,46 @@ export default function HabitsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
+  safe: { flex: 1 },
   header: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.xl,
+    marginBottom: SPACING.md,
   },
-  title: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxxl, fontWeight: TYPOGRAPHY.bold },
+  title: { fontSize: TYPOGRAPHY.xxxl, fontWeight: TYPOGRAPHY.bold },
   addBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   count: {
-    color: COLORS.textMuted,
     fontSize: TYPOGRAPHY.sm,
-    marginHorizontal: SPACING.xl,
-    marginBottom: SPACING.md,
+    fontWeight: TYPOGRAPHY.medium,
+    marginTop: 2,
+    opacity: 0.8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    height: 40,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginTop: SPACING.sm,
+  },
+  searchIcon: { marginRight: SPACING.xs },
+  searchInput: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.md,
+    paddingVertical: 8,
   },
 });

@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { BadgeWithStatus } from '@/types/badge.types';
 
-type Theme = 'dark' | 'light' | 'system';
+import { PREMIUM_THEMES, PremiumTheme } from '@/constants/Themes';
+
+type Theme = 'dark' | 'light' | 'system' | keyof typeof PREMIUM_THEMES;
 
 interface UIState {
     theme: Theme;
+    premiumTheme: PremiumTheme | null;
     celebrationVisible: boolean;
     unlockedBadge: BadgeWithStatus | null;
     analyticsViewCount: number;
@@ -16,10 +19,14 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
     theme: 'dark',
+    premiumTheme: null,
     celebrationVisible: false,
     unlockedBadge: null,
     analyticsViewCount: 0,
-    setTheme: (theme) => set({ theme }),
+    setTheme: (theme) => {
+        const premiumTheme = theme in PREMIUM_THEMES ? PREMIUM_THEMES[theme as keyof typeof PREMIUM_THEMES] : null;
+        set({ theme, premiumTheme });
+    },
     showCelebration: (badge) => set({ celebrationVisible: true, unlockedBadge: badge }),
     hideCelebration: () => set({ celebrationVisible: false, unlockedBadge: null }),
     incrementAnalyticsView: () =>
