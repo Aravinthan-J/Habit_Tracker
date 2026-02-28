@@ -1,6 +1,24 @@
 import { Pedometer } from 'expo-sensors';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { formatDate } from '@/utils/dateHelpers';
 import { STEPS_PER_KM, CALORIES_PER_STEP, ACTIVE_MINUTES_PER_STEP } from '@/lib/constants';
+
+// Pedometer.getStepCountAsync (date-range query) is iOS-only.
+// On Android we accumulate watchStepCount deltas and persist them to AsyncStorage.
+const STEP_RANGE_SUPPORTED = Platform.OS === 'ios';
+
+const androidStepsKey = (date: string) => `android_steps_${date}`;
+
+function stepsToData(steps: number, date: string): StepData {
+    return {
+        date,
+        steps,
+        distance: parseFloat((steps / STEPS_PER_KM).toFixed(2)),
+        calories: Math.round(steps * CALORIES_PER_STEP),
+        activeMinutes: Math.round(steps * ACTIVE_MINUTES_PER_STEP),
+    };
+}
 
 export interface StepData {
     date: string;
@@ -19,6 +37,20 @@ export async function isPedometerAvailable(): Promise<boolean> {
 }
 
 export async function getTodaySteps(): Promise<StepData | null> {
+    const date = formatDate(new Date());
+
+    if (!STEP_RANGE_SUPPORTED) {
+        // Android: read accumulated steps that subscribeToPedometer writes
+        try {
+            const stored = await AsyncStorage.getItem(androidStepsKey(date));
+            const steps = stored ? parseInt(stored, 10) : 0;
+            return stepsToData(steps, date);
+        } catch {
+            return null;
+        }
+    }
+
+    // iOS: accurate date-range query via CoreMotion
     const available = await isPedometerAvailable();
     if (!available) return null;
 
@@ -28,24 +60,16 @@ export async function getTodaySteps(): Promise<StepData | null> {
 
     try {
         const result = await Pedometer.getStepCountAsync(start, end);
-        const steps = result.steps;
-        return {
-            date: formatDate(new Date()),
-            steps,
-            distance: parseFloat((steps / STEPS_PER_KM).toFixed(2)),
-            calories: Math.round(steps * CALORIES_PER_STEP),
-            activeMinutes: Math.round(steps * ACTIVE_MINUTES_PER_STEP),
-        };
+        return stepsToData(result.steps, date);
     } catch (err) {
-        if (__DEV__) console.warn('[PedometerService] Error getting steps:', err);
+        if (__DEV__) console.warn('[PedometerService] getTodaySteps error:', err);
         return null;
     }
 }
 
-export async function getStepsForDateRange(
-    start: Date,
-    end: Date
-): Promise<number> {
+export async function getStepsForDateRange(start: Date, end: Date): Promise<number> {
+    if (!STEP_RANGE_SUPPORTED) return 0;
+
     const available = await isPedometerAvailable();
     if (!available) return 0;
 
@@ -58,8 +82,40 @@ export async function getStepsForDateRange(
 }
 
 export function subscribeToPedometer(
-    callback: (steps: number) => void
+    callback: (steps: number) => void,
 ): { remove: () => void } {
+    if (Platform.OS === 'android') {
+        const date = formatDate(new Date());
+        const key = androidStepsKey(date);
+
+        // Steps accumulated during this session (added on top of the persisted baseline)
+        let sessionSteps = 0;
+        let baseline = 0;
+        let ready = false;
+
+        // Load today's persisted baseline before counting starts
+        AsyncStorage.getItem(key).then((stored) => {
+            baseline = stored ? parseInt(stored, 10) : 0;
+            ready = true;
+            callback(baseline + sessionSteps);
+        });
+
+        const sub = Pedometer.watchStepCount((result) => {
+            // result.steps is the per-event delta on Android
+            sessionSteps += result.steps;
+            const total = baseline + sessionSteps;
+            callback(total);
+
+            if (ready) {
+                // Persist so getTodaySteps() always returns up-to-date data
+                AsyncStorage.setItem(key, String(total)).catch(() => {});
+            }
+        });
+
+        return sub;
+    }
+
+    // iOS: watchStepCount already returns cumulative steps since subscription start
     return Pedometer.watchStepCount((result) => {
         callback(result.steps);
     });
