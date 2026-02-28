@@ -70,24 +70,47 @@ export function useHabits() {
 
     const updateHabit = useMutation({
         mutationFn: async ({ id, ...updates }: HabitUpdate & { id: string }) => {
-            const { data, error } = await supabase
-                .from('habits')
-                .update({ ...updates, updated_at: new Date().toISOString() })
-                .eq('id', id)
-                .select()
-                .single();
+            try {
+                const { data, error } = await supabase
+                    .from('habits')
+                    .update({ ...updates, updated_at: new Date().toISOString() })
+                    .eq('id', id)
+                    .select()
+                    .single();
 
-            if (error) throw error;
-            await saveHabitLocally(data);
-            return data;
+                if (error) throw error;
+                await saveHabitLocally(data);
+                return data;
+            } catch {
+                const cached = (qc.getQueryData<Habit[]>(['habits', user?.id]) ?? []).find(h => h.id === id);
+                if (cached) {
+                    const updated = { ...cached, ...updates, updated_at: new Date().toISOString() };
+                    await saveHabitLocally(updated as Habit);
+                }
+                await queueOperation({
+                    operation: 'UPDATE',
+                    table_name: 'habits',
+                    record_id: id,
+                    payload: JSON.stringify({ id, ...updates }),
+                });
+            }
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
     });
 
     const deleteHabit = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('habits').delete().eq('id', id);
-            if (error) throw error;
+            try {
+                const { error } = await supabase.from('habits').delete().eq('id', id);
+                if (error) throw error;
+            } catch {
+                await queueOperation({
+                    operation: 'DELETE',
+                    table_name: 'habits',
+                    record_id: id,
+                    payload: JSON.stringify({ id }),
+                });
+            }
             await deleteLocalHabit(id);
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),

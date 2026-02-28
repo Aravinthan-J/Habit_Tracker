@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Achievement, FocusSession, MetricLog, Metric } from '@/types/advanced.types';
+import { queueOperation, generateId } from '@/services/storage/LocalStorageService';
 
 export function useAdvancedFeatures() {
     const { user } = useAuthStore();
@@ -51,11 +52,39 @@ export function useAdvancedFeatures() {
         enabled: !!user,
     });
 
+    const queryClient = useQueryClient();
+
+    const logMetric = useMutation({
+        mutationFn: async ({ metricId, value }: { metricId: string; value: number }) => {
+            if (!user) throw new Error('Not authenticated');
+
+            const date = new Date().toISOString().split('T')[0];
+            const { data, error } = await supabase
+                .from('metric_logs')
+                .insert([{ metric_id: metricId, user_id: user.id, value, date }]);
+
+            if (error) {
+                await queueOperation({
+                    operation: 'INSERT',
+                    table_name: 'metric_logs',
+                    record_id: generateId(),
+                    payload: JSON.stringify({ metric_id: metricId, user_id: user.id, value, date }),
+                });
+                return;
+            }
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['metrics'] });
+        }
+    });
+
     return {
         recentAchievements: achievementsQuery.data?.slice(0, 5) ?? [],
         focusSessions: focusSessionsQuery.data ?? [],
         metrics: metricsQuery.data ?? [],
         isLoading: achievementsQuery.isLoading || focusSessionsQuery.isLoading || metricsQuery.isLoading,
+        logMetric,
         refetch: () => {
             achievementsQuery.refetch();
             focusSessionsQuery.refetch();

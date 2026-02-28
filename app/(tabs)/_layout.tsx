@@ -1,6 +1,8 @@
 import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/constants/theme';
+import { OfflineBanner } from '@/components/shared/OfflineBanner';
 
 type TabBarIconProps = {
   name: keyof typeof Ionicons.glyphMap;
@@ -19,7 +21,9 @@ function TabIcon({ name, focused }: TabBarIconProps) {
 
 export default function TabLayout() {
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      <OfflineBanner />
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
@@ -42,44 +46,52 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Today',
-          tabBarIcon: ({ focused }) => <TabIcon name="home-outline" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="home-outline" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ focused }) => <TabIcon name="calendar-outline" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="calendar-outline" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="habits"
         options={{
           title: 'Habits',
-          tabBarIcon: ({ focused }) => <TabIcon name="list-outline" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="list-outline" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="analytics"
         options={{
           title: 'Analytics',
-          tabBarIcon: ({ focused }) => <TabIcon name="bar-chart-outline" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="bar-chart-outline" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="badges"
         options={{
           title: 'Badges',
-          tabBarIcon: ({ focused }) => <TabIcon name="trophy-outline" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="trophy-outline" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="community"
+        options={{
+          title: 'Community',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="people-outline" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ focused }) => <TabIcon name="settings-outline" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="settings-outline" focused={focused} />,
         }}
       />
     </Tabs>
+    </View>
   );
 }
