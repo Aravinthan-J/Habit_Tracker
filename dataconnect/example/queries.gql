@@ -1,0 +1,14 @@
+type User @table {
+  uid: String!
+  displayName: String
+  email: String!
+}
+
+type Task @table {
+  id: ID!
+  title: String!
+  description: String
+  completed: Boolean!
+  dueDate: Timestamp
+  user: User!
+}

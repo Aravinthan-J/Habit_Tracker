@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 
 export function useRealtime() {
@@ -10,28 +11,25 @@ export function useRealtime() {
     useEffect(() => {
         if (!user || isOffline) return;
 
-        const habitsChannel = supabase
-            .channel('habits-channel')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` },
-                () => qc.invalidateQueries({ queryKey: ['habits', user.id] }))
-            .subscribe();
+        const unsubHabits = onSnapshot(
+            collection(db, 'users', user.uid, 'habits'),
+            () => qc.invalidateQueries({ queryKey: ['habits', user.uid] })
+        );
 
-        const completionsChannel = supabase
-            .channel('completions-channel')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'completions', filter: `user_id=eq.${user.id}` },
-                () => qc.invalidateQueries({ queryKey: ['completions', user.id] }))
-            .subscribe();
+        const unsubCompletions = onSnapshot(
+            collection(db, 'users', user.uid, 'completions'),
+            () => qc.invalidateQueries({ queryKey: ['completions', user.uid] })
+        );
 
-        const badgesChannel = supabase
-            .channel('badges-channel')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_badges', filter: `user_id=eq.${user.id}` },
-                () => qc.invalidateQueries({ queryKey: ['badges', user.id] }))
-            .subscribe();
+        const unsubBadges = onSnapshot(
+            collection(db, 'users', user.uid, 'user_badges'),
+            () => qc.invalidateQueries({ queryKey: ['badges', user.uid] })
+        );
 
         return () => {
-            habitsChannel.unsubscribe();
-            completionsChannel.unsubscribe();
-            badgesChannel.unsubscribe();
+            unsubHabits();
+            unsubCompletions();
+            unsubBadges();
         };
-    }, [user?.id, isOffline]);
+    }, [user?.uid, isOffline]);
 }

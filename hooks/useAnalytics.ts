@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { getLast30Days, getLastNDays } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
@@ -61,7 +62,7 @@ export function useAnalytics() {
     const { user } = useAuthStore();
 
     return useQuery({
-        queryKey: ['analytics', user?.id],
+        queryKey: ['analytics', user?.uid],
         queryFn: async (): Promise<AnalyticsSummary> => {
             if (!user) throw new Error('Not authenticated');
 
@@ -70,22 +71,35 @@ export function useAnalytics() {
             const endDate = last30[last30.length - 1];
 
             try {
-                const [completionsRes, habitsRes, stepsRes] = await Promise.all([
-                    supabase.from('completions').select('habit_id, date').eq('user_id', user.id).gte('date', startDate).lte('date', endDate),
-                    supabase.from('habits').select('id').eq('user_id', user.id).is('archived_at', null),
-                    supabase.from('step_data').select('date, steps').eq('user_id', user.id).gte('date', startDate).lte('date', endDate),
+                const [completionsSnap, habitsSnap, stepsSnap] = await Promise.all([
+                    getDocs(query(
+                        collection(db, 'users', user.uid, 'completions'),
+                        where('date', '>=', startDate),
+                        where('date', '<=', endDate)
+                    )),
+                    getDocs(collection(db, 'users', user.uid, 'habits')),
+                    getDocs(query(
+                        collection(db, 'users', user.uid, 'step_data'),
+                        where('date', '>=', startDate),
+                        where('date', '<=', endDate)
+                    )),
                 ]);
 
-                if (completionsRes.error || habitsRes.error) throw completionsRes.error ?? habitsRes.error;
+                const completions = completionsSnap.docs.map((d) => d.data() as { habit_id: string; date: string });
+                const habits = habitsSnap.docs
+                    .map((d) => ({ id: d.id, ...d.data() } as { id: string; archived_at: string | null }))
+                    .filter((h) => h.archived_at === null);
 
                 const stepsMap: Record<string, number> = {};
-                for (const s of stepsRes.data ?? []) stepsMap[s.date] = s.steps;
+                for (const d of stepsSnap.docs) {
+                    const s = d.data();
+                    stepsMap[s.date] = s.steps;
+                }
 
-                return buildSummary(habitsRes.data ?? [], completionsRes.data ?? [], last30, stepsMap);
+                return buildSummary(habits, completions, last30, stepsMap);
             } catch {
-                // Offline fallback from local SQLite
-                const habits = await getLocalHabits(user.id);
-                const allCompletions = await getAllLocalCompletions(user.id);
+                const habits = await getLocalHabits(user.uid);
+                const allCompletions = await getAllLocalCompletions(user.uid);
                 const completions = allCompletions.filter((c) => c.date >= startDate && c.date <= endDate);
                 return buildSummary(habits, completions, last30);
             }

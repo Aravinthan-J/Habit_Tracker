@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase';
-import { Badge, UserBadge } from '@/types/badge.types';
-import { calculateCurrentStreak, calculateLongestStreak } from '@/utils/streakCalculator';
-import { today, getLast30Days } from '@/utils/dateHelpers';
+import { collection, getDocs, addDoc, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Badge } from '@/types/badge.types';
+import { BADGE_DEFINITIONS } from '@/constants/badges';
+import { calculateCurrentStreak } from '@/utils/streakCalculator';
+import { getLast30Days } from '@/utils/dateHelpers';
 
 export interface BadgeCheckResult {
     badge: Badge;
@@ -15,117 +17,100 @@ export async function checkAndAwardBadges(
     const newlyEarned: BadgeCheckResult[] = [];
 
     try {
-        // Fetch all badge definitions
-        const { data: allBadges } = await supabase.from('badges').select('*');
-        if (!allBadges) return [];
+        // Fetch already earned badge IDs (badge_id = badge name)
+        const earnedSnap = await getDocs(collection(db, 'users', userId, 'user_badges'));
+        const earnedIds = new Set(earnedSnap.docs.map((d) => d.data().badge_id as string));
 
-        // Fetch already earned badges
-        const { data: earned } = await supabase
-            .from('user_badges')
-            .select('badge_id')
-            .eq('user_id', userId);
-        const earnedIds = new Set((earned ?? []).map((e) => e.badge_id));
+        // Fetch all completions
+        const completionsSnap = await getDocs(collection(db, 'users', userId, 'completions'));
+        const completions = completionsSnap.docs.map((d) => d.data() as { habit_id: string; date: string; completed_at: string });
 
-        // Fetch all completions for user
-        const { data: allCompletions } = await supabase
-            .from('completions')
-            .select('*')
-            .eq('user_id', userId)
-            .order('date', { ascending: false });
-        const completions = allCompletions ?? [];
-
-        // Fetch all habits for user
-        const { data: habits } = await supabase
-            .from('habits')
-            .select('id, created_at')
-            .eq('user_id', userId);
-        const totalHabits = habits?.length ?? 0;
+        // Fetch all habits
+        const habitsSnap = await getDocs(collection(db, 'users', userId, 'habits'));
+        const habits = habitsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as { id: string; created_at: string }));
+        const totalHabits = habits.length;
 
         // Fetch step data
-        const { data: stepRows } = await supabase
-            .from('step_data')
-            .select('steps, date, distance')
-            .eq('user_id', userId)
-            .order('date', { ascending: false });
-        const stepData = stepRows ?? [];
+        const stepsSnap = await getDocs(collection(db, 'users', userId, 'step_data'));
+        const stepData = stepsSnap.docs.map((d) => d.data() as { steps: number; date: string; distance?: number });
 
         // Fetch user profile for step goal
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('step_goal, created_at')
-            .eq('id', userId)
-            .single();
-        const stepGoal = profile?.step_goal ?? 10000;
+        const profileDoc = await getDoc(doc(db, 'users', userId));
+        const stepGoal: number = profileDoc.data()?.step_goal ?? 10000;
 
-        for (const badge of allBadges) {
-            if (earnedIds.has(badge.id)) continue;
+        for (const def of BADGE_DEFINITIONS) {
+            if (earnedIds.has(def.name)) continue;
 
             let qualified = false;
             let qualifyingHabitId: string | undefined = habitId;
 
-            if (badge.type === 'streak') {
-                // Check streak for a specific habit or all habits
-                const habitsToCheck = habitId ? [{ id: habitId }] : (habits ?? []);
+            if (def.type === 'streak') {
+                const habitsToCheck = habitId ? [{ id: habitId }] : habits;
                 for (const h of habitsToCheck) {
-                    const dates = completions
-                        .filter((c) => c.habit_id === h.id)
-                        .map((c) => c.date);
-                    const streak = calculateCurrentStreak(dates);
-                    if (streak >= badge.requirement) {
+                    const dates = completions.filter((c) => c.habit_id === h.id).map((c) => c.date);
+                    if (calculateCurrentStreak(dates) >= def.requirement) {
                         qualified = true;
                         qualifyingHabitId = h.id;
                         break;
                     }
                 }
-            } else if (badge.type === 'completion') {
-                if (badge.name.includes('Completions Club')) {
-                    qualified = completions.length >= badge.requirement;
-                } else if (badge.name === 'Perfect Week') {
-                    qualified = checkPerfectWeek(completions, habits ?? [], 7);
+            } else if (def.type === 'completion') {
+                if (def.name.includes('Completions Club')) {
+                    qualified = completions.length >= def.requirement;
+                } else if (def.name === 'Perfect Week') {
+                    qualified = checkPerfectWeek(completions, habits, 7);
                 }
-                // Other completion badges could be extended here
-            } else if (badge.type === 'step') {
-                if (badge.name === '10K Walker') {
+            } else if (def.type === 'step') {
+                if (def.name === '10K Walker') {
                     qualified = stepData.some((s) => s.steps >= 10000);
-                } else if (badge.name === 'Step Streak - Week') {
+                } else if (def.name === 'Step Streak - Week') {
                     qualified = checkStepStreak(stepData, stepGoal, 7);
-                } else if (badge.name === 'Step Streak - 2 Weeks') {
+                } else if (def.name === 'Step Streak - 2 Weeks') {
                     qualified = checkStepStreak(stepData, stepGoal, 14);
-                } else if (badge.name === 'Step Streak - Month') {
+                } else if (def.name === 'Step Streak - Month') {
                     qualified = checkStepStreak(stepData, stepGoal, 30);
-                } else if (badge.name === '100km Milestone') {
-                    const totalKm = stepData.reduce((sum, s) => sum + (s.distance ?? 0), 0);
-                    qualified = totalKm >= 100;
-                } else if (badge.name === '500km Milestone') {
-                    const totalKm = stepData.reduce((sum, s) => sum + (s.distance ?? 0), 0);
-                    qualified = totalKm >= 500;
+                } else if (def.name === '100km Milestone') {
+                    qualified = stepData.reduce((sum, s) => sum + (s.distance ?? 0), 0) >= 100;
+                } else if (def.name === '500km Milestone') {
+                    qualified = stepData.reduce((sum, s) => sum + (s.distance ?? 0), 0) >= 500;
                 }
-            } else if (badge.type === 'special') {
-                if (badge.name === 'Habit Collector') {
-                    qualified = totalHabits >= badge.requirement;
-                } else if (badge.name === 'Power User') {
-                    qualified = totalHabits >= badge.requirement;
-                } else if (badge.name === 'Consistency King') {
-                    // 3 habits with active streaks >= 3 days
+            } else if (def.type === 'special') {
+                if (def.name === 'Habit Collector' || def.name === 'Power User') {
+                    qualified = totalHabits >= def.requirement;
+                } else if (def.name === 'Consistency King') {
                     let activeStreaks = 0;
-                    for (const h of habits ?? []) {
+                    for (const h of habits) {
                         const dates = completions.filter((c) => c.habit_id === h.id).map((c) => c.date);
                         if (calculateCurrentStreak(dates) >= 3) activeStreaks++;
                     }
-                    qualified = activeStreaks >= badge.requirement;
+                    qualified = activeStreaks >= def.requirement;
                 }
             }
 
             if (qualified) {
-                const { error } = await supabase.from('user_badges').insert({
-                    user_id: userId,
-                    badge_id: badge.id,
-                    habit_id: qualifyingHabitId ?? null,
-                });
+                try {
+                    await addDoc(collection(db, 'users', userId, 'user_badges'), {
+                        badge_id: def.name,
+                        user_id: userId,
+                        habit_id: qualifyingHabitId ?? null,
+                        earned_at: new Date().toISOString(),
+                    });
 
-                if (!error) {
+                    const badge: Badge = {
+                        id: def.name,
+                        name: def.name,
+                        description: def.description,
+                        type: def.type,
+                        tier: def.tier,
+                        requirement: def.requirement,
+                        icon_name: def.icon_name,
+                        created_at: new Date().toISOString(),
+                    };
+
                     newlyEarned.push({ badge, habitId: qualifyingHabitId });
-                    earnedIds.add(badge.id);
+                    earnedIds.add(def.name);
+                } catch {
+                    // ignore write errors for individual badges
                 }
             }
         }
@@ -137,23 +122,22 @@ export async function checkAndAwardBadges(
 }
 
 function checkPerfectWeek(
-    completions: any[],
-    habits: any[],
+    completions: { habit_id: string; date: string }[],
+    habits: { id: string }[],
     days: number
 ): boolean {
     if (habits.length === 0) return false;
     const last7 = getLast30Days().slice(-days);
     for (const date of last7) {
         for (const habit of habits) {
-            const done = completions.some((c) => c.habit_id === habit.id && c.date === date);
-            if (!done) return false;
+            if (!completions.some((c) => c.habit_id === habit.id && c.date === date)) return false;
         }
     }
     return true;
 }
 
 function checkStepStreak(
-    stepData: any[],
+    stepData: { steps: number; date: string }[],
     stepGoal: number,
     days: number
 ): boolean {

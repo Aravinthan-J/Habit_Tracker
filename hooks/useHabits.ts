@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import {
+    collection,
+    getDocs,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { Habit, HabitInsert, HabitUpdate } from '@/types/habit.types';
 import {
@@ -14,25 +22,22 @@ export function useHabits() {
     const qc = useQueryClient();
 
     const habitsQuery = useQuery({
-        queryKey: ['habits', user?.id],
+        queryKey: ['habits', user?.uid],
         queryFn: async () => {
             if (!user) return [];
             try {
-                const { data, error } = await supabase
-                    .from('habits')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .is('archived_at', null)
-                    .order('created_at', { ascending: false });
+                const snapshot = await getDocs(collection(db, 'users', user.uid, 'habits'));
+                const data: Habit[] = snapshot.docs
+                    .map((d) => ({ id: d.id, ...d.data() } as Habit))
+                    .filter((h) => h.archived_at === null)
+                    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
-                if (error) throw error;
-
-                for (const habit of data ?? []) {
+                for (const habit of data) {
                     await saveHabitLocally(habit);
                 }
-                return data ?? [];
+                return data;
             } catch {
-                return getLocalHabits(user.id);
+                return getLocalHabits(user.uid);
             }
         },
         enabled: !!user,
@@ -43,66 +48,64 @@ export function useHabits() {
         mutationFn: async (input: Omit<HabitInsert, 'user_id'>) => {
             if (!user) throw new Error('Not authenticated');
 
-            try {
-                const { data, error } = await supabase
-                    .from('habits')
-                    .insert({ ...input, user_id: user.id } as any)
-                    .select()
-                    .single();
+            const now = new Date().toISOString();
+            const habitData = {
+                ...input,
+                user_id: user.uid,
+                created_at: now,
+                updated_at: now,
+                archived_at: null,
+            };
 
-                if (error) throw error;
-                await saveHabitLocally(data);
-                return data;
+            try {
+                const docRef = await addDoc(collection(db, 'users', user.uid, 'habits'), habitData);
+                const habit: Habit = { id: docRef.id, ...habitData } as Habit;
+                await saveHabitLocally(habit);
+                return habit;
             } catch {
-                // Queue for sync when back online
-                const payload = { ...input, user_id: user.id };
                 await queueOperation({
                     operation: 'INSERT',
                     table_name: 'habits',
                     record_id: 'pending',
-                    payload: JSON.stringify(payload),
+                    payload: JSON.stringify(habitData),
                 });
                 throw new Error('Saved locally. Will sync when online.');
             }
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.uid] }),
     });
 
     const updateHabit = useMutation({
         mutationFn: async ({ id, ...updates }: HabitUpdate & { id: string }) => {
+            const updatesWithTimestamp = { ...updates, updated_at: new Date().toISOString() };
             try {
-                const { data, error } = await supabase
-                    .from('habits')
-                    .update({ ...updates, updated_at: new Date().toISOString() })
-                    .eq('id', id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                await saveHabitLocally(data);
-                return data;
-            } catch {
-                const cached = (qc.getQueryData<Habit[]>(['habits', user?.id]) ?? []).find(h => h.id === id);
+                await updateDoc(doc(db, 'users', user!.uid, 'habits', id), updatesWithTimestamp);
+                const cached = (qc.getQueryData<Habit[]>(['habits', user?.uid]) ?? []).find((h) => h.id === id);
                 if (cached) {
-                    const updated = { ...cached, ...updates, updated_at: new Date().toISOString() };
-                    await saveHabitLocally(updated as Habit);
+                    const updated = { ...cached, ...updatesWithTimestamp };
+                    await saveHabitLocally(updated);
+                }
+                return { id, ...updatesWithTimestamp };
+            } catch {
+                const cached = (qc.getQueryData<Habit[]>(['habits', user?.uid]) ?? []).find((h) => h.id === id);
+                if (cached) {
+                    await saveHabitLocally({ ...cached, ...updatesWithTimestamp } as Habit);
                 }
                 await queueOperation({
                     operation: 'UPDATE',
                     table_name: 'habits',
                     record_id: id,
-                    payload: JSON.stringify({ id, ...updates }),
+                    payload: JSON.stringify({ id, ...updatesWithTimestamp }),
                 });
             }
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.uid] }),
     });
 
     const deleteHabit = useMutation({
         mutationFn: async (id: string) => {
             try {
-                const { error } = await supabase.from('habits').delete().eq('id', id);
-                if (error) throw error;
+                await deleteDoc(doc(db, 'users', user!.uid, 'habits', id));
             } catch {
                 await queueOperation({
                     operation: 'DELETE',
@@ -113,7 +116,7 @@ export function useHabits() {
             }
             await deleteLocalHabit(id);
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.id] }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.uid] }),
     });
 
     return {

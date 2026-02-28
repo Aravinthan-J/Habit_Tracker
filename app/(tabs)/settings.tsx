@@ -13,7 +13,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Card } from '@/components/ui/Card';
@@ -88,11 +87,11 @@ export default function SettingsScreen() {
           <View style={styles.profileRow}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
               <Text style={styles.avatarText}>
-                {user?.user_metadata?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
+                {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
               </Text>
             </View>
             <View>
-              <Text style={[styles.profileName, { color: colors.textPrimary }]}>{user?.user_metadata?.name ?? 'Habity User'}</Text>
+              <Text style={[styles.profileName, { color: colors.textPrimary }]}>{user?.displayName ?? 'Habity User'}</Text>
               <Text style={[styles.profileEmail, { color: colors.textMuted }]}>{user?.email}</Text>
             </View>
           </View>

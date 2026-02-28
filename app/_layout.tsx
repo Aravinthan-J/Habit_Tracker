@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { isLoading, session } = useAuth();
+  const { isLoading, user } = useAuth();
   useRealtime();
   useOfflineSync();
 
@@ -31,7 +31,7 @@ function AppContent() {
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
-        {!session ? (
+        {!user ? (
           <Stack.Screen name="(auth)" />
         ) : (
           <Stack.Screen name="(tabs)" />

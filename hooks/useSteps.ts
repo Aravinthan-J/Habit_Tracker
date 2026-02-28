@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import * as PedometerService from '@/services/health/PedometerService';
 import { getLastNDays, today } from '@/utils/dateHelpers';
@@ -21,23 +22,27 @@ export function useSteps() {
     }, [isPedometerAvailable]);
 
     const todayStepsQuery = useQuery({
-        queryKey: ['steps', user?.id, today()],
+        queryKey: ['steps', user?.uid, today()],
         queryFn: async () => {
             if (!user) return null;
 
             const pedData = await PedometerService.getTodaySteps();
 
             if (pedData) {
-                // Fire-and-forget sync to Supabase
-                supabase.from('step_data').upsert({
-                    user_id: user.id,
-                    date: pedData.date,
-                    steps: pedData.steps,
-                    distance: pedData.distance,
-                    calories: pedData.calories,
-                    active_minutes: pedData.activeMinutes,
-                    source: 'pedometer',
-                }, { onConflict: 'user_id,date' }).then().catch(() => {});
+                // Fire-and-forget sync to Firestore
+                setDoc(
+                    doc(db, 'users', user.uid, 'step_data', pedData.date),
+                    {
+                        user_id: user.uid,
+                        date: pedData.date,
+                        steps: pedData.steps,
+                        distance: pedData.distance,
+                        calories: pedData.calories,
+                        active_minutes: pedData.activeMinutes,
+                        source: 'pedometer',
+                    },
+                    { merge: true }
+                ).catch(() => {});
             }
 
             return pedData;
@@ -47,18 +52,17 @@ export function useSteps() {
     });
 
     const weeklyStepsQuery = useQuery({
-        queryKey: ['steps-weekly', user?.id],
+        queryKey: ['steps-weekly', user?.uid],
         queryFn: async () => {
             if (!user) return [];
             const days = getLastNDays(7).reverse();
             try {
-                const { data } = await supabase
-                    .from('step_data')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .gte('date', days[0])
-                    .lte('date', days[6]);
-                return data ?? [];
+                const snapshot = await getDocs(query(
+                    collection(db, 'users', user.uid, 'step_data'),
+                    where('date', '>=', days[0]),
+                    where('date', '<=', days[6])
+                ));
+                return snapshot.docs.map((d) => d.data());
             } catch {
                 return [];
             }

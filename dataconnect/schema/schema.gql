@@ -1,0 +1,18 @@
+type Habit @table {
+  name: String!
+  createdAt: Timestamp!
+  reminderTime: String
+  reminderDays: [String]
+}
+
+type DailyLog @table {
+  date: Date!
+  status: String!
+  habit: Habit
+}
+
+type UserConfig @table {
+  theme: String!
+  lastAccessed: Timestamp!
+  notificationsEnabled: Boolean
+}

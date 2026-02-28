@@ -1,9 +1,24 @@
-import { Database } from './database.types';
-
-export type Badge = Database['public']['Tables']['badges']['Row'];
-export type UserBadge = Database['public']['Tables']['user_badges']['Row'];
 export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 export type BadgeType = 'streak' | 'completion' | 'step' | 'special';
+
+export interface Badge {
+    id: string;
+    name: string;
+    description: string;
+    type: BadgeType;
+    tier: BadgeTier;
+    requirement: number;
+    icon_name: string;
+    created_at: string;
+}
+
+export interface UserBadge {
+    id: string;
+    user_id: string;
+    badge_id: string;
+    habit_id: string | null;
+    earned_at: string;
+}
 
 export interface BadgeWithStatus extends Badge {
     earned: boolean;

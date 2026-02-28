@@ -1,11 +1,59 @@
-import { Database } from './database.types';
+export interface Habit {
+    id: string;
+    user_id: string;
+    title: string;
+    monthly_goal: number;
+    color: string;
+    icon: string | null;
+    notifications_enabled: boolean;
+    reminder_time: string | null;
+    created_at: string;
+    updated_at: string;
+    archived_at: string | null;
+}
 
-export type Habit = Database['public']['Tables']['habits']['Row'];
-export type HabitInsert = Database['public']['Tables']['habits']['Insert'];
-export type HabitUpdate = Database['public']['Tables']['habits']['Update'];
+export interface HabitInsert {
+    id?: string;
+    user_id: string;
+    title: string;
+    monthly_goal?: number;
+    color?: string;
+    icon?: string | null;
+    notifications_enabled?: boolean;
+    reminder_time?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    archived_at?: string | null;
+}
 
-export type Completion = Database['public']['Tables']['completions']['Row'];
-export type CompletionInsert = Database['public']['Tables']['completions']['Insert'];
+export interface HabitUpdate {
+    id?: string;
+    user_id?: string;
+    title?: string;
+    monthly_goal?: number;
+    color?: string;
+    icon?: string | null;
+    notifications_enabled?: boolean;
+    reminder_time?: string | null;
+    updated_at?: string;
+    archived_at?: string | null;
+}
+
+export interface Completion {
+    id: string;
+    habit_id: string;
+    user_id: string;
+    date: string;
+    completed_at: string;
+}
+
+export interface CompletionInsert {
+    id?: string;
+    habit_id: string;
+    user_id: string;
+    date: string;
+    completed_at?: string;
+}
 
 export interface HabitWithCompletions extends Habit {
     completions: Completion[];

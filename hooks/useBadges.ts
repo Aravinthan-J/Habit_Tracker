@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { checkAndAwardBadges } from '@/services/badges/BadgeChecker';
@@ -73,28 +74,37 @@ export function useBadges() {
     const qc = useQueryClient();
 
     const badgesQuery = useQuery({
-        queryKey: ['badges', user?.id],
+        queryKey: ['badges', user?.uid],
         queryFn: async (): Promise<BadgeWithStatus[]> => {
             if (!user) return [];
 
             try {
-                const { data: allBadges, error: badgesErr } = await supabase.from('badges').select('*');
-                if (badgesErr) throw badgesErr;
+                const snapshot = await getDocs(collection(db, 'users', user.uid, 'user_badges'));
+                // badge_id in Firestore is the badge name (from BADGE_DEFINITIONS)
+                const earnedMap = new Map(
+                    snapshot.docs.map((d) => {
+                        const data = d.data();
+                        return [data.badge_id as string, data.earned_at as string];
+                    })
+                );
 
-                const { data: userBadges } = await supabase
-                    .from('user_badges')
-                    .select('*')
-                    .eq('user_id', user.id);
-
-                const earnedMap = new Map((userBadges ?? []).map((ub) => [ub.badge_id, ub]));
-
-                return (allBadges ?? []).map((badge) => {
-                    const earned = earnedMap.get(badge.id);
-                    return { ...badge, earned: !!earned, earned_at: earned?.earned_at ?? null };
+                return BADGE_DEFINITIONS.map((def, i) => {
+                    const earnedAt = earnedMap.get(def.name) ?? null;
+                    return {
+                        id: `badge-${i}`,
+                        name: def.name,
+                        description: def.description,
+                        type: def.type,
+                        tier: def.tier,
+                        requirement: def.requirement,
+                        icon_name: def.icon_name,
+                        created_at: new Date().toISOString(),
+                        earned: !!earnedAt,
+                        earned_at: earnedAt,
+                    } as BadgeWithStatus;
                 });
             } catch {
-                // Offline fallback: compute locally from SQLite
-                return computeBadgesLocally(user.id);
+                return computeBadgesLocally(user.uid);
             }
         },
         enabled: !!user,
@@ -105,16 +115,15 @@ export function useBadges() {
         if (!user) return;
 
         try {
-            const newBadges = await checkAndAwardBadges(user.id, habitId);
+            const newBadges = await checkAndAwardBadges(user.uid, habitId);
             if (newBadges.length > 0) {
-                qc.invalidateQueries({ queryKey: ['badges', user.id] });
+                qc.invalidateQueries({ queryKey: ['badges', user.uid] });
                 showCelebration({ ...newBadges[0].badge, earned: true, earned_at: new Date().toISOString() });
             }
         } catch {
-            // Offline: recompute locally and detect newly earned
-            const prev = qc.getQueryData<BadgeWithStatus[]>(['badges', user.id]) ?? [];
-            const next = await computeBadgesLocally(user.id);
-            qc.setQueryData(['badges', user.id], next);
+            const prev = qc.getQueryData<BadgeWithStatus[]>(['badges', user.uid]) ?? [];
+            const next = await computeBadgesLocally(user.uid);
+            qc.setQueryData(['badges', user.uid], next);
 
             const prevEarnedIds = new Set(prev.filter((b) => b.earned).map((b) => b.id));
             const newlyEarned = next.filter((b) => b.earned && !prevEarnedIds.has(b.id));

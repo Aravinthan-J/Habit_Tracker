@@ -1,17 +1,85 @@
-import { Database } from './database.types';
+export interface Metric {
+    id: string;
+    user_id: string;
+    habit_id: string | null;
+    name: string;
+    type: 'numeric' | 'boolean' | 'slider' | 'time';
+    unit: string;
+    target_value: number | null;
+    created_at: string;
+}
 
-export type Metric = Database['public']['Tables']['custom_metrics']['Row'];
-export type MetricInsert = Database['public']['Tables']['custom_metrics']['Insert'];
-export type MetricUpdate = Database['public']['Tables']['custom_metrics']['Update'];
+export interface MetricInsert {
+    id?: string;
+    user_id: string;
+    habit_id?: string | null;
+    name: string;
+    type?: 'numeric' | 'boolean' | 'slider' | 'time';
+    unit: string;
+    target_value?: number | null;
+    created_at?: string;
+}
 
-export type MetricLog = Database['public']['Tables']['metric_logs']['Row'];
-export type MetricLogInsert = Database['public']['Tables']['metric_logs']['Insert'];
+export interface MetricUpdate {
+    name?: string;
+    type?: 'numeric' | 'boolean' | 'slider' | 'time';
+    unit?: string;
+    target_value?: number | null;
+}
 
-export type FocusSession = Database['public']['Tables']['focus_sessions']['Row'];
-export type FocusSessionInsert = Database['public']['Tables']['focus_sessions']['Insert'];
+export interface MetricLog {
+    id: string;
+    metric_id: string;
+    user_id: string;
+    value: number;
+    date: string;
+    created_at: string;
+}
 
-export type Achievement = Database['public']['Tables']['achievements']['Row'];
-export type AchievementInsert = Database['public']['Tables']['achievements']['Insert'];
+export interface MetricLogInsert {
+    id?: string;
+    metric_id: string;
+    user_id: string;
+    value: number;
+    date: string;
+    created_at?: string;
+}
+
+export interface FocusSession {
+    id: string;
+    user_id: string;
+    duration: number;
+    started_at: string;
+    ended_at: string;
+    interrupted: boolean;
+}
+
+export interface FocusSessionInsert {
+    id?: string;
+    user_id: string;
+    duration: number;
+    started_at: string;
+    ended_at: string;
+    interrupted: boolean;
+}
+
+export interface Achievement {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string;
+    icon: string;
+    earned_at: string;
+}
+
+export interface AchievementInsert {
+    id?: string;
+    user_id: string;
+    title: string;
+    description: string;
+    icon: string;
+    earned_at?: string;
+}
 
 export interface FocusSessionStats {
     totalDuration: number;

@@ -1,41 +1,43 @@
 import { useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import {
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    updateProfile,
+    signOut as firebaseSignOut,
+    sendPasswordResetEmail,
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { isValidEmail, isValidPassword } from '@/utils/validators';
 
 export function useAuth() {
-    const { user, session, isLoading, isOffline, setSession, setLoading, setupDummyUser, clear } = useAuthStore();
+    const { user, isLoading, isOffline, setUser, setLoading, setupDummyUser, clear } = useAuthStore();
 
     useEffect(() => {
         let mounted = true;
 
-        // If Supabase is unreachable, fall back to offline/dummy mode after 5s
+        // Fallback to offline/dummy mode if Firebase doesn't respond within 5s
         const sessionTimeout = setTimeout(() => {
             if (mounted && isLoading) setupDummyUser();
         }, 5000);
 
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             clearTimeout(sessionTimeout);
             if (mounted) {
-                setSession(session);
+                setUser(firebaseUser);
                 setLoading(false);
             }
-        }).catch(() => {
+        }, () => {
             clearTimeout(sessionTimeout);
             if (mounted) setupDummyUser();
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (mounted) {
-                setSession(session);
-                setLoading(false);
-            }
         });
 
         return () => {
             mounted = false;
             clearTimeout(sessionTimeout);
-            subscription.unsubscribe();
+            unsubscribe();
         };
     }, []);
 
@@ -45,8 +47,12 @@ export function useAuth() {
         if (isOffline) return offlineError;
         if (!isValidEmail(email)) return { error: { message: 'Invalid email address' } };
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        return { data, error };
+        try {
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            return { data: result, error: null };
+        } catch (err: any) {
+            return { data: null, error: { message: err.message } };
+        }
     };
 
     const signUp = async (email: string, password: string, name: string) => {
@@ -55,27 +61,41 @@ export function useAuth() {
         const { valid, errors } = isValidPassword(password);
         if (!valid) return { error: { message: errors.join(', ') } };
 
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { name } },
-        });
+        try {
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(result.user, { displayName: name });
 
-        if (!error && data.user) {
-            await supabase.from('profiles').insert({ id: data.user.id, email, name });
+            // Write profile document to Firestore
+            await setDoc(doc(db, 'users', result.user.uid), {
+                email,
+                name,
+                step_goal: 10000,
+                reminder_time: '20:00',
+                timezone: 'UTC',
+                theme: 'dark',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            });
+
+            return { data: result, error: null };
+        } catch (err: any) {
+            return { data: null, error: { message: err.message } };
         }
-
-        return { data, error };
     };
 
     const signOut = async () => {
-        await supabase.auth.signOut();
+        await firebaseSignOut(auth);
         clear();
     };
 
     const resetPassword = async (email: string) => {
-        return await supabase.auth.resetPasswordForEmail(email);
+        try {
+            await sendPasswordResetEmail(auth, email);
+            return { data: {}, error: null };
+        } catch (err: any) {
+            return { data: null, error: { message: err.message } };
+        }
     };
 
-    return { user, session, isLoading, signIn, signUp, signOut, resetPassword };
+    return { user, isLoading, signIn, signUp, signOut, resetPassword };
 }

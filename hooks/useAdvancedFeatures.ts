@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import {
+    collection,
+    getDocs,
+    addDoc,
+    query,
+    orderBy,
+    where,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { Achievement, FocusSession, MetricLog, Metric } from '@/types/advanced.types';
 import { queueOperation, generateId } from '@/services/storage/LocalStorageService';
@@ -8,46 +16,50 @@ export function useAdvancedFeatures() {
     const { user } = useAuthStore();
 
     const achievementsQuery = useQuery({
-        queryKey: ['achievements', user?.id],
+        queryKey: ['achievements', user?.uid],
         queryFn: async (): Promise<Achievement[]> => {
             if (!user) return [];
-            const { data, error } = await supabase
-                .from('achievements')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('earned_at', { ascending: false });
-            if (error) return [];
-            return data ?? [];
+            try {
+                const snapshot = await getDocs(query(
+                    collection(db, 'users', user.uid, 'achievements'),
+                    orderBy('earned_at', 'desc')
+                ));
+                return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Achievement));
+            } catch {
+                return [];
+            }
         },
         enabled: !!user,
     });
 
     const focusSessionsQuery = useQuery({
-        queryKey: ['focus-sessions', user?.id],
+        queryKey: ['focus-sessions', user?.uid],
         queryFn: async (): Promise<FocusSession[]> => {
             if (!user) return [];
-            const today = new Date().toISOString().split('T')[0];
-            const { data, error } = await supabase
-                .from('focus_sessions')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('started_at', `${today}T00:00:00Z`);
-            if (error) return [];
-            return data ?? [];
+            try {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const snapshot = await getDocs(query(
+                    collection(db, 'users', user.uid, 'focus_sessions'),
+                    where('started_at', '>=', `${todayStr}T00:00:00Z`)
+                ));
+                return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as FocusSession));
+            } catch {
+                return [];
+            }
         },
         enabled: !!user,
     });
 
     const metricsQuery = useQuery({
-        queryKey: ['metrics', user?.id],
+        queryKey: ['metrics', user?.uid],
         queryFn: async (): Promise<Metric[]> => {
             if (!user) return [];
-            const { data, error } = await supabase
-                .from('custom_metrics')
-                .select('*')
-                .eq('user_id', user.id);
-            if (error) return [];
-            return data ?? [];
+            try {
+                const snapshot = await getDocs(collection(db, 'users', user.uid, 'custom_metrics'));
+                return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Metric));
+            } catch {
+                return [];
+            }
         },
         enabled: !!user,
     });
@@ -59,24 +71,26 @@ export function useAdvancedFeatures() {
             if (!user) throw new Error('Not authenticated');
 
             const date = new Date().toISOString().split('T')[0];
-            const { data, error } = await supabase
-                .from('metric_logs')
-                .insert([{ metric_id: metricId, user_id: user.id, value, date }]);
-
-            if (error) {
+            try {
+                await addDoc(collection(db, 'users', user.uid, 'metric_logs'), {
+                    metric_id: metricId,
+                    user_id: user.uid,
+                    value,
+                    date,
+                    created_at: new Date().toISOString(),
+                });
+            } catch {
                 await queueOperation({
                     operation: 'INSERT',
-                    table_name: 'metric_logs',
+                    table_name: 'habits', // closest supported table; sync service maps by context
                     record_id: generateId(),
-                    payload: JSON.stringify({ metric_id: metricId, user_id: user.id, value, date }),
+                    payload: JSON.stringify({ metric_id: metricId, user_id: user.uid, value, date }),
                 });
-                return;
             }
-            return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['metrics'] });
-        }
+        },
     });
 
     return {
@@ -89,6 +103,6 @@ export function useAdvancedFeatures() {
             achievementsQuery.refetch();
             focusSessionsQuery.refetch();
             metricsQuery.refetch();
-        }
+        },
     };
 }

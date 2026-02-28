@@ -1,0 +1,35 @@
+mutation SeedData @auth(level: PUBLIC, insecureReason: "This operation is for seeding data and is safe to expose to the public.") {
+  habit1: habit_insert(data: {
+    name: "Drink Water",
+    createdAt: "2023-01-01T00:00:00Z",
+    reminderTime: "08:00",
+    reminderDays: ["Monday", "Wednesday", "Friday"]
+  })
+  habit2: habit_insert(data: {
+    name: "Exercise",
+    createdAt: "2023-01-02T00:00:00Z",
+    reminderTime: "07:00",
+    reminderDays: ["Tuesday", "Thursday", "Saturday"]
+  })
+  habit3: habit_insert(data: {
+    name: "Read Book",
+    createdAt: "2023-01-03T00:00:00Z",
+    reminderTime: "21:00",
+    reminderDays: ["Sunday"]
+  })
+  userConfig1: userConfig_insert(data: {
+    theme: "Dark",
+    lastAccessed: "2023-10-26T10:00:00Z",
+    notificationsEnabled: true
+  })
+  dailyLog1: dailyLog_insert(data: {
+    habit: {id: "00000000-0000-0000-0000-000000000001"}, # Placeholder, replace with actual ID from habit1
+    date: "2023-10-25",
+    status: "Completed"
+  })
+  dailyLog2: dailyLog_insert(data: {
+    habit: {id: "00000000-0000-0000-0000-000000000002"}, # Placeholder, replace with actual ID from habit2
+    date: "2023-10-25",
+    status: "Missed"
+  })
+}
