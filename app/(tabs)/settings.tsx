@@ -260,7 +260,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="document-text-outline"
             label="Privacy Policy"
-            onPress={() => Linking.openURL('https://habity.app/privacy')}
+            onPress={() => router.push('/privacy')}
           />
           <SettingsRow
             icon="help-circle-outline"
