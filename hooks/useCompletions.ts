@@ -4,7 +4,7 @@ import {
     query,
     where,
     getDocs,
-    addDoc,
+    setDoc,
     deleteDoc,
     doc,
 } from 'firebase/firestore';
@@ -15,7 +15,6 @@ import {
     saveCompletionLocally,
     deleteCompletionLocally,
     getLocalCompletions,
-    generateId,
     queueOperation,
 } from '@/services/storage/LocalStorageService';
 import { Completion } from '@/types/habit.types';
@@ -66,54 +65,53 @@ export function useCompletions(startDate?: string, endDate?: string) {
             if (!user) throw new Error('Not authenticated');
 
             if (isCompleted) {
+                const compositeId = `${habitId}_${date}`;
                 try {
-                    // Find and delete the Firestore document
-                    const q = query(
-                        collection(db, 'users', user.uid, 'completions'),
-                        where('habit_id', '==', habitId),
-                        where('date', '==', date)
-                    );
-                    const snapshot = await getDocs(q);
-                    for (const d of snapshot.docs) {
-                        await deleteDoc(doc(db, 'users', user.uid, 'completions', d.id));
-                    }
+                    await deleteDoc(doc(db, 'users', user.uid, 'completions', compositeId));
+                    await setDoc(
+                        doc(db, 'users', user.uid, 'daily', date),
+                        { [habitId]: false },
+                        { merge: true }
+                    ).catch(() => {});
                 } catch {
                     await queueOperation({
                         operation: 'DELETE',
                         table_name: 'completions',
-                        record_id: `${habitId}-${date}`,
+                        record_id: compositeId,
                         payload: JSON.stringify({ habit_id: habitId, date }),
                     });
                 }
                 await deleteCompletionLocally(habitId, date);
             } else {
+                const compositeId = `${habitId}_${date}`;
+                const completed_at = new Date().toISOString();
                 const newCompletion: Completion = {
-                    id: generateId(),
+                    id: compositeId,
                     habit_id: habitId,
                     user_id: user.uid,
                     date,
-                    completed_at: new Date().toISOString(),
+                    completed_at,
                 };
                 try {
-                    const docRef = await addDoc(
-                        collection(db, 'users', user.uid, 'completions'),
-                        {
-                            habit_id: habitId,
-                            user_id: user.uid,
-                            date,
-                            completed_at: newCompletion.completed_at,
-                        }
+                    await setDoc(
+                        doc(db, 'users', user.uid, 'completions', compositeId),
+                        { habit_id: habitId, user_id: user.uid, date, completed_at }
                     );
-                    const saved = { ...newCompletion, id: docRef.id };
+                    await setDoc(
+                        doc(db, 'users', user.uid, 'daily', date),
+                        { [habitId]: true },
+                        { merge: true }
+                    ).catch(() => {});
+                    const saved = { ...newCompletion, id: compositeId };
                     await saveCompletionLocally(saved);
                     return saved;
                 } catch {
                     await saveCompletionLocally(newCompletion);
                     await queueOperation({
-                        operation: 'INSERT',
+                        operation: 'SET',
                         table_name: 'completions',
-                        record_id: newCompletion.id,
-                        payload: JSON.stringify(newCompletion),
+                        record_id: compositeId,
+                        payload: JSON.stringify({ habit_id: habitId, user_id: user.uid, date, completed_at }),
                     });
                     return newCompletion;
                 }

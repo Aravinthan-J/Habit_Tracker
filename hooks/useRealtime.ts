@@ -41,10 +41,16 @@ export function useRealtime() {
             () => qc.invalidateQueries({ queryKey: ['badges', uid] }),
         );
 
+        const unsubDaily = safeSnapshot(
+            collection(db, 'users', uid, 'daily'),
+            () => qc.invalidateQueries({ queryKey: ['completions', uid] }),
+        );
+
         return () => {
             unsubHabits();
             unsubCompletions();
             unsubBadges();
+            unsubDaily();
         };
     }, [user?.uid]);
 }
