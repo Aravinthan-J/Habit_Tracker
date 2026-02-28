@@ -19,7 +19,10 @@
       "infoPlist": {
         "NSMotionUsageDescription": "Habity uses motion sensors to track your daily steps and activity goals.",
         "NSUserNotificationUsageDescription": "Habity sends you reminders to complete your daily habits.",
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -55,7 +58,8 @@
         {
           "enableFTS": false
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

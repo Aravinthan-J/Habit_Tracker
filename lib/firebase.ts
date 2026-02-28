@@ -26,3 +26,7 @@ function getFirebaseAuth() {
 
 export const auth = getFirebaseAuth();
 export const db = getFirestore(app);
+
+// Find this in: Firebase Console → Authentication → Sign-in method
+// → Google → Web SDK configuration → Web client ID
+export const GOOGLE_WEB_CLIENT_ID = 'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com';

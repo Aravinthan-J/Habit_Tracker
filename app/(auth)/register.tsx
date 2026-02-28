@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,17 @@ import {
   Platform,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { GoogleButton } from '@/components/ui/GoogleButton';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { passwordStrength } from '@/utils/validators';
+import { GOOGLE_WEB_CLIENT_ID } from '@/lib/firebase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const STRENGTH_COLORS = ['#F44336', '#FF9800', '#FFEB3B', '#4CAF50'];
 const STRENGTH_LABELS = ['Weak', 'Fair', 'Good', 'Strong'];
@@ -25,10 +31,36 @@ export default function RegisterScreen() {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   const strength = passwordStrength(password);
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      if (id_token) handleGoogleResponse(id_token);
+    } else if (response?.type === 'error') {
+      setError(response.error?.message ?? 'Google sign-in failed.');
+    }
+  }, [response]);
+
+  const handleGoogleResponse = async (idToken: string) => {
+    setIsGoogleLoading(true);
+    setError(null);
+    const { error: authError } = await signInWithGoogle(idToken);
+    setIsGoogleLoading(false);
+    if (authError) {
+      setError(authError.message);
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
 
   const handleRegister = async () => {
     setError(null);
@@ -71,6 +103,20 @@ export default function RegisterScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Start your habit journey</Text>
+        </View>
+
+        {/* Google Sign-Up */}
+        <GoogleButton
+          onPress={() => { setError(null); promptAsync(); }}
+          loading={isGoogleLoading}
+          label="Sign up with Google"
+        />
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or sign up with email</Text>
+          <View style={styles.dividerLine} />
         </View>
 
         <Input
@@ -185,6 +231,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   subtitle: { color: COLORS.textSecondary },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginVertical: SPACING.xl,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
+  dividerText: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.xs },
   strengthContainer: {
     marginTop: -SPACING.md,
     marginBottom: SPACING.lg,

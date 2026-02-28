@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,50 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { GoogleButton } from '@/components/ui/GoogleButton';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { GOOGLE_WEB_CLIENT_ID } from '@/lib/firebase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      if (id_token) handleGoogleResponse(id_token);
+    } else if (response?.type === 'error') {
+      setError(response.error?.message ?? 'Google sign-in failed.');
+    }
+  }, [response]);
+
+  const handleGoogleResponse = async (idToken: string) => {
+    setIsGoogleLoading(true);
+    setError(null);
+    const { error: authError } = await signInWithGoogle(idToken);
+    setIsGoogleLoading(false);
+    if (authError) {
+      setError(authError.message);
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
 
   const handleLogin = async () => {
     setError(null);
@@ -29,7 +61,6 @@ export default function LoginScreen() {
       setError('Please fill in all fields.');
       return;
     }
-
     setIsLoading(true);
     try {
       const { error: authError } = await signIn(email.trim(), password);
@@ -69,6 +100,20 @@ export default function LoginScreen() {
         <View style={styles.form}>
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
+
+          {/* Google Sign-In */}
+          <GoogleButton
+            onPress={() => { setError(null); promptAsync(); }}
+            loading={isGoogleLoading}
+            label="Continue with Google"
+          />
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <Input
             label="Email"
@@ -150,6 +195,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   subtitle: { color: COLORS.textSecondary, marginBottom: SPACING.xl },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginVertical: SPACING.xl,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
+  dividerText: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm },
   error: {
     color: COLORS.error,
     fontSize: TYPOGRAPHY.sm,

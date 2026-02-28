@@ -6,6 +6,8 @@ import {
     updateProfile,
     signOut as firebaseSignOut,
     sendPasswordResetEmail,
+    GoogleAuthProvider,
+    signInWithCredential,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -71,5 +73,25 @@ export function useAuth() {
         }
     };
 
-    return { user, isLoading, signIn, signUp, signOut, resetPassword };
+    const signInWithGoogle = async (idToken: string) => {
+        try {
+            const credential = GoogleAuthProvider.credential(idToken);
+            const result = await signInWithCredential(auth, credential);
+            // Create or update Firestore profile (merge so existing data is preserved)
+            await setDoc(doc(db, 'users', result.user.uid), {
+                email: result.user.email,
+                name: result.user.displayName,
+                step_goal: 10000,
+                reminder_time: '20:00',
+                timezone: 'UTC',
+                theme: 'dark',
+                updated_at: new Date().toISOString(),
+            }, { merge: true });
+            return { data: result, error: null };
+        } catch (err: any) {
+            return { data: null, error: { message: err.message } };
+        }
+    };
+
+    return { user, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle };
 }
