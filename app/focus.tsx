@@ -1,159 +1,369 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import {
+    StyleSheet,
+    View,
+    Text,
+    TouchableOpacity,
+    Dimensions,
+    ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Accelerometer } from 'expo-sensors';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
-import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
 
+const DURATIONS = [
+    { label: '25 min', value: 25 * 60 },
+    { label: '45 min', value: 45 * 60 },
+    { label: '60 min', value: 60 * 60 },
+];
+
 export default function FocusMode() {
-    const [isActive, setIsActive] = useState(false);
+    const router = useRouter();
+    const [selectedDuration, setSelectedDuration] = useState(25 * 60);
     const [seconds, setSeconds] = useState(25 * 60);
+    const [isActive, setIsActive] = useState(false);
     const [isFaceDown, setIsFaceDown] = useState(false);
     const subscription = useRef<any>(null);
+    const prevFaceDown = useRef(false);
 
+    // Accelerometer: detect face-down to auto-start
     useEffect(() => {
-        _subscribe();
-        return () => _unsubscribe();
+        subscription.current = Accelerometer.addListener((data) => {
+            const faceDown = data.z < -0.8;
+            setIsFaceDown(faceDown);
+
+            // Auto-start when flipped face down, auto-pause when picked up
+            if (faceDown && !prevFaceDown.current) {
+                setIsActive(true);
+            } else if (!faceDown && prevFaceDown.current) {
+                setIsActive(false);
+            }
+            prevFaceDown.current = faceDown;
+        });
+        Accelerometer.setUpdateInterval(500);
+        return () => {
+            subscription.current?.remove();
+            subscription.current = null;
+        };
     }, []);
 
+    // Timer countdown — runs whenever isActive, no face-down requirement
     useEffect(() => {
-        let interval: any;
-        if (isActive && seconds > 0 && isFaceDown) {
-            interval = setInterval(() => {
-                setSeconds((prev) => prev - 1);
-            }, 1000);
+        let interval: ReturnType<typeof setInterval>;
+        if (isActive && seconds > 0) {
+            interval = setInterval(() => setSeconds((s) => s - 1), 1000);
         } else if (seconds === 0) {
             setIsActive(false);
         }
         return () => clearInterval(interval);
-    }, [isActive, seconds, isFaceDown]);
+    }, [isActive, seconds]);
 
-    const _subscribe = () => {
-        subscription.current = Accelerometer.addListener((accelerometerData) => {
-            const faceDown = accelerometerData.z < -0.9;
-            setIsFaceDown(faceDown);
-        });
-        Accelerometer.setUpdateInterval(500);
+    const formatTime = (total: number) => {
+        const m = Math.floor(total / 60).toString().padStart(2, '0');
+        const s = (total % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
     };
 
-    const _unsubscribe = () => {
-        subscription.current && subscription.current.remove();
-        subscription.current = null;
+    const progress = 1 - seconds / selectedDuration;
+
+    const handleToggle = () => {
+        if (isActive) {
+            setIsActive(false);
+        } else {
+            setIsActive(true);
+        }
     };
 
-    const formatTime = (totalSeconds: number) => {
-        const mins = Math.floor(totalSeconds / 60);
-        const secs = totalSeconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const handleReset = () => {
+        setIsActive(false);
+        setSeconds(selectedDuration);
     };
 
-    const toggleFocus = () => {
-        setIsActive(!isActive);
+    const handleDurationSelect = (value: number) => {
+        if (isActive) return; // don't change while running
+        setSelectedDuration(value);
+        setSeconds(value);
     };
+
+    const circumference = Math.PI * (width * 0.65);
+    const strokeDashoffset = circumference * (1 - progress);
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Analog Focus</Text>
-                <Text style={styles.subtitle}>
-                    Flip your phone face down to start
-                </Text>
-            </View>
+        <SafeAreaView style={styles.safe}>
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-            <View style={styles.timerContainer}>
-                <Text style={[styles.timer, { color: isActive ? COLORS.primary : COLORS.textMuted }]}>
-                    {formatTime(seconds)}
-                </Text>
-            </View>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Focus Mode</Text>
+                    <View style={{ width: 40 }} />
+                </View>
 
-            <View style={styles.statusContainer}>
-                {isFaceDown ? (
-                    <View style={styles.statusRow}>
-                        <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
-                        <Text style={[styles.statusText, { color: COLORS.success }]}>
-                            Focused & Face Down
-                        </Text>
+                {/* Duration selector */}
+                <View style={styles.durationRow}>
+                    {DURATIONS.map((d) => (
+                        <TouchableOpacity
+                            key={d.value}
+                            style={[
+                                styles.durationChip,
+                                selectedDuration === d.value && styles.durationChipActive,
+                                isActive && { opacity: 0.4 },
+                            ]}
+                            onPress={() => handleDurationSelect(d.value)}
+                            disabled={isActive}
+                        >
+                            <Text style={[
+                                styles.durationChipText,
+                                selectedDuration === d.value && styles.durationChipTextActive,
+                            ]}>
+                                {d.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Timer ring */}
+                <View style={styles.ringWrapper}>
+                    <View style={[styles.ringOuter, { borderColor: COLORS.surface }]}>
+                        <View style={[
+                            styles.ringProgress,
+                            {
+                                borderColor: seconds === 0
+                                    ? COLORS.success
+                                    : isActive ? COLORS.primary : COLORS.textMuted + '40',
+                            },
+                        ]} />
+                        <View style={styles.ringInner}>
+                            <Text style={[
+                                styles.timerText,
+                                { color: isActive ? COLORS.textPrimary : COLORS.textMuted },
+                            ]}>
+                                {formatTime(seconds)}
+                            </Text>
+                            {seconds === 0 ? (
+                                <Text style={[styles.timerLabel, { color: COLORS.success }]}>Complete! 🎉</Text>
+                            ) : (
+                                <Text style={styles.timerLabel}>
+                                    {isActive ? 'Focusing…' : 'Ready'}
+                                </Text>
+                            )}
+                        </View>
                     </View>
-                ) : (
-                    <View style={styles.statusRow}>
-                        <Ionicons name="alert-circle" size={24} color={COLORS.textMuted} />
-                        <Text style={[styles.statusText, { color: COLORS.textMuted }]}>
-                            Flip phone down to deep work
+                </View>
+
+                {/* Face-down status */}
+                <View style={styles.statusRow}>
+                    <Ionicons
+                        name={isFaceDown ? 'phone-portrait-outline' : 'phone-portrait-outline'}
+                        size={18}
+                        color={isFaceDown ? COLORS.success : COLORS.textMuted}
+                    />
+                    <Text style={[styles.statusText, { color: isFaceDown ? COLORS.success : COLORS.textMuted }]}>
+                        {isFaceDown
+                            ? 'Phone face-down — auto-pauses if picked up'
+                            : 'Flip phone face-down to auto-start'}
+                    </Text>
+                </View>
+
+                {/* Controls */}
+                <View style={styles.controls}>
+                    <TouchableOpacity
+                        style={styles.resetBtn}
+                        onPress={handleReset}
+                        disabled={seconds === selectedDuration && !isActive}
+                    >
+                        <Ionicons name="refresh" size={22} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.mainBtn,
+                            {
+                                backgroundColor: seconds === 0
+                                    ? COLORS.success
+                                    : isActive ? COLORS.secondary : COLORS.primary,
+                            },
+                        ]}
+                        onPress={seconds === 0 ? handleReset : handleToggle}
+                    >
+                        <Ionicons
+                            name={seconds === 0 ? 'refresh' : isActive ? 'pause' : 'play'}
+                            size={32}
+                            color="#fff"
+                        />
+                    </TouchableOpacity>
+
+                    <View style={{ width: 52 }} />
+                </View>
+
+                {/* Tips */}
+                {!isActive && seconds === selectedDuration && (
+                    <View style={styles.tipCard}>
+                        <Text style={styles.tipTitle}>💡 How to use</Text>
+                        <Text style={styles.tipText}>
+                            Press Play or flip your phone face-down to start the timer.
+                            Picking the phone back up will auto-pause your session.
                         </Text>
                     </View>
                 )}
-            </View>
-
-            <TouchableOpacity
-                style={[styles.button, { backgroundColor: isActive ? COLORS.secondary : COLORS.primary }]}
-                onPress={toggleFocus}
-            >
-                <Text style={styles.buttonText}>{isActive ? 'STOP SESSION' : 'START FOCUS'}</Text>
-            </TouchableOpacity>
-        </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
+const RING_SIZE = width * 0.72;
+
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING.xl,
-        backgroundColor: COLORS.background,
-    },
+    safe: { flex: 1, backgroundColor: COLORS.background },
+    scroll: { flexGrow: 1, paddingBottom: 40 },
+
     header: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: SPACING.xxxl,
+        justifyContent: 'space-between',
+        paddingHorizontal: SPACING.lg,
+        paddingTop: SPACING.md,
+        paddingBottom: SPACING.sm,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
     },
     title: {
-        fontSize: TYPOGRAPHY.xxxl,
-        fontWeight: TYPOGRAPHY.bold,
-        marginBottom: SPACING.xs,
         color: COLORS.textPrimary,
+        fontSize: TYPOGRAPHY.xl,
+        fontWeight: TYPOGRAPHY.bold,
     },
-    subtitle: {
-        fontSize: TYPOGRAPHY.md,
-        textAlign: 'center',
-        color: COLORS.textSecondary,
+
+    durationRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: SPACING.sm,
+        marginVertical: SPACING.lg,
+        paddingHorizontal: SPACING.xl,
     },
-    timerContainer: {
-        width: width * 0.7,
-        height: width * 0.7,
-        borderRadius: (width * 0.7) / 2,
-        borderWidth: 4,
-        borderColor: 'rgba(255,255,255,0.1)',
+    durationChip: {
+        flex: 1,
+        paddingVertical: SPACING.sm,
+        borderRadius: RADIUS.full,
+        borderWidth: 1.5,
+        borderColor: COLORS.cardBorder,
+        alignItems: 'center',
+        backgroundColor: COLORS.surface,
+    },
+    durationChipActive: {
+        backgroundColor: COLORS.primary + '22',
+        borderColor: COLORS.primary,
+    },
+    durationChipText: {
+        color: COLORS.textMuted,
+        fontSize: TYPOGRAPHY.sm,
+        fontWeight: TYPOGRAPHY.medium,
+    },
+    durationChipTextActive: {
+        color: COLORS.primary,
+        fontWeight: TYPOGRAPHY.bold,
+    },
+
+    ringWrapper: {
+        alignItems: 'center',
+        marginVertical: SPACING.xl,
+    },
+    ringOuter: {
+        width: RING_SIZE,
+        height: RING_SIZE,
+        borderRadius: RING_SIZE / 2,
+        borderWidth: 6,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: SPACING.xxxl,
     },
-    timer: {
-        fontSize: 64,
+    ringProgress: {
+        position: 'absolute',
+        width: RING_SIZE,
+        height: RING_SIZE,
+        borderRadius: RING_SIZE / 2,
+        borderWidth: 6,
+        borderTopColor: 'transparent',
+        borderRightColor: 'transparent',
+    },
+    ringInner: {
+        alignItems: 'center',
+    },
+    timerText: {
+        fontSize: 56,
         fontWeight: TYPOGRAPHY.extrabold,
+        letterSpacing: 2,
     },
-    statusContainer: {
-        marginBottom: SPACING.xxxl,
+    timerLabel: {
+        color: COLORS.textMuted,
+        fontSize: TYPOGRAPHY.sm,
+        marginTop: 4,
+        letterSpacing: 0.5,
     },
+
     statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: SPACING.sm,
+        marginBottom: SPACING.xl,
+        paddingHorizontal: SPACING.xl,
     },
     statusText: {
-        marginLeft: SPACING.sm,
-        fontSize: TYPOGRAPHY.md,
-        fontWeight: TYPOGRAPHY.medium,
+        fontSize: TYPOGRAPHY.sm,
+        textAlign: 'center',
+        flex: 1,
     },
-    button: {
-        width: '100%',
-        paddingVertical: SPACING.lg,
-        borderRadius: RADIUS.lg,
+
+    controls: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: SPACING.xl,
+        marginBottom: SPACING.xl,
+    },
+    resetBtn: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: COLORS.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+    },
+    mainBtn: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: TYPOGRAPHY.lg,
-        fontWeight: TYPOGRAPHY.bold,
+
+    tipCard: {
+        marginHorizontal: SPACING.xl,
+        backgroundColor: COLORS.surface,
+        borderRadius: RADIUS.lg,
+        padding: SPACING.lg,
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+    },
+    tipTitle: {
+        color: COLORS.textPrimary,
+        fontSize: TYPOGRAPHY.md,
+        fontWeight: TYPOGRAPHY.semibold,
+        marginBottom: SPACING.xs,
+    },
+    tipText: {
+        color: COLORS.textSecondary,
+        fontSize: TYPOGRAPHY.sm,
+        lineHeight: 20,
     },
 });
