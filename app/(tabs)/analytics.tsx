@@ -5,10 +5,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useUIStore } from '@/store/uiStore';
+import { Metric } from '@/types/advanced.types';
 import { StatsCard } from '@/components/analytics/StatsCard';
 import { LineChart } from '@/components/analytics/LineChart';
 import { BarChart } from '@/components/analytics/BarChart';
 import { InsightCard } from '@/components/analytics/InsightCard';
+import MetricLogger from '@/components/MetricLogger';
+import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { getLast30Days } from '@/utils/dateHelpers';
@@ -18,6 +21,7 @@ import { useAuthStore } from '@/store/authStore';
 
 export default function AnalyticsScreen() {
   const { data, isLoading } = useAnalytics();
+  const { metrics, logMetric } = useAdvancedFeatures();
   const { incrementAnalyticsView, premiumTheme } = useUIStore();
   const { user } = useAuthStore();
 
@@ -123,6 +127,20 @@ export default function AnalyticsScreen() {
             <InsightCard key={i} insight={ins.text} type={ins.type} />
           ))}
         </View>
+
+        {/* Custom Metrics */}
+        {metrics && metrics.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Daily Tracking</Text>
+            {metrics.map((metric: Metric) => (
+              <MetricLogger
+                key={metric.id}
+                metric={metric}
+                onLog={(val) => logMetric.mutate({ metricId: metric.id, value: val })}
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

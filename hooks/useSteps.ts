@@ -37,7 +37,7 @@ export function useSteps() {
                     calories: pedData.calories,
                     active_minutes: pedData.activeMinutes,
                     source: 'pedometer',
-                }, { onConflict: 'user_id,date' }).then();
+                }, { onConflict: 'user_id,date' }).then().catch(() => {});
             }
 
             return pedData;
@@ -51,13 +51,17 @@ export function useSteps() {
         queryFn: async () => {
             if (!user) return [];
             const days = getLastNDays(7).reverse();
-            const { data } = await supabase
-                .from('step_data')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('date', days[0])
-                .lte('date', days[6]);
-            return data ?? [];
+            try {
+                const { data } = await supabase
+                    .from('step_data')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gte('date', days[0])
+                    .lte('date', days[6]);
+                return data ?? [];
+            } catch {
+                return [];
+            }
         },
         enabled: !!user,
         staleTime: 1000 * 60 * 5,

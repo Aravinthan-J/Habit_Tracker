@@ -63,7 +63,7 @@ export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
         ]}
       >
         {isCompleted && (
-          <Animated.View style={{ opacity: checkAnim }}>
+          <Animated.View style={{ opacity: checkAnim, justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name="checkmark" size={size * 0.55} color={COLORS.textPrimary} />
           </Animated.View>
         )}

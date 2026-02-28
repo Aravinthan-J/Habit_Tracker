@@ -4,11 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 
 export function useRealtime() {
-    const { user } = useAuthStore();
+    const { user, isOffline } = useAuthStore();
     const qc = useQueryClient();
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || isOffline) return;
 
         const habitsChannel = supabase
             .channel('habits-channel')
@@ -33,5 +33,5 @@ export function useRealtime() {
             completionsChannel.unsubscribe();
             badgesChannel.unsubscribe();
         };
-    }, [user?.id]);
+    }, [user?.id, isOffline]);
 }

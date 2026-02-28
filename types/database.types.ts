@@ -195,6 +195,7 @@ export interface Database {
                     user_id: string;
                     habit_id: string | null;
                     name: string;
+                    type: 'numeric' | 'boolean' | 'slider' | 'time';
                     unit: string;
                     target_value: number | null;
                     created_at: string;
@@ -204,12 +205,14 @@ export interface Database {
                     user_id: string;
                     habit_id?: string | null;
                     name: string;
+                    type?: 'numeric' | 'boolean' | 'slider' | 'time';
                     unit: string;
                     target_value?: number | null;
                     created_at?: string;
                 };
                 Update: {
                     name?: string;
+                    type?: 'numeric' | 'boolean' | 'slider' | 'time';
                     unit?: string;
                     target_value?: number | null;
                 };

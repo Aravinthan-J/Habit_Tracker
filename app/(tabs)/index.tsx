@@ -22,14 +22,28 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
-import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { MockDataService } from '@/services/MockDataService';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 
 export default function HomeScreen() {
-  const { user } = useAuthStore();
+  const { user, setupDummyUser } = useAuthStore();
   const { premiumTheme } = useUIStore();
   const colors = premiumTheme?.colors || COLORS;
+
+  useEffect(() => {
+    if (!user) {
+      setupDummyUser();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.id === MockDataService.DUMMY_USER_ID) {
+      MockDataService.seedDummyData();
+    }
+  }, [user]);
   const { habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
   const { todaySteps, liveSteps, isPedometerAvailable } = useSteps();
@@ -62,7 +76,7 @@ export default function HomeScreen() {
     await Promise.all([refetchHabits(), refetchAdvanced()]);
   };
 
-  const totalFocusMinutes = focusSessions.reduce((acc, s) => acc + s.duration, 0);
+  const totalFocusMinutes = focusSessions.reduce((acc: number, s: any) => acc + s.duration, 0);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
