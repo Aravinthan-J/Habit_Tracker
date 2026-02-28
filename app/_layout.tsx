@@ -58,6 +58,7 @@ function AppContent() {
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="badge/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="support" options={{ presentation: 'modal' }} />
         <Stack.Screen name="+not-found" />
       </Stack>
 

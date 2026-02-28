@@ -10,7 +10,6 @@ import {
   Modal,
   Animated,
   Dimensions,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -265,7 +264,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="help-circle-outline"
             label="Help & Support"
-            onPress={() => Linking.openURL('mailto:support@habity.app')}
+            onPress={() => router.push('/support')}
           />
         </Card>
 
