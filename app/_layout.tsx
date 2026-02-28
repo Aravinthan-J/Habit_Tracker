@@ -50,7 +50,7 @@ function AppContent() {
         onClose={hideCelebration}
       />
 
-      <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} />
+      {!!user && <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} />}
 
       <StatusBar style="light" />
     </>
