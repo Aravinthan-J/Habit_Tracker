@@ -17,6 +17,7 @@ import { HabitStats } from '@/components/habits/HabitStats';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { calculateCurrentStreak, calculateLongestStreak, completionRate } from '@/utils/streakCalculator';
+import { resolveIcon } from '@/utils/iconHelpers';
 
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -71,7 +72,7 @@ export default function HabitDetailScreen() {
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
         {/* Color accent banner */}
         <View style={[styles.colorBanner, { backgroundColor: habit.color + '22' }]}>
-          <Text style={styles.habitEmoji}>{habit.icon ?? '✨'}</Text>
+          <Text style={styles.habitEmoji}>{resolveIcon(habit.icon)}</Text>
           <View style={[styles.colorDot, { backgroundColor: habit.color }]} />
         </View>
 
