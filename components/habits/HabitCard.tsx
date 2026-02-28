@@ -11,6 +11,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme'
 import { Habit } from '@/types/habit.types';
 import { HabitCheckbox } from './HabitCheckbox';
 import { useHaptics } from '@/hooks/useHaptics';
+import { resolveIcon } from '@/utils/iconHelpers';
 
 interface HabitCardProps {
   habit: Habit;
@@ -58,7 +59,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
           <View style={styles.content}>
             <View style={styles.left}>
               <View style={[styles.iconCircle, { backgroundColor: habit.color + '25', borderColor: habit.color + '40', borderWidth: 1 }]}>
-                <Text style={styles.icon}>{habit.icon ?? '✨'}</Text>
+                <Text style={styles.icon}>{resolveIcon(habit.icon)}</Text>
               </View>
               <View style={styles.info}>
                 <Text style={[styles.title, { color: COLORS.textPrimary }]} numberOfLines={1}>{habit.title}</Text>

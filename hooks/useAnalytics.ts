@@ -23,18 +23,23 @@ function buildSummary(
     stepsMap: Record<string, number> = {},
 ): AnalyticsSummary {
     const activeHabits = habits.length;
+    const activeHabitIds = new Set(habits.map((h) => h.id));
+
+    // Only count completions for habits that still exist (ignore deleted habit completions)
+    const activeCompletions = completions.filter((c) => activeHabitIds.has(c.habit_id));
+
     const completionsByDate: Record<string, number> = {};
     const ratesByDate: Record<string, number> = {};
 
     for (const date of last30) {
-        const count = completions.filter((c) => c.date === date).length;
+        const count = activeCompletions.filter((c) => c.date === date).length;
         completionsByDate[date] = count;
-        ratesByDate[date] = activeHabits > 0 ? Math.round((count / activeHabits) * 100) : 0;
+        ratesByDate[date] = activeHabits > 0 ? Math.min(Math.round((count / activeHabits) * 100), 100) : 0;
     }
 
     let bestStreak = 0;
     for (const habit of habits) {
-        const dates = completions.filter((c) => c.habit_id === habit.id).map((c) => c.date);
+        const dates = activeCompletions.filter((c) => c.habit_id === habit.id).map((c) => c.date);
         const streak = calculateCurrentStreak(dates);
         if (streak > bestStreak) bestStreak = streak;
     }
@@ -48,7 +53,7 @@ function buildSummary(
     }));
 
     return {
-        totalCompletions: completions.length,
+        totalCompletions: activeCompletions.length,
         avgCompletionRate: Math.round(avgCompletionRate),
         bestStreak,
         activeHabits,

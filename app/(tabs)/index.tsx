@@ -34,9 +34,15 @@ export default function HomeScreen() {
   const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
 
   const todayStr = today();
+  const activeHabitIds = useMemo(() => new Set(habits.map((h) => h.id)), [habits]);
+
   const completedTodayIds = useMemo(
-    () => new Set(completions.filter((c) => c.date === todayStr).map((c) => c.habit_id)),
-    [completions, todayStr]
+    () => new Set(
+      completions
+        .filter((c) => c.date === todayStr && activeHabitIds.has(c.habit_id))
+        .map((c) => c.habit_id)
+    ),
+    [completions, todayStr, activeHabitIds]
   );
 
   const completedCount = completedTodayIds.size;

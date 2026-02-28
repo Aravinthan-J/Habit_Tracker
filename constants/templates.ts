@@ -11,7 +11,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     {
         title: 'Morning Meditation',
         description: 'Start your day with 10 minutes of mindfulness.',
-        icon: 'sunny',
+        icon: '☀️',
         color: '#FF9A3C',
         monthly_goal: 20,
         category: 'Mindfulness',
@@ -19,7 +19,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     {
         title: 'Deep Work Session',
         description: '90 minutes of focused, uninterrupted work.',
-        icon: 'laptop',
+        icon: '💻',
         color: '#6C63FF',
         monthly_goal: 15,
         category: 'Productivity',
@@ -27,7 +27,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     {
         title: 'Drink Water',
         description: 'Stay hydrated throughout the day.',
-        icon: 'water',
+        icon: '💧',
         color: '#06B6D4',
         monthly_goal: 25,
         category: 'Health',
@@ -35,7 +35,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     {
         title: 'Read 20 Pages',
         description: 'Keep growing by reading every day.',
-        icon: 'book',
+        icon: '📚',
         color: '#A855F7',
         monthly_goal: 18,
         category: 'Personal',
@@ -43,7 +43,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
     {
         title: 'Evening Reflection',
         description: 'Jot down 3 wins from today.',
-        icon: 'moon',
+        icon: '🌙',
         color: '#FF6584',
         monthly_goal: 22,
         category: 'Mindfulness',

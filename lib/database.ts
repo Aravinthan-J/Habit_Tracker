@@ -1,12 +1,22 @@
 import * as SQLite from 'expo-sqlite';
 
-let db: SQLite.SQLiteDatabase | null = null;
+// Promise-based singleton — guarantees openDatabaseAsync is called exactly once
+// even when multiple callers request the DB before initialization finishes.
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-    if (db) return db;
-    db = await SQLite.openDatabaseAsync('habity.db');
-    await initializeSchema(db);
-    return db;
+export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
+    if (!dbPromise) {
+        dbPromise = (async () => {
+            const database = await SQLite.openDatabaseAsync('habity.db');
+            await initializeSchema(database);
+            return database;
+        })().catch((err) => {
+            // Reset so the next call can retry
+            dbPromise = null;
+            throw err;
+        });
+    }
+    return dbPromise;
 }
 
 async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {

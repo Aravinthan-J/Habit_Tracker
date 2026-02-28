@@ -27,6 +27,9 @@ function getFirebaseAuth() {
 export const auth = getFirebaseAuth();
 export const db = getFirestore(app);
 
-// Find this in: Firebase Console → Authentication → Sign-in method
-// → Google → Web SDK configuration → Web client ID
+// Android client ID — from google-services.json → oauth_client → client_type 3
+export const GOOGLE_ANDROID_CLIENT_ID = '20069212711-oj3minl0m0eko1ukk9i1rrq58jdp5tmi.apps.googleusercontent.com';
+
+// Web client ID — find it at:
+// Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration → Web client ID
 export const GOOGLE_WEB_CLIENT_ID = 'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com';

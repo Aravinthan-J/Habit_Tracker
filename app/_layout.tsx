@@ -9,6 +9,7 @@ import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { COLORS } from '@/constants/theme';
 import { View, StyleSheet } from 'react-native';
+import getDatabase from '@/lib/database';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,11 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Warm up the DB singleton early so it's ready before hooks need it
+    getDatabase().catch(console.error);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <View style={styles.root}>

@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GoogleButton } from '@/components/ui/GoogleButton';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
-import { GOOGLE_WEB_CLIENT_ID } from '@/lib/firebase';
+import { GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID } from '@/lib/firebase';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,6 +32,7 @@ export default function LoginScreen() {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: GOOGLE_WEB_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
   });
 
   useEffect(() => {

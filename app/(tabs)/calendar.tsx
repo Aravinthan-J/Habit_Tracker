@@ -1,29 +1,60 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuthStore } from '@/store/authStore';
 import { useHabits } from '@/hooks/useHabits';
 import { useCompletions } from '@/hooks/useCompletions';
 import { MonthCalendar, DayData } from '@/components/calendar/MonthCalendar';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { getMonthName, getMonthRange, getDaysInMonth, today, friendlyDate } from '@/utils/dateHelpers';
+import { resolveIcon } from '@/utils/iconHelpers';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SHEET_HEIGHT = SCREEN_HEIGHT * 0.65;
+const STEP_GOAL = 10000;
 
 export default function CalendarScreen() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [selectedDate, setSelectedDate] = useState<string | null>(today());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [sheetVisible, setSheetVisible] = useState(false);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
+
+  const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const { user } = useAuthStore();
 
   const range = getMonthRange(year, month);
   const { habits } = useHabits();
   const { completions } = useCompletions(range.start, range.end);
+
+  // Fetch step data for the selected date
+  const stepQuery = useQuery({
+    queryKey: ['step-day', user?.uid, selectedDate],
+    queryFn: async () => {
+      if (!user || !selectedDate) return null;
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid, 'step_data', selectedDate));
+        return snap.exists() ? snap.data() : null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!user && !!selectedDate,
+  });
 
   const habitMap = useMemo(() => {
     const map: Record<string, { color: string; title: string; icon: string | null }> = {};
@@ -36,7 +67,6 @@ export default function CalendarScreen() {
     [completions, selectedHabitId]
   );
 
-  // Build per-day data for calendar cells
   const dayData = useMemo(() => {
     const result: Record<string, DayData> = {};
     for (const c of filteredCompletions) {
@@ -51,26 +81,19 @@ export default function CalendarScreen() {
     return result;
   }, [filteredCompletions, habitMap, habits.length, selectedHabitId]);
 
-  // Month stats (always from all completions, not filtered)
   const stats = useMemo(() => {
     const todayStr = today();
-    const allDays = getDaysInMonth(year, month);
-    const pastDays = allDays.filter((d) => d <= todayStr);
+    const pastDays = getDaysInMonth(year, month).filter((d) => d <= todayStr);
     const totalPossible = pastDays.length * habits.length;
-    const totalCompleted = completions.length;
-    const completionRate = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
-
+    const completionRate = totalPossible > 0 ? Math.round((completions.length / totalPossible) * 100) : 0;
     const perfectDays = pastDays.filter((d) => {
       const count = completions.filter((c) => c.date === d).length;
       return habits.length > 0 && count >= habits.length;
     }).length;
-
     const activeDays = new Set(completions.map((c) => c.date)).size;
-
     return { completionRate, perfectDays, activeDays };
   }, [completions, habits.length, year, month]);
 
-  // Selected day detail
   const dayDetail = useMemo(() => {
     if (!selectedDate) return null;
     const completedIds = new Set(
@@ -78,6 +101,30 @@ export default function CalendarScreen() {
     );
     return habits.map((h) => ({ ...h, completed: completedIds.has(h.id) }));
   }, [selectedDate, completions, habits]);
+
+  // Sheet animation helpers
+  const openSheet = () => {
+    setSheetVisible(true);
+    Animated.spring(translateY, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeSheet = () => {
+    Animated.timing(translateY, {
+      toValue: SHEET_HEIGHT,
+      duration: 260,
+      useNativeDriver: true,
+    }).start(() => setSheetVisible(false));
+  };
+
+  const handleDayPress = (date: string) => {
+    setSelectedDate(date);
+    openSheet();
+  };
 
   const prevMonth = () => {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -90,8 +137,11 @@ export default function CalendarScreen() {
     setSelectedDate(null);
   };
 
-  const completedCount = dayDetail?.filter((h) => h.completed).length ?? 0;
-  const totalCount = dayDetail?.length ?? 0;
+  const completed = dayDetail?.filter((h) => h.completed) ?? [];
+  const incomplete = dayDetail?.filter((h) => !h.completed) ?? [];
+  const stepData = stepQuery.data;
+  const steps = stepData?.steps ?? 0;
+  const stepPct = Math.min(steps / STEP_GOAL, 1);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -152,7 +202,7 @@ export default function CalendarScreen() {
             month={month}
             dayData={dayData}
             selectedDate={selectedDate}
-            onDayPress={setSelectedDate}
+            onDayPress={handleDayPress}
           />
         </View>
 
@@ -172,50 +222,140 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-        {/* Day Detail */}
-        {selectedDate && (
-          <View style={styles.detailCard}>
-            <View style={styles.detailHeader}>
-              <Text style={styles.detailDate}>{friendlyDate(selectedDate)}</Text>
-              {totalCount > 0 && (
-                <View style={[
-                  styles.detailBadge,
-                  { backgroundColor: completedCount === totalCount ? COLORS.success + '30' : COLORS.surface },
-                ]}>
-                  <Text style={[
-                    styles.detailBadgeText,
-                    { color: completedCount === totalCount ? COLORS.success : COLORS.textMuted },
-                  ]}>
-                    {completedCount}/{totalCount}
-                  </Text>
-                </View>
+      </ScrollView>
+
+      {/* Slide-up Day Detail Sheet */}
+      <Modal visible={sheetVisible} transparent animationType="none" onRequestClose={closeSheet}>
+        {/* Backdrop */}
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={closeSheet} />
+
+        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+          {/* Handle */}
+          <View style={styles.handle} />
+
+          {/* Sheet Header */}
+          <View style={styles.sheetHeader}>
+            <View>
+              <Text style={styles.sheetDate}>{selectedDate ? friendlyDate(selectedDate) : ''}</Text>
+              {dayDetail && dayDetail.length > 0 && (
+                <Text style={styles.sheetSubtitle}>
+                  {completed.length}/{dayDetail.length} habits completed
+                </Text>
               )}
             </View>
-
-            {dayDetail && dayDetail.length > 0 ? (
-              dayDetail.map((h) => (
-                <View key={h.id} style={styles.detailRow}>
-                  <View style={[styles.detailColorBar, { backgroundColor: h.color }]} />
-                  <Text style={styles.detailIcon}>{h.icon ?? '✨'}</Text>
-                  <Text style={[styles.detailTitle, !h.completed && { color: COLORS.textMuted }]}>
-                    {h.title}
-                  </Text>
-                  <Ionicons
-                    name={h.completed ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={h.completed ? COLORS.success : COLORS.textMuted}
-                  />
-                </View>
-              ))
-            ) : (
-              <Text style={styles.detailEmpty}>
-                {habits.length === 0 ? 'No habits yet' : 'No habits were tracked'}
-              </Text>
-            )}
+            <TouchableOpacity onPress={closeSheet} style={styles.closeBtn}>
+              <Ionicons name="close" size={20} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </View>
-        )}
 
-      </ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetScroll}>
+
+            {/* Steps Section */}
+            <View style={styles.sheetSection}>
+              <View style={styles.sheetSectionHeader}>
+                <Text style={styles.sheetSectionIcon}>👟</Text>
+                <Text style={styles.sheetSectionTitle}>Steps</Text>
+                <Text style={[styles.sheetSectionBadge, { color: steps >= STEP_GOAL ? COLORS.success : COLORS.textMuted }]}>
+                  {steps.toLocaleString()} / {STEP_GOAL.toLocaleString()}
+                </Text>
+              </View>
+
+              {/* Progress bar */}
+              <View style={styles.stepTrack}>
+                <View style={[styles.stepFill, {
+                  width: `${stepPct * 100}%` as any,
+                  backgroundColor: steps >= STEP_GOAL ? COLORS.success : COLORS.primary,
+                }]} />
+              </View>
+
+              {/* Extra stats */}
+              {(stepData?.distance || stepData?.calories || stepData?.active_minutes) ? (
+                <View style={styles.stepExtras}>
+                  {stepData?.distance != null && (
+                    <View style={styles.stepExtra}>
+                      <Text style={styles.stepExtraValue}>{(stepData.distance / 1000).toFixed(1)} km</Text>
+                      <Text style={styles.stepExtraLabel}>Distance</Text>
+                    </View>
+                  )}
+                  {stepData?.calories != null && (
+                    <View style={styles.stepExtra}>
+                      <Text style={styles.stepExtraValue}>{stepData.calories}</Text>
+                      <Text style={styles.stepExtraLabel}>Calories</Text>
+                    </View>
+                  )}
+                  {stepData?.active_minutes != null && (
+                    <View style={styles.stepExtra}>
+                      <Text style={styles.stepExtraValue}>{stepData.active_minutes} min</Text>
+                      <Text style={styles.stepExtraLabel}>Active</Text>
+                    </View>
+                  )}
+                </View>
+              ) : steps === 0 ? (
+                <Text style={styles.noData}>No step data for this day</Text>
+              ) : null}
+            </View>
+
+            {/* Completed Habits */}
+            {completed.length > 0 && (
+              <View style={styles.sheetSection}>
+                <View style={styles.sheetSectionHeader}>
+                  <Text style={styles.sheetSectionIcon}>✅</Text>
+                  <Text style={[styles.sheetSectionTitle, { color: COLORS.success }]}>
+                    Completed
+                  </Text>
+                  <View style={[styles.countBadge, { backgroundColor: COLORS.success + '25' }]}>
+                    <Text style={[styles.countBadgeText, { color: COLORS.success }]}>{completed.length}</Text>
+                  </View>
+                </View>
+                {completed.map((h) => (
+                  <View key={h.id} style={styles.habitRow}>
+                    <View style={[styles.habitColorBar, { backgroundColor: h.color }]} />
+                    <View style={[styles.habitIconCircle, { backgroundColor: h.color + '20' }]}>
+                      <Text style={styles.habitIcon}>{resolveIcon(h.icon)}</Text>
+                    </View>
+                    <Text style={styles.habitTitle}>{h.title}</Text>
+                    <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Incomplete Habits */}
+            {incomplete.length > 0 && (
+              <View style={styles.sheetSection}>
+                <View style={styles.sheetSectionHeader}>
+                  <Text style={styles.sheetSectionIcon}>⏳</Text>
+                  <Text style={[styles.sheetSectionTitle, { color: COLORS.textSecondary }]}>
+                    Not Completed
+                  </Text>
+                  <View style={[styles.countBadge, { backgroundColor: COLORS.surface }]}>
+                    <Text style={[styles.countBadgeText, { color: COLORS.textMuted }]}>{incomplete.length}</Text>
+                  </View>
+                </View>
+                {incomplete.map((h) => (
+                  <View key={h.id} style={[styles.habitRow, styles.habitRowIncomplete]}>
+                    <View style={[styles.habitColorBar, { backgroundColor: COLORS.textMuted + '40' }]} />
+                    <View style={[styles.habitIconCircle, { backgroundColor: COLORS.surface }]}>
+                      <Text style={[styles.habitIcon, { opacity: 0.5 }]}>{resolveIcon(h.icon)}</Text>
+                    </View>
+                    <Text style={[styles.habitTitle, { color: COLORS.textMuted }]}>{h.title}</Text>
+                    <Ionicons name="ellipse-outline" size={20} color={COLORS.textMuted} />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* No habits state */}
+            {dayDetail && dayDetail.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>📅</Text>
+                <Text style={styles.emptyText}>No habits tracked yet</Text>
+              </View>
+            )}
+
+          </ScrollView>
+        </Animated.View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -299,39 +439,120 @@ const styles = StyleSheet.create({
   legendDot: {},
   legendText: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.xs },
 
-  detailCard: {
-    marginHorizontal: SPACING.xl,
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+  // ── Bottom Sheet ────────────────────────────────────────────
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  detailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_HEIGHT,
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: COLORS.cardBorder,
+    paddingTop: SPACING.sm,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: COLORS.textMuted + '60',
+    borderRadius: 2,
+    alignSelf: 'center',
     marginBottom: SPACING.md,
   },
-  detailDate: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.lg, fontWeight: TYPOGRAPHY.bold },
-  detailBadge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: RADIUS.full },
-  detailBadgeText: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+  },
+  sheetDate: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xl, fontWeight: TYPOGRAPHY.bold },
+  sheetSubtitle: { color: COLORS.textSecondary, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
+  closeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetScroll: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: 40 },
 
-  detailRow: {
+  sheetSection: {
+    marginBottom: SPACING.xl,
+  },
+  sheetSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
     gap: SPACING.sm,
+    marginBottom: SPACING.md,
   },
-  detailColorBar: { width: 3, height: 20, borderRadius: 2 },
-  detailIcon: { fontSize: 16, width: 22 },
-  detailTitle: { flex: 1, color: COLORS.textPrimary, fontSize: TYPOGRAPHY.md },
-  detailEmpty: {
-    color: COLORS.textMuted,
-    fontSize: TYPOGRAPHY.sm,
-    textAlign: 'center',
-    paddingVertical: SPACING.lg,
+  sheetSectionIcon: { fontSize: 16 },
+  sheetSectionTitle: {
+    color: COLORS.textPrimary,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.semibold,
+    flex: 1,
   },
+  sheetSectionBadge: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold },
+  countBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+  },
+  countBadgeText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.bold },
+
+  // Steps
+  stepTrack: {
+    height: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+  },
+  stepFill: { height: '100%', borderRadius: 4 },
+  stepExtras: { flexDirection: 'row', gap: SPACING.xl },
+  stepExtra: { alignItems: 'center' },
+  stepExtraValue: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.semibold },
+  stepExtraLabel: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.xs, marginTop: 2 },
+  noData: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, fontStyle: 'italic' },
+
+  // Habit rows
+  habitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+  },
+  habitRowIncomplete: { opacity: 0.65 },
+  habitColorBar: { width: 3, height: 22, borderRadius: 2 },
+  habitIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  habitIcon: { fontSize: 16 },
+  habitTitle: {
+    flex: 1,
+    color: COLORS.textPrimary,
+    fontSize: TYPOGRAPHY.md,
+  },
+
+  // Empty
+  emptyState: { alignItems: 'center', paddingVertical: SPACING.xxxl },
+  emptyIcon: { fontSize: 40, marginBottom: SPACING.md },
+  emptyText: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.md },
 });

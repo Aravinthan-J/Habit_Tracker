@@ -17,12 +17,13 @@ export default function AnalyticsScreen() {
 
   if (isLoading || !data) return <LoadingSpinner />;
 
-  const weeklyLabels = data.weeklyData.map((d) => {
-    const date = new Date(d.date);
-    return ['S', 'M', 'T', 'W', 'T', 'F', 'S'][date.getDay()];
-  });
+  const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   const weeklyRateData = {
-    labels: weeklyLabels,
+    labels: data.weeklyData.map((d) => {
+      // Parse as local date (avoid UTC midnight timezone shift)
+      const [y, mo, day] = d.date.split('-').map(Number);
+      return DAY_LABELS[new Date(y, mo - 1, day).getDay()];
+    }),
     datasets: [{ data: data.weeklyData.map((d) => d.rate) }],
   };
 
@@ -88,6 +89,7 @@ export default function AnalyticsScreen() {
             data={weeklyRateData}
             suffix="%"
             color={COLORS.primary}
+            maxValue={100}
           />
         </View>
 

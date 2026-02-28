@@ -117,13 +117,14 @@ export default function SettingsScreen() {
 
   // ── Reusable row ──────────────────────────────────────────────────────────
   const SettingsRow: React.FC<{
-    icon: keyof typeof Ionicons.glyphMap;
+    icon?: keyof typeof Ionicons.glyphMap;
+    emojiIcon?: string;
     label: string;
     value?: string;
     onPress?: () => void;
     right?: React.ReactNode;
     color?: string;
-  }> = ({ icon, label, value, onPress, right, color = COLORS.textPrimary }) => (
+  }> = ({ icon, emojiIcon, label, value, onPress, right, color = COLORS.textPrimary }) => (
     <TouchableOpacity
       style={styles.row}
       onPress={onPress}
@@ -131,7 +132,11 @@ export default function SettingsScreen() {
       accessibilityLabel={label}
     >
       <View style={styles.rowLeft}>
-        <Ionicons name={icon} size={20} color={color} style={styles.rowIcon} />
+        {emojiIcon ? (
+          <Text style={[styles.rowIcon, { fontSize: 20 }]}>{emojiIcon}</Text>
+        ) : icon ? (
+          <Ionicons name={icon} size={20} color={color} style={styles.rowIcon} />
+        ) : null}
         <Text style={[styles.rowLabel, { color }]}>{label}</Text>
       </View>
       {right ?? (
@@ -176,7 +181,7 @@ export default function SettingsScreen() {
             return (
               <SettingsRow
                 key={idx}
-                icon={template.icon as any}
+                emojiIcon={template.icon}
                 label={template.title}
                 color={added ? COLORS.textMuted : template.color}
                 right={
