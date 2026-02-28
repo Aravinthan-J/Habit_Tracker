@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
+import { queueOperation } from '@/services/storage/LocalStorageService';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import * as PedometerService from '@/services/health/PedometerService';
@@ -29,20 +30,30 @@ export function useSteps() {
             const pedData = await PedometerService.getTodaySteps();
 
             if (pedData) {
-                // Fire-and-forget sync to Firestore
-                setDoc(
-                    doc(db, 'users', user.uid, 'step_data', pedData.date),
-                    {
-                        user_id: user.uid,
-                        date: pedData.date,
-                        steps: pedData.steps,
-                        distance: pedData.distance,
-                        calories: pedData.calories,
-                        active_minutes: pedData.activeMinutes,
-                        source: 'pedometer',
-                    },
-                    { merge: true }
-                ).catch(() => {});
+                const stepPayload = {
+                    user_id: user.uid,
+                    date: pedData.date,
+                    steps: pedData.steps,
+                    distance: pedData.distance,
+                    calories: pedData.calories,
+                    active_minutes: pedData.activeMinutes,
+                    source: 'pedometer',
+                };
+                try {
+                    await setDoc(
+                        doc(db, 'users', user.uid, 'step_data', pedData.date),
+                        stepPayload,
+                        { merge: true },
+                    );
+                } catch {
+                    // Offline — queue for sync when connection returns
+                    await queueOperation({
+                        operation: 'SET',
+                        table_name: 'step_data',
+                        record_id: pedData.date,
+                        payload: JSON.stringify(stepPayload),
+                    });
+                }
             }
 
             return pedData;

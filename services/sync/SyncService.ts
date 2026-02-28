@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import {
     getPendingOperations,
@@ -28,6 +28,9 @@ export async function processQueue(): Promise<void> {
                 await updateDoc(doc(db, 'users', userId, tableName, op.record_id), payload);
             } else if (op.operation === 'DELETE') {
                 await deleteDoc(doc(db, 'users', userId, tableName, op.record_id));
+            } else if (op.operation === 'SET') {
+                // setDoc with merge — used for documents with a known ID (e.g. step_data/{date})
+                await setDoc(doc(db, 'users', userId, tableName, op.record_id), payload, { merge: true });
             }
 
             if (op.id !== undefined) {

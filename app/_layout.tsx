@@ -7,6 +7,7 @@ import { useRealtime } from '@/hooks/useRealtime';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { COLORS } from '@/constants/theme';
 import { View, StyleSheet } from 'react-native';
 import getDatabase from '@/lib/database';
@@ -23,7 +24,7 @@ const queryClient = new QueryClient({
 function AppContent() {
   const { isLoading, user } = useAuth();
   useRealtime();
-  useOfflineSync();
+  const { isOnline, isSyncing } = useOfflineSync();
 
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
 
@@ -48,6 +49,9 @@ function AppContent() {
         visible={celebrationVisible}
         onClose={hideCelebration}
       />
+
+      <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} />
+
       <StatusBar style="light" />
     </>
   );
