@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 import { Achievement } from '@/types/advanced.types';
 
 interface AchievementPreviewProps {
@@ -10,25 +9,22 @@ interface AchievementPreviewProps {
 }
 
 export default function AchievementPreview({ achievements }: AchievementPreviewProps) {
-    const { premiumTheme } = useUIStore();
-    const colors = premiumTheme?.colors || COLORS;
-
     if (achievements.length === 0) return null;
 
     return (
         <View style={styles.container}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Recent Wins</Text>
+            <Text style={[styles.sectionTitle, { color: COLORS.textSecondary }]}>Recent Wins</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
                 {achievements.map((item) => (
-                    <View key={item.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.cardBorder || COLORS.cardBorder }]}>
-                        <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-                            <Ionicons name={item.icon as any} size={24} color={colors.primary} />
+                    <View key={item.id} style={[styles.card, { backgroundColor: COLORS.surface, borderColor: COLORS.cardBorder }]}>
+                        <View style={[styles.iconContainer, { backgroundColor: COLORS.primary + '20' }]}>
+                            <Ionicons name={item.icon as any} size={24} color={COLORS.primary} />
                         </View>
                         <View style={styles.textContainer}>
-                            <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
+                            <Text style={[styles.title, { color: COLORS.textPrimary }]} numberOfLines={1}>
                                 {item.title}
                             </Text>
-                            <Text style={[styles.date, { color: colors.textMuted }]}>
+                            <Text style={[styles.date, { color: COLORS.textMuted }]}>
                                 {new Date(item.earned_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </Text>
                         </View>

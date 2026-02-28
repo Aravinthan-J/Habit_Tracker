@@ -22,28 +22,11 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
-import { useUIStore } from '@/store/uiStore';
-import { MockDataService } from '@/services/MockDataService';
-import { useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 
 export default function HomeScreen() {
-  const { user, setupDummyUser } = useAuthStore();
-  const { premiumTheme } = useUIStore();
-  const colors = premiumTheme?.colors || COLORS;
-
-  useEffect(() => {
-    if (!user) {
-      setupDummyUser();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user?.id === MockDataService.DUMMY_USER_ID) {
-      MockDataService.seedDummyData();
-    }
-  }, [user]);
+  const { user } = useAuthStore();
   const { habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
   const { todaySteps, liveSteps, isPedometerAvailable } = useSteps();
@@ -79,23 +62,23 @@ export default function HomeScreen() {
   const totalFocusMinutes = focusSessions.reduce((acc: number, s: any) => acc + s.duration, 0);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]}>
       <FlatList
         data={habits}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={habitsLoading || advancedLoading} onRefresh={handleRefresh} tintColor={colors.primary} />
+          <RefreshControl refreshing={habitsLoading || advancedLoading} onRefresh={handleRefresh} tintColor={COLORS.primary} />
         }
         ListHeaderComponent={() => (
           <View>
             {/* Header */}
             <LinearGradient
-              colors={[colors.surface, colors.background]}
+              colors={[COLORS.surface, COLORS.background]}
               style={styles.header}
             >
               <View>
-                <Text style={[styles.greeting, { color: colors.textMuted }]}>{greeting},</Text>
-                <Text style={[styles.name, { color: colors.textPrimary }]}>{user?.user_metadata?.name ?? 'there'} 👋</Text>
+                <Text style={[styles.greeting, { color: COLORS.textMuted }]}>{greeting},</Text>
+                <Text style={[styles.name, { color: COLORS.textPrimary }]}>{user?.displayName ?? 'there'} 👋</Text>
               </View>
             </LinearGradient>
 
@@ -103,18 +86,18 @@ export default function HomeScreen() {
             {totalCount > 0 && (
               <View style={styles.progressBanner}>
                 <View style={styles.progressTextRow}>
-                  <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.progressText, { color: COLORS.textSecondary }]}>
                     {completedCount}/{totalCount} habits done
                   </Text>
-                  {allDone && <Text style={[styles.allDone, { color: colors.success || COLORS.success }]}>All done! 🎉</Text>}
+                  {allDone && <Text style={styles.allDone}>All done! 🎉</Text>}
                 </View>
-                <View style={[styles.progressTrack, { backgroundColor: colors.surface }]}>
+                <View style={[styles.progressTrack, { backgroundColor: COLORS.surface }]}>
                   <View
                     style={[
                       styles.progressFill,
                       {
                         width: `${(completedCount / totalCount) * 100}%`,
-                        backgroundColor: allDone ? (colors.success || COLORS.success) : colors.primary,
+                        backgroundColor: allDone ? COLORS.success : COLORS.primary,
                       },
                     ]}
                   />
@@ -123,15 +106,15 @@ export default function HomeScreen() {
             )}
 
             {/* Step ring */}
-            <View style={[styles.stepSection, { backgroundColor: colors.card, borderColor: colors.cardBorder || COLORS.cardBorder }]}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Steps Today</Text>
+            <View style={[styles.stepSection, { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }]}>
+              <Text style={[styles.sectionTitle, { color: COLORS.textSecondary }]}>Steps Today</Text>
               <StepProgressRing
                 steps={liveSteps || todaySteps?.steps || 0}
                 goal={stepGoal}
                 size={160}
               />
               {!isPedometerAvailable && (
-                <Text style={[styles.pedometerHint, { color: colors.textMuted }]}>Pedometer not available on this device</Text>
+                <Text style={[styles.pedometerHint, { color: COLORS.textMuted }]}>Pedometer not available on this device</Text>
               )}
             </View>
 
@@ -143,7 +126,7 @@ export default function HomeScreen() {
               <FocusHighlights totalMinutes={totalFocusMinutes} sessionsCount={focusSessions.length} />
             )}
 
-            <Text style={[styles.habitsTitle, { color: colors.textPrimary }]}>Today's Habits</Text>
+            <Text style={[styles.habitsTitle, { color: COLORS.textPrimary }]}>Today's Habits</Text>
 
             {habitsLoading && <LoadingState count={3} />}
           </View>

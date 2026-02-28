@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart as RNBarChart } from 'react-native-chart-kit';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 
 const { width } = Dimensions.get('window');
 
@@ -19,12 +18,9 @@ export const BarChart: React.FC<BarChartProps> = ({
   color = COLORS.primary,
   suffix = '',
 }) => {
-  const { premiumTheme } = useUIStore();
-  const themeColors = premiumTheme?.colors || COLORS;
-
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.surface + '44', borderRadius: RADIUS.lg, padding: SPACING.md, borderWidth: 1, borderColor: themeColors.cardBorder || COLORS.cardBorder }]}>
-      {title && <Text style={[styles.title, { color: themeColors.textPrimary }]}>{title}</Text>}
+    <View style={[styles.container, { backgroundColor: COLORS.surface + '44', borderRadius: RADIUS.lg, padding: SPACING.md, borderWidth: 1, borderColor: COLORS.cardBorder }]}>
+      {title && <Text style={[styles.title, { color: COLORS.textPrimary }]}>{title}</Text>}
       <RNBarChart
         data={data}
         width={width - SPACING.lg * 2 - SPACING.xl * 2 - SPACING.md * 2}
@@ -37,12 +33,12 @@ export const BarChart: React.FC<BarChartProps> = ({
           backgroundGradientTo: 'transparent',
           decimalPlaces: 0,
           color: (opacity = 1) => color,
-          labelColor: () => themeColors.textMuted,
+          labelColor: () => COLORS.textMuted,
           barPercentage: 0.6,
           propsForBackgroundLines: {
             strokeDasharray: '',
             strokeWidth: '0.5',
-            stroke: themeColors.textMuted + '22',
+            stroke: COLORS.textMuted + '22',
           },
         }}
         style={{ borderRadius: RADIUS.md, marginHorizontal: -SPACING.xs }}

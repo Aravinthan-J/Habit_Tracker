@@ -18,7 +18,6 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button } from '@/components/ui/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
 
@@ -26,8 +25,6 @@ export default function HabitsScreen() {
   const router = useRouter();
   const { habits, isLoading } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
-  const { premiumTheme } = useUIStore();
-  const themeColors = premiumTheme?.colors || COLORS;
   const todayStr = today();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -48,21 +45,21 @@ export default function HabitsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]}>
+    <SafeAreaView style={styles.safe}>
       <LinearGradient
-        colors={[themeColors.surface, themeColors.background]}
+        colors={[COLORS.surface, COLORS.background] as const}
         style={styles.header}
       >
         <View style={styles.headerContent}>
           <View>
-            <Text style={[styles.title, { color: themeColors.textPrimary }]}>My Habits</Text>
-            <Text style={[styles.count, { color: themeColors.textSecondary }]}>
+            <Text style={[styles.title, { color: COLORS.textPrimary }]}>My Habits</Text>
+            <Text style={[styles.count, { color: COLORS.textSecondary }]}>
               {habits.length} routines active
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push('/habit/new')}
-            style={[styles.addBtn, { backgroundColor: themeColors.primary }]}
+            style={[styles.addBtn, { backgroundColor: COLORS.primary }]}
             accessibilityLabel="Create new habit"
           >
             <Ionicons name="add" size={28} color="#FFFFFF" />
@@ -70,18 +67,18 @@ export default function HabitsScreen() {
         </View>
 
         {habits.length > 5 && (
-          <View style={[styles.searchContainer, { backgroundColor: themeColors.surface + '88', borderColor: themeColors.cardBorder || COLORS.cardBorder }]}>
-            <Ionicons name="search-outline" size={18} color={themeColors.textMuted} style={styles.searchIcon} />
+          <View style={[styles.searchContainer, { backgroundColor: COLORS.surface + '88', borderColor: COLORS.cardBorder }]}>
+            <Ionicons name="search-outline" size={18} color={COLORS.textMuted} style={styles.searchIcon} />
             <TextInput
               placeholder="Search habits..."
-              placeholderTextColor={themeColors.textMuted}
-              style={[styles.searchInput, { color: themeColors.textPrimary }]}
+              placeholderTextColor={COLORS.textMuted}
+              style={[styles.searchInput, { color: COLORS.textPrimary }]}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color={themeColors.textMuted} />
+                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -129,7 +126,7 @@ export default function HabitsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.lg,

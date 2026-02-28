@@ -5,11 +5,11 @@ import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 
 export function useRealtime() {
-    const { user, isOffline } = useAuthStore();
+    const { user } = useAuthStore();
     const qc = useQueryClient();
 
     useEffect(() => {
-        if (!user || isOffline) return;
+        if (!user) return;
 
         const unsubHabits = onSnapshot(
             collection(db, 'users', user.uid, 'habits'),
@@ -31,5 +31,5 @@ export function useRealtime() {
             unsubCompletions();
             unsubBadges();
         };
-    }, [user?.uid, isOffline]);
+    }, [user?.uid]);
 }

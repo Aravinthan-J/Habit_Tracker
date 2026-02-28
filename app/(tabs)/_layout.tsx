@@ -1,8 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/constants/theme';
-import { OfflineBanner } from '@/components/shared/OfflineBanner';
 
 type TabBarIconProps = {
   name: keyof typeof Ionicons.glyphMap;
@@ -21,9 +19,7 @@ function TabIcon({ name, focused }: TabBarIconProps) {
 
 export default function TabLayout() {
   return (
-    <View style={{ flex: 1 }}>
-      <OfflineBanner />
-      <Tabs
+    <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
@@ -78,13 +74,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="community"
-        options={{
-          title: 'Community',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="people-outline" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
@@ -92,6 +81,5 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-    </View>
   );
 }

@@ -1,38 +1,21 @@
-import React, { useEffect } from 'react';
-import { ScrollView, RefreshControl, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { ScrollView, RefreshControl, View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useUIStore } from '@/store/uiStore';
 import { Metric } from '@/types/advanced.types';
-import { StatsCard } from '@/components/analytics/StatsCard';
-import { LineChart } from '@/components/analytics/LineChart';
 import { BarChart } from '@/components/analytics/BarChart';
 import { InsightCard } from '@/components/analytics/InsightCard';
 import MetricLogger from '@/components/MetricLogger';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
-import { getLast30Days } from '@/utils/dateHelpers';
-import { formatCompletionRateData, formatStepData } from '@/utils/chartDataFormatter';
-import { PdfGeneratorService } from '@/services/export/PdfGeneratorService';
-import { useAuthStore } from '@/store/authStore';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 
 export default function AnalyticsScreen() {
-  const { data, isLoading } = useAnalytics();
+  const { data, isLoading, refetch } = useAnalytics();
   const { metrics, logMetric } = useAdvancedFeatures();
-  const { incrementAnalyticsView, premiumTheme } = useUIStore();
-  const { user } = useAuthStore();
-
-  useEffect(() => {
-    incrementAnalyticsView();
-  }, []);
 
   if (isLoading || !data) return <LoadingSpinner />;
-
-  const last30 = getLast30Days();
-  const lineData = formatCompletionRateData(last30, data.ratesByDate);
 
   const weeklyLabels = data.weeklyData.map((d) => {
     const date = new Date(d.date);
@@ -42,21 +25,19 @@ export default function AnalyticsScreen() {
     labels: weeklyLabels,
     datasets: [{ data: data.weeklyData.map((d) => d.rate) }],
   };
-  const weeklyStepData = {
-    labels: weeklyLabels,
-    datasets: [{ data: data.weeklyData.map((d) => Math.round(d.steps / 1000)) }],
-  };
 
-  // Generate insights
-  const themeColors = premiumTheme?.colors || COLORS;
+  const perfectDays = data.weeklyData.filter((d) => d.rate === 100).length;
+
+  const rate = data.avgCompletionRate;
+  const rateColor = rate >= 80 ? COLORS.success : rate >= 50 ? COLORS.primary : COLORS.accentOrange;
 
   const insights: Array<{ text: string; type: 'positive' | 'warning' | 'info' }> = [];
-  if (data.avgCompletionRate >= 80) {
-    insights.push({ text: `You're crushing it with a ${data.avgCompletionRate}% completion rate this month! 🔥`, type: 'positive' });
-  } else if (data.avgCompletionRate < 50) {
-    insights.push({ text: `Your completion rate is ${data.avgCompletionRate}%. Try setting habit reminders to improve consistency.`, type: 'warning' });
+  if (rate >= 80) {
+    insights.push({ text: `You're crushing it with a ${rate}% completion rate! 🔥`, type: 'positive' });
+  } else if (rate < 50) {
+    insights.push({ text: `Your completion rate is ${rate}%. Try setting habit reminders to improve.`, type: 'warning' });
   } else {
-    insights.push({ text: `${data.avgCompletionRate}% completion rate this month. Keep building that momentum!`, type: 'info' });
+    insights.push({ text: `${rate}% completion rate this month — keep building that momentum!`, type: 'info' });
   }
   if (data.bestStreak >= 7) {
     insights.push({ text: `Your best streak is ${data.bestStreak} days. That's real dedication.`, type: 'positive' });
@@ -66,72 +47,64 @@ export default function AnalyticsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]}>
+    <SafeAreaView style={styles.safe}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={isLoading} tintColor={themeColors.primary} />
-        }
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={COLORS.primary} />}
+        contentContainerStyle={styles.scroll}
       >
-        <LinearGradient
-          colors={[themeColors.surface, themeColors.background]}
-          style={styles.header}
-        >
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={[styles.title, { color: themeColors.textPrimary }]}>Analytics</Text>
-              <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>Last 30 days dashboard</Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.exportBtn, { borderColor: themeColors.primary + '40' }]}
-              onPress={() => PdfGeneratorService.generateAnalyticsReport(data, user?.email || 'User')}
-            >
-              <Ionicons name="share-outline" size={20} color={themeColors.primary} />
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-
-        {/* Summary stats */}
-        <View style={styles.statsRow}>
-          <StatsCard icon="checkmark-circle-outline" value={`${data.avgCompletionRate}%`} label="Avg Rate" color={themeColors.primary} />
-          <StatsCard icon="flame-outline" value={data.bestStreak} label="Best Streak" color={themeColors.secondary} />
-          <StatsCard icon="trophy-outline" value={data.totalCompletions} label="Total Done" color={COLORS.gold} />
-          <StatsCard icon="list-outline" value={data.activeHabits} label="Habits" color={themeColors.accent || COLORS.accent} />
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Analytics</Text>
+          <Text style={styles.subtitle}>Last 30 days</Text>
         </View>
 
-        {/* Charts */}
+        {/* Hero Completion Rate */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroLeft}>
+            <Text style={styles.heroLabel}>Monthly Completion</Text>
+            <Text style={[styles.heroRate, { color: rateColor }]}>{rate}%</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${rate}%`, backgroundColor: rateColor }]} />
+            </View>
+          </View>
+          <View style={[styles.heroIcon, { backgroundColor: rateColor + '18' }]}>
+            <Ionicons name="trending-up-outline" size={32} color={rateColor} />
+          </View>
+        </View>
+
+        {/* 4-stat grid */}
+        <View style={styles.statGrid}>
+          <StatBox icon="flame-outline" value={String(data.bestStreak)} label="Best Streak" color={COLORS.accentOrange} unit="days" />
+          <StatBox icon="checkmark-circle-outline" value={String(data.totalCompletions)} label="Total Done" color={COLORS.primary} />
+          <StatBox icon="list-outline" value={String(data.activeHabits)} label="Habits" color={COLORS.secondary} />
+          <StatBox icon="star-outline" value={String(perfectDays)} label="Perfect Days" color={COLORS.success} unit="this week" />
+        </View>
+
+        {/* Weekly Bar Chart */}
         <View style={styles.section}>
-          <LineChart
-            data={lineData}
-            title="Completion Trend"
-            color={themeColors.primary}
-          />
+          <Text style={styles.sectionTitle}>Weekly Consistency</Text>
           <BarChart
             data={weeklyRateData}
-            title="Weekly Consistency"
             suffix="%"
-            color={themeColors.secondary}
-          />
-          <BarChart
-            data={weeklyStepData}
-            title="Activity Summary"
-            suffix="k"
-            color={themeColors.accent || COLORS.accent}
+            color={COLORS.primary}
           />
         </View>
 
         {/* Insights */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Intelligent Insights</Text>
-          {insights.map((ins, i) => (
-            <InsightCard key={i} insight={ins.text} type={ins.type} />
-          ))}
-        </View>
+        {insights.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Insights</Text>
+            {insights.map((ins, i) => (
+              <InsightCard key={i} insight={ins.text} type={ins.type} />
+            ))}
+          </View>
+        )}
 
         {/* Custom Metrics */}
         {metrics && metrics.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Daily Tracking</Text>
+            <Text style={styles.sectionTitle}>Daily Tracking</Text>
             {metrics.map((metric: Metric) => (
               <MetricLogger
                 key={metric.id}
@@ -146,44 +119,100 @@ export default function AnalyticsScreen() {
   );
 }
 
+function StatBox({ icon, value, label, color, unit }: {
+  icon: any; value: string; label: string; color: string; unit?: string;
+}) {
+  return (
+    <View style={[styles.statBox, { borderColor: color + '30' }]}>
+      <View style={[styles.statIcon, { backgroundColor: color + '18' }]}>
+        <Ionicons name={icon} size={18} color={color} />
+      </View>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+      {unit && <Text style={styles.statUnit}>{unit}</Text>}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { paddingBottom: 40 },
+
   header: {
-    padding: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  exportBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  title: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxl, fontWeight: TYPOGRAPHY.bold },
+  subtitle: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
+
+  heroCard: {
+    marginHorizontal: SPACING.xl,
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: SPACING.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.lg,
+  },
+  heroLeft: { flex: 1 },
+  heroLabel: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.xs, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACING.xs },
+  heroRate: { fontSize: 48, fontWeight: TYPOGRAPHY.extrabold, lineHeight: 52 },
+  progressTrack: {
+    height: 6,
+    backgroundColor: COLORS.surface,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginTop: SPACING.md,
+    marginRight: SPACING.xl,
+  },
+  progressFill: { height: '100%', borderRadius: 3 },
+  heroIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  title: { fontSize: TYPOGRAPHY.xxxl, fontWeight: TYPOGRAPHY.bold },
-  subtitle: { fontSize: TYPOGRAPHY.sm, marginTop: 2, opacity: 0.8 },
-  statsRow: {
+
+  statGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: SPACING.md,
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
   },
+  statBox: {
+    width: '46%',
+    margin: '2%',
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACING.md,
+    alignItems: 'flex-start',
+  },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  statValue: { fontSize: TYPOGRAPHY.xxl, fontWeight: TYPOGRAPHY.bold },
+  statLabel: { color: COLORS.textSecondary, fontSize: TYPOGRAPHY.xs, marginTop: 2 },
+  statUnit: { color: COLORS.textMuted, fontSize: 10, marginTop: 1 },
+
   section: {
     paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: TYPOGRAPHY.lg,
-    fontWeight: TYPOGRAPHY.bold,
+    color: COLORS.textPrimary,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.semibold,
     marginBottom: SPACING.md,
-    letterSpacing: 0.3,
   },
 });

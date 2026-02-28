@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useUIStore } from '@/store/uiStore';
 
 interface StatsCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -19,14 +18,11 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   color = COLORS.primary,
   subtitle,
 }) => {
-  const { premiumTheme } = useUIStore();
-  const themeColors = premiumTheme?.colors || COLORS;
-
   return (
     <View style={[
       styles.card,
       {
-        backgroundColor: themeColors.surface + '66', // Glass effect
+        backgroundColor: COLORS.surface + '66', // Glass effect
         borderColor: color + '44',
       }
     ]}>
@@ -34,9 +30,9 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         <Ionicons name={icon} size={22} color={color} />
       </View>
       <View style={styles.content}>
-        <Text style={[styles.value, { color: themeColors.textPrimary }]}>{value}</Text>
-        <Text style={[styles.label, { color: themeColors.textSecondary }]}>{label}</Text>
-        {subtitle && <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>{subtitle}</Text>}
+        <Text style={[styles.value, { color: COLORS.textPrimary }]}>{value}</Text>
+        <Text style={[styles.label, { color: COLORS.textSecondary }]}>{label}</Text>
+        {subtitle && <Text style={[styles.subtitle, { color: COLORS.textMuted }]}>{subtitle}</Text>}
       </View>
     </View>
   );

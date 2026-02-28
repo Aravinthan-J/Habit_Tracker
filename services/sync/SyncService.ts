@@ -6,7 +6,6 @@ import {
     incrementAttempts,
     saveHabitLocally,
 } from '../storage/LocalStorageService';
-import { SYNC_RETRY_LIMIT } from '@/lib/constants';
 
 type SyncableCollection = 'habits' | 'completions' | 'step_data';
 

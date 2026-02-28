@@ -11,7 +11,6 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/store/authStore';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
@@ -22,7 +21,6 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
-  const { setupDummyUser } = useAuthStore();
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -107,13 +105,6 @@ export default function LoginScreen() {
             style={styles.loginBtn}
           />
 
-          <TouchableOpacity
-            style={styles.offlineBtn}
-            onPress={() => { setupDummyUser(); router.replace('/(tabs)'); }}
-          >
-            <Text style={styles.offlineBtnText}>Continue Offline (Demo)</Text>
-          </TouchableOpacity>
-
           <View style={styles.registerRow}>
             <Text style={styles.registerText}>Don't have an account? </Text>
             <Link href="/(auth)/register">
@@ -169,17 +160,7 @@ const styles = StyleSheet.create({
   },
   forgotRow: { alignSelf: 'flex-end', marginBottom: SPACING.lg },
   forgotText: { color: COLORS.primary, fontSize: TYPOGRAPHY.sm },
-  loginBtn: { marginBottom: SPACING.sm },
-  offlineBtn: {
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    marginBottom: SPACING.lg,
-  },
-  offlineBtnText: {
-    color: COLORS.textMuted,
-    fontSize: TYPOGRAPHY.sm,
-    textDecorationLine: 'underline',
-  },
+  loginBtn: { marginBottom: SPACING.lg },
   registerRow: { flexDirection: 'row', justifyContent: 'center' },
   registerText: { color: COLORS.textSecondary },
   registerLink: { color: COLORS.primary, fontWeight: TYPOGRAPHY.semibold },

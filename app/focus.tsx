@@ -2,20 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { Ionicons } from '@expo/vector-icons';
-import { useUIStore } from '@/store/uiStore';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
 
 export default function FocusMode() {
-    const { premiumTheme } = useUIStore();
-    const colors = premiumTheme?.colors || COLORS;
-
     const [isActive, setIsActive] = useState(false);
     const [seconds, setSeconds] = useState(25 * 60);
     const [isFaceDown, setIsFaceDown] = useState(false);
-    const [data, setData] = useState({ x: 0, y: 0, z: 0 });
     const subscription = useRef<any>(null);
 
     useEffect(() => {
@@ -37,8 +32,6 @@ export default function FocusMode() {
 
     const _subscribe = () => {
         subscription.current = Accelerometer.addListener((accelerometerData) => {
-            setData(accelerometerData);
-            // Z < -0.9 implies the phone is likely face down
             const faceDown = accelerometerData.z < -0.9;
             setIsFaceDown(faceDown);
         });
@@ -61,32 +54,32 @@ export default function FocusMode() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.textPrimary }]}>Analog Focus</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                <Text style={styles.title}>Analog Focus</Text>
+                <Text style={styles.subtitle}>
                     Flip your phone face down to start
                 </Text>
             </View>
 
             <View style={styles.timerContainer}>
-                <Text style={[styles.timer, { color: isActive ? colors.primary : colors.textMuted }]}>
+                <Text style={[styles.timer, { color: isActive ? COLORS.primary : COLORS.textMuted }]}>
                     {formatTime(seconds)}
                 </Text>
             </View>
 
             <View style={styles.statusContainer}>
                 {isFaceDown ? (
-                    <View style={styles.activeStatus}>
-                        <Ionicons name="checkmark-circle" size={24} color={colors.success || COLORS.success} />
-                        <Text style={[styles.statusText, { color: colors.success || COLORS.success }]}>
+                    <View style={styles.statusRow}>
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                        <Text style={[styles.statusText, { color: COLORS.success }]}>
                             Focused & Face Down
                         </Text>
                     </View>
                 ) : (
-                    <View style={styles.inactiveStatus}>
-                        <Ionicons name="alert-circle" size={24} color={colors.textMuted} />
-                        <Text style={[styles.statusText, { color: colors.textMuted }]}>
+                    <View style={styles.statusRow}>
+                        <Ionicons name="alert-circle" size={24} color={COLORS.textMuted} />
+                        <Text style={[styles.statusText, { color: COLORS.textMuted }]}>
                             Flip phone down to deep work
                         </Text>
                     </View>
@@ -94,7 +87,7 @@ export default function FocusMode() {
             </View>
 
             <TouchableOpacity
-                style={[styles.button, { backgroundColor: isActive ? colors.secondary : colors.primary }]}
+                style={[styles.button, { backgroundColor: isActive ? COLORS.secondary : COLORS.primary }]}
                 onPress={toggleFocus}
             >
                 <Text style={styles.buttonText}>{isActive ? 'STOP SESSION' : 'START FOCUS'}</Text>
@@ -109,6 +102,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: SPACING.xl,
+        backgroundColor: COLORS.background,
     },
     header: {
         alignItems: 'center',
@@ -118,10 +112,12 @@ const styles = StyleSheet.create({
         fontSize: TYPOGRAPHY.xxxl,
         fontWeight: TYPOGRAPHY.bold,
         marginBottom: SPACING.xs,
+        color: COLORS.textPrimary,
     },
     subtitle: {
         fontSize: TYPOGRAPHY.md,
         textAlign: 'center',
+        color: COLORS.textSecondary,
     },
     timerContainer: {
         width: width * 0.7,
@@ -140,11 +136,7 @@ const styles = StyleSheet.create({
     statusContainer: {
         marginBottom: SPACING.xxxl,
     },
-    activeStatus: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    inactiveStatus: {
+    statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },

@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart as RNLineChart } from 'react-native-chart-kit';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 
 const { width } = Dimensions.get('window');
 
@@ -17,12 +16,9 @@ export const LineChart: React.FC<LineChartProps> = ({
   title,
   color = COLORS.primary,
 }) => {
-  const { premiumTheme } = useUIStore();
-  const themeColors = premiumTheme?.colors || COLORS;
-
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.surface + '44', borderRadius: RADIUS.lg, padding: SPACING.md, borderWidth: 1, borderColor: themeColors.cardBorder || COLORS.cardBorder }]}>
-      {title && <Text style={[styles.title, { color: themeColors.textPrimary }]}>{title}</Text>}
+    <View style={[styles.container, { backgroundColor: COLORS.surface + '44', borderRadius: RADIUS.lg, padding: SPACING.md, borderWidth: 1, borderColor: COLORS.cardBorder }]}>
+      {title && <Text style={[styles.title, { color: COLORS.textPrimary }]}>{title}</Text>}
       <RNLineChart
         data={data}
         width={width - SPACING.lg * 2 - SPACING.xl * 2 - SPACING.md * 2}
@@ -33,13 +29,13 @@ export const LineChart: React.FC<LineChartProps> = ({
           backgroundGradientTo: 'transparent',
           decimalPlaces: 0,
           color: (opacity = 1) => color,
-          labelColor: () => themeColors.textMuted,
+          labelColor: () => COLORS.textMuted,
           style: { borderRadius: RADIUS.md },
           propsForDots: { r: '4', strokeWidth: '0', fill: color },
           propsForBackgroundLines: {
             strokeDasharray: '',
             strokeWidth: '0.5',
-            stroke: themeColors.textMuted + '22',
+            stroke: COLORS.textMuted + '22',
           },
         }}
         bezier

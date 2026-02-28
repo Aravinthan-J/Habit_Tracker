@@ -3,7 +3,6 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Switch } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 import { Metric } from '@/types/advanced.types';
 
 interface MetricLoggerProps {
@@ -13,8 +12,6 @@ interface MetricLoggerProps {
 }
 
 export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
-    const { premiumTheme } = useUIStore();
-    const colors = premiumTheme?.colors || COLORS;
     const [value, setValue] = useState('');
 
     const handleSubmit = () => {
@@ -32,7 +29,7 @@ export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
             const isTrue = value === '1';
             return (
                 <View style={styles.booleanContainer}>
-                    <Text style={[styles.booleanLabel, { color: colors.textPrimary }]}>
+                    <Text style={styles.booleanLabel}>
                         {isTrue ? 'Yes' : 'No'}
                     </Text>
                     <Switch
@@ -41,7 +38,7 @@ export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
                             setValue(val ? '1' : '0');
                             onLog(val ? 1 : 0);
                         }}
-                        trackColor={{ false: colors.surfaceLight, true: colors.primary }}
+                        trackColor={{ false: COLORS.surface, true: COLORS.primary }}
                         thumbColor="#FFF"
                     />
                 </View>
@@ -52,7 +49,7 @@ export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
             const numVal = parseFloat(value) || 0;
             return (
                 <View style={styles.sliderContainer}>
-                    <Text style={[styles.sliderValue, { color: colors.primary }]}>{numVal}</Text>
+                    <Text style={styles.sliderValue}>{numVal}</Text>
                     <Slider
                         style={{ flex: 1, height: 40 }}
                         minimumValue={0}
@@ -61,27 +58,26 @@ export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
                         value={numVal}
                         onValueChange={(val: number) => setValue(val.toString())}
                         onSlidingComplete={(val: number) => onLog(val)}
-                        minimumTrackTintColor={colors.primary}
-                        maximumTrackTintColor={colors.surfaceLight}
-                        thumbTintColor={colors.primary}
+                        minimumTrackTintColor={COLORS.primary}
+                        maximumTrackTintColor={COLORS.surface}
+                        thumbTintColor={COLORS.primary}
                     />
                 </View>
             );
         }
 
-        // Default: numeric or time
         return (
             <View style={styles.inputContainer}>
                 <TextInput
-                    style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.surfaceLight }]}
+                    style={styles.input}
                     value={value}
                     onChangeText={setValue}
                     placeholder={`Value in ${metric.unit}...`}
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={COLORS.textMuted}
                     keyboardType="numeric"
                 />
                 <TouchableOpacity
-                    style={[styles.button, { backgroundColor: colors.primary }]}
+                    style={styles.button}
                     onPress={handleSubmit}
                     disabled={!value}
                 >
@@ -92,17 +88,17 @@ export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.cardBorder || COLORS.cardBorder }]}>
+        <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.textPrimary }]}>{metric.name}</Text>
-                <Text style={[styles.unit, { color: colors.textSecondary }]}>{metric.unit}</Text>
+                <Text style={styles.title}>{metric.name}</Text>
+                <Text style={styles.unit}>{metric.unit}</Text>
             </View>
 
             {renderInput()}
 
             {metric.target_value && (
                 <View style={styles.progressContainer}>
-                    <Text style={[styles.targetText, { color: colors.textMuted }]}>
+                    <Text style={styles.targetText}>
                         Target: {metric.target_value} {metric.unit}
                     </Text>
                 </View>
@@ -117,6 +113,8 @@ const styles = StyleSheet.create({
         borderRadius: RADIUS.md,
         borderWidth: 1,
         marginBottom: SPACING.md,
+        backgroundColor: COLORS.surface,
+        borderColor: COLORS.cardBorder,
     },
     header: {
         flexDirection: 'row',
@@ -127,9 +125,11 @@ const styles = StyleSheet.create({
     title: {
         fontSize: TYPOGRAPHY.md,
         fontWeight: TYPOGRAPHY.bold,
+        color: COLORS.textPrimary,
     },
     unit: {
         fontSize: TYPOGRAPHY.sm,
+        color: COLORS.textSecondary,
     },
     inputContainer: {
         flexDirection: 'row',
@@ -141,10 +141,13 @@ const styles = StyleSheet.create({
         borderRadius: RADIUS.sm,
         marginRight: SPACING.sm,
         fontSize: TYPOGRAPHY.md,
+        color: COLORS.textPrimary,
+        backgroundColor: COLORS.background,
     },
     button: {
         padding: SPACING.sm,
         borderRadius: RADIUS.sm,
+        backgroundColor: COLORS.primary,
     },
     progressContainer: {
         marginTop: SPACING.xs,
@@ -152,6 +155,7 @@ const styles = StyleSheet.create({
     targetText: {
         fontSize: TYPOGRAPHY.xs,
         fontStyle: 'italic',
+        color: COLORS.textMuted,
     },
     booleanContainer: {
         flexDirection: 'row',
@@ -162,6 +166,7 @@ const styles = StyleSheet.create({
     booleanLabel: {
         fontSize: TYPOGRAPHY.md,
         fontWeight: TYPOGRAPHY.medium,
+        color: COLORS.textPrimary,
     },
     sliderContainer: {
         flexDirection: 'row',
@@ -173,5 +178,6 @@ const styles = StyleSheet.create({
         fontWeight: TYPOGRAPHY.bold,
         textAlign: 'center',
         marginRight: SPACING.sm,
+        color: COLORS.primary,
     },
 });

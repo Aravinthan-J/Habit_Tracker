@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 
 interface FocusHighlightsProps {
     totalMinutes: number;
@@ -10,27 +9,24 @@ interface FocusHighlightsProps {
 }
 
 export default function FocusHighlights({ totalMinutes, sessionsCount }: FocusHighlightsProps) {
-    const { premiumTheme } = useUIStore();
-    const colors = premiumTheme?.colors || COLORS;
-
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.cardBorder || COLORS.cardBorder }]}>
+        <View style={styles.container}>
             <View style={styles.header}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
-                    <Ionicons name="timer-outline" size={24} color={colors.secondary} />
+                <View style={styles.iconContainer}>
+                    <Ionicons name="timer-outline" size={24} color={COLORS.secondary} />
                 </View>
                 <View>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Deep Work Today</Text>
-                    <Text style={[styles.value, { color: colors.textPrimary }]}>
+                    <Text style={styles.label}>Deep Work Today</Text>
+                    <Text style={styles.value}>
                         {hours > 0 ? `${hours}h ` : ''}{mins}m
                     </Text>
                 </View>
             </View>
-            <View style={[styles.divider, { backgroundColor: colors.textMuted + '20' }]} />
-            <Text style={[styles.footer, { color: colors.textMuted }]}>
+            <View style={styles.divider} />
+            <Text style={styles.footer}>
                 {sessionsCount} session{sessionsCount !== 1 ? 's' : ''} completed
             </Text>
         </View>
@@ -43,6 +39,8 @@ const styles = StyleSheet.create({
         padding: SPACING.lg,
         borderRadius: RADIUS.lg,
         borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+        backgroundColor: COLORS.surface,
         marginBottom: SPACING.lg,
     },
     header: {
@@ -56,23 +54,28 @@ const styles = StyleSheet.create({
         borderRadius: RADIUS.md,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: COLORS.secondary + '20',
     },
     label: {
         fontSize: TYPOGRAPHY.xs,
         fontWeight: TYPOGRAPHY.medium,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
+        color: COLORS.textSecondary,
     },
     value: {
         fontSize: TYPOGRAPHY.xl,
         fontWeight: TYPOGRAPHY.bold,
+        color: COLORS.textPrimary,
     },
     divider: {
         height: 1,
+        backgroundColor: COLORS.textMuted + '20',
         marginVertical: SPACING.md,
     },
     footer: {
         fontSize: TYPOGRAPHY.xs,
         fontStyle: 'italic',
+        color: COLORS.textMuted,
     },
 });

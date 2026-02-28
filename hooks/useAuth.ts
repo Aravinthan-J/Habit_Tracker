@@ -13,40 +13,18 @@ import { useAuthStore } from '@/store/authStore';
 import { isValidEmail, isValidPassword } from '@/utils/validators';
 
 export function useAuth() {
-    const { user, isLoading, isOffline, setUser, setLoading, setupDummyUser, clear } = useAuthStore();
+    const { user, isLoading, setUser, setLoading, clear } = useAuthStore();
 
     useEffect(() => {
-        let mounted = true;
-
-        // Fallback to offline/dummy mode if Firebase doesn't respond within 5s
-        const sessionTimeout = setTimeout(() => {
-            if (mounted && isLoading) setupDummyUser();
-        }, 5000);
-
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-            clearTimeout(sessionTimeout);
-            if (mounted) {
-                setUser(firebaseUser);
-                setLoading(false);
-            }
-        }, () => {
-            clearTimeout(sessionTimeout);
-            if (mounted) setupDummyUser();
+            setUser(firebaseUser);
+            setLoading(false);
         });
-
-        return () => {
-            mounted = false;
-            clearTimeout(sessionTimeout);
-            unsubscribe();
-        };
+        return unsubscribe;
     }, []);
 
-    const offlineError = { error: { message: 'You appear to be offline. Please check your connection and try again.' } };
-
     const signIn = async (email: string, password: string) => {
-        if (isOffline) return offlineError;
         if (!isValidEmail(email)) return { error: { message: 'Invalid email address' } };
-
         try {
             const result = await signInWithEmailAndPassword(auth, email, password);
             return { data: result, error: null };
@@ -56,7 +34,6 @@ export function useAuth() {
     };
 
     const signUp = async (email: string, password: string, name: string) => {
-        if (isOffline) return offlineError;
         if (!isValidEmail(email)) return { error: { message: 'Invalid email address' } };
         const { valid, errors } = isValidPassword(password);
         if (!valid) return { error: { message: errors.join(', ') } };
@@ -64,8 +41,6 @@ export function useAuth() {
         try {
             const result = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(result.user, { displayName: name });
-
-            // Write profile document to Firestore
             await setDoc(doc(db, 'users', result.user.uid), {
                 email,
                 name,
@@ -76,7 +51,6 @@ export function useAuth() {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             });
-
             return { data: result, error: null };
         } catch (err: any) {
             return { data: null, error: { message: err.message } };

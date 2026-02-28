@@ -10,5 +10,3 @@ export const DEFAULT_STEP_GOAL = 10000;
 export const DEFAULT_REMINDER_TIME = '20:00';
 
 export const SYNC_RETRY_LIMIT = 3;
-export const REALTIME_CHANNEL_HABITS = 'habits-channel';
-export const REALTIME_CHANNEL_COMPLETIONS = 'completions-channel';

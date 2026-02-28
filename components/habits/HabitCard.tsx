@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
-import { useUIStore } from '@/store/uiStore';
 import { Habit } from '@/types/habit.types';
 import { HabitCheckbox } from './HabitCheckbox';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -28,8 +27,6 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   onToggle,
   onPress,
 }) => {
-  const { premiumTheme } = useUIStore();
-  const themeColors = premiumTheme?.colors || COLORS;
   const { light } = useHaptics();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -52,8 +49,8 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
         <View style={[
           styles.card,
           {
-            backgroundColor: themeColors.surface + '66', // Glass effect
-            borderColor: themeColors.cardBorder || COLORS.cardBorder
+            backgroundColor: COLORS.surface + '66', // Glass effect
+            borderColor: COLORS.cardBorder
           }
         ]}>
           <View style={[styles.glowBar, { backgroundColor: habit.color }]} />
@@ -64,7 +61,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
                 <Text style={styles.icon}>{habit.icon ?? '✨'}</Text>
               </View>
               <View style={styles.info}>
-                <Text style={[styles.title, { color: themeColors.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
+                <Text style={[styles.title, { color: COLORS.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
                 {streak > 0 && (
                   <View style={styles.streakRow}>
                     <Text style={styles.fire}>🔥</Text>

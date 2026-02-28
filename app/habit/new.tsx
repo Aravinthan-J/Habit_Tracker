@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,8 +19,12 @@ export default function NewHabitScreen() {
   const router = useRouter();
 
   const handleCreate = async (values: any) => {
-    await createHabit.mutateAsync(values);
-    router.back();
+    try {
+      await createHabit.mutateAsync(values);
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not create habit. Please try again.');
+    }
   };
 
   return (

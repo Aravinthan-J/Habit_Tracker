@@ -7,27 +7,34 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useHabits } from '@/hooks/useHabits';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
 import { Card } from '@/components/ui/Card';
-import { PREMIUM_THEMES } from '@/constants/Themes';
-import { HABIT_TEMPLATES } from '@/constants/templates';
+import { HABIT_TEMPLATES, HabitTemplate } from '@/constants/templates';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { signOut } = useAuth();
   const { user } = useAuthStore();
-  const { theme, setTheme, premiumTheme } = useUIStore();
-  const colors = premiumTheme?.colors || COLORS;
+  const { habits, createHabit } = useHabits();
   const { requestAndScheduleDaily, cancelAll } = useNotifications();
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('20:00');
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [tempHour, setTempHour] = useState(20);
+  const [tempMinute, setTempMinute] = useState(0);
 
+  // ── Sign out ──────────────────────────────────────────────────────────────
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -35,6 +42,7 @@ export default function SettingsScreen() {
     ]);
   };
 
+  // ── Notifications ─────────────────────────────────────────────────────────
   const toggleNotifications = async (value: boolean) => {
     setNotificationsEnabled(value);
     if (value) {
@@ -48,6 +56,66 @@ export default function SettingsScreen() {
     }
   };
 
+  // ── Time picker ───────────────────────────────────────────────────────────
+  const openTimePicker = () => {
+    const [h, m] = reminderTime.split(':').map(Number);
+    setTempHour(h);
+    setTempMinute(m);
+    setTimePickerVisible(true);
+  };
+
+  const confirmTime = async () => {
+    const newTime = `${String(tempHour).padStart(2, '0')}:${String(tempMinute).padStart(2, '0')}`;
+    setReminderTime(newTime);
+    setTimePickerVisible(false);
+    if (notificationsEnabled) {
+      await requestAndScheduleDaily(newTime);
+    }
+  };
+
+  const adjustHour = (delta: number) =>
+    setTempHour((h) => (h + delta + 24) % 24);
+  const adjustMinute = (delta: number) =>
+    setTempMinute((m) => (m + delta + 60) % 60);
+
+  // ── Habit templates ───────────────────────────────────────────────────────
+  const handleAddTemplate = (template: HabitTemplate) => {
+    const alreadyExists = habits.some(
+      (h) => h.title.toLowerCase() === template.title.toLowerCase()
+    );
+    if (alreadyExists) {
+      Alert.alert('Already Added', `"${template.title}" is already in your habits.`);
+      return;
+    }
+    Alert.alert(
+      'Add Habit',
+      `Add "${template.title}" to your habits?\n\n${template.description}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add',
+          onPress: async () => {
+            try {
+              await createHabit.mutateAsync({
+                title: template.title,
+                icon: template.icon,
+                color: template.color,
+                monthly_goal: template.monthly_goal,
+              });
+              Alert.alert('Added!', `"${template.title}" is now in your habits.`);
+            } catch (e: any) {
+              // mutateAsync throws 'Saved locally.' message when offline — that's fine
+              if (!e.message?.includes('locally')) {
+                Alert.alert('Error', e.message || 'Could not add habit.');
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ── Reusable row ──────────────────────────────────────────────────────────
   const SettingsRow: React.FC<{
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
@@ -57,7 +125,7 @@ export default function SettingsScreen() {
     color?: string;
   }> = ({ icon, label, value, onPress, right, color = COLORS.textPrimary }) => (
     <TouchableOpacity
-      style={[styles.row, { borderBottomColor: colors.cardBorder || COLORS.cardBorder }]}
+      style={styles.row}
       onPress={onPress}
       disabled={!onPress}
       accessibilityLabel={label}
@@ -68,83 +136,78 @@ export default function SettingsScreen() {
       </View>
       {right ?? (
         <View style={styles.rowRight}>
-          {value && <Text style={[styles.rowValue, { color: colors.textMuted }]}>{value}</Text>}
-          {onPress && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+          {value && <Text style={styles.rowValue}>{value}</Text>}
+          {onPress && <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />}
         </View>
       )}
     </TouchableOpacity>
   );
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Settings</Text>
+          <Text style={styles.title}>Settings</Text>
         </View>
 
         {/* Profile */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Card style={styles.section}>
           <View style={styles.profileRow}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <View style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
               </Text>
             </View>
             <View>
-              <Text style={[styles.profileName, { color: colors.textPrimary }]}>{user?.displayName ?? 'Habity User'}</Text>
-              <Text style={[styles.profileEmail, { color: colors.textMuted }]}>{user?.email}</Text>
+              <Text style={styles.profileName}>{user?.displayName ?? 'Habity User'}</Text>
+              <Text style={styles.profileEmail}>{user?.email}</Text>
             </View>
           </View>
         </Card>
 
-        {/* Themes */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Premium Themes</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeScroll}>
-          <TouchableOpacity
-            style={[styles.themeBadge, theme === 'dark' && styles.themeBadgeActive, { backgroundColor: COLORS.surface }]}
-            onPress={() => setTheme('dark')}
-          >
-            <Text style={[styles.themeText, { color: COLORS.textPrimary }]}>Default</Text>
-          </TouchableOpacity>
-          {Object.values(PREMIUM_THEMES).map((t) => (
-            <TouchableOpacity
-              key={t.id}
-              style={[styles.themeBadge, theme === t.id && styles.themeBadgeActive, { backgroundColor: t.colors.surface }]}
-              onPress={() => setTheme(t.id as any)}
-            >
-              <Text style={[styles.themeText, { color: t.colors.textPrimary }]}>{t.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
         {/* Habit Templates */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Habit Templates</Text>
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
-          {HABIT_TEMPLATES.map((template, idx) => (
-            <SettingsRow
-              key={idx}
-              icon={template.icon as any}
-              label={template.title}
-              color={template.color}
-              onPress={() => Alert.alert('Add Habit', `Would you like to add "${template.title}" to your habits?`)}
-            />
-          ))}
+        <Text style={styles.sectionTitle}>Habit Templates</Text>
+        <Card style={styles.section}>
+          {HABIT_TEMPLATES.map((template, idx) => {
+            const added = habits.some(
+              (h) => h.title.toLowerCase() === template.title.toLowerCase()
+            );
+            return (
+              <SettingsRow
+                key={idx}
+                icon={template.icon as any}
+                label={template.title}
+                color={added ? COLORS.textMuted : template.color}
+                right={
+                  <View style={styles.rowRight}>
+                    {added ? (
+                      <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                    ) : (
+                      <Ionicons name="add-circle-outline" size={20} color={template.color} />
+                    )}
+                  </View>
+                }
+                onPress={() => handleAddTemplate(template)}
+              />
+            );
+          })}
         </Card>
 
-        {/* Focus Mode */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Productivity</Text>
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        {/* Productivity */}
+        <Text style={styles.sectionTitle}>Productivity</Text>
+        <Card style={styles.section}>
           <SettingsRow
             icon="timer-outline"
             label="Focus Mode"
-            onPress={() => { }} // Navigate to focus screen
-            color={colors.primary}
+            onPress={() => router.push('/focus')}
+            color={COLORS.primary}
           />
         </Card>
 
         {/* Notifications */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Notifications</Text>
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <Card style={styles.section}>
           <SettingsRow
             icon="notifications-outline"
             label="Daily Reminder"
@@ -152,8 +215,8 @@ export default function SettingsScreen() {
               <Switch
                 value={notificationsEnabled}
                 onValueChange={toggleNotifications}
-                trackColor={{ false: colors.surface, true: colors.primary + '88' }}
-                thumbColor={notificationsEnabled ? colors.primary : colors.textMuted}
+                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
+                thumbColor={notificationsEnabled ? COLORS.primary : COLORS.textMuted}
                 accessibilityLabel="Toggle daily reminder"
               />
             }
@@ -163,20 +226,29 @@ export default function SettingsScreen() {
               icon="time-outline"
               label="Reminder Time"
               value={reminderTime}
+              onPress={openTimePicker}
             />
           )}
         </Card>
 
         {/* About */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>About</Text>
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Text style={styles.sectionTitle}>About</Text>
+        <Card style={styles.section}>
           <SettingsRow icon="information-circle-outline" label="Version" value="1.0.0" />
-          <SettingsRow icon="document-text-outline" label="Privacy Policy" onPress={() => { }} />
-          <SettingsRow icon="help-circle-outline" label="Help & Support" onPress={() => { }} />
+          <SettingsRow
+            icon="document-text-outline"
+            label="Privacy Policy"
+            onPress={() => Linking.openURL('https://habity.app/privacy')}
+          />
+          <SettingsRow
+            icon="help-circle-outline"
+            label="Help & Support"
+            onPress={() => Linking.openURL('mailto:support@habity.app')}
+          />
         </Card>
 
         {/* Sign Out */}
-        <Card style={[styles.section, { backgroundColor: colors.surface }]}>
+        <Card style={styles.section}>
           <SettingsRow
             icon="log-out-outline"
             label="Sign Out"
@@ -187,6 +259,63 @@ export default function SettingsScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Time Picker Modal */}
+      <Modal
+        visible={timePickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTimePickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Set Reminder Time</Text>
+
+            <View style={styles.timePicker}>
+              {/* Hour */}
+              <View style={styles.timeColumn}>
+                <TouchableOpacity onPress={() => adjustHour(1)} style={styles.timeBtn}>
+                  <Ionicons name="chevron-up" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+                <Text style={styles.timeValue}>{String(tempHour).padStart(2, '0')}</Text>
+                <TouchableOpacity onPress={() => adjustHour(-1)} style={styles.timeBtn}>
+                  <Ionicons name="chevron-down" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.timeSep}>:</Text>
+
+              {/* Minute */}
+              <View style={styles.timeColumn}>
+                <TouchableOpacity onPress={() => adjustMinute(5)} style={styles.timeBtn}>
+                  <Ionicons name="chevron-up" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+                <Text style={styles.timeValue}>{String(tempMinute).padStart(2, '0')}</Text>
+                <TouchableOpacity onPress={() => adjustMinute(-5)} style={styles.timeBtn}>
+                  <Ionicons name="chevron-down" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={styles.timeHint}>Minutes step by 5</Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setTimePickerVisible(false)}
+              >
+                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnConfirm]}
+                onPress={confirmTime}
+              >
+                <Text style={styles.modalBtnConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -215,11 +344,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: {
-    color: COLORS.textPrimary,
-    fontSize: TYPOGRAPHY.xl,
-    fontWeight: TYPOGRAPHY.bold,
-  },
+  avatarText: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xl, fontWeight: TYPOGRAPHY.bold },
   profileName: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.semibold },
   profileEmail: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
   row: {
@@ -234,9 +359,64 @@ const styles = StyleSheet.create({
   rowIcon: { marginRight: SPACING.md },
   rowLabel: { fontSize: TYPOGRAPHY.md },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  rowValue: { fontSize: TYPOGRAPHY.sm },
-  themeScroll: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.lg, flexDirection: 'row' },
-  themeBadge: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.md, marginRight: SPACING.sm, borderWidth: 2, borderColor: 'transparent' },
-  themeBadgeActive: { borderColor: '#FFFFFF' },
-  themeText: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.bold },
+  rowValue: { fontSize: TYPOGRAPHY.sm, color: COLORS.textMuted },
+
+  // Time picker modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xl,
+    width: 280,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  modalTitle: {
+    color: COLORS.textPrimary,
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.bold,
+    marginBottom: SPACING.xl,
+  },
+  timePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  timeColumn: { alignItems: 'center', gap: SPACING.sm },
+  timeBtn: {
+    padding: SPACING.sm,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primary + '18',
+  },
+  timeValue: {
+    color: COLORS.textPrimary,
+    fontSize: 40,
+    fontWeight: TYPOGRAPHY.bold,
+    width: 70,
+    textAlign: 'center',
+  },
+  timeSep: {
+    color: COLORS.textPrimary,
+    fontSize: 40,
+    fontWeight: TYPOGRAPHY.bold,
+    marginBottom: 8,
+  },
+  timeHint: {
+    color: COLORS.textMuted,
+    fontSize: TYPOGRAPHY.xs,
+    marginBottom: SPACING.xl,
+  },
+  modalButtons: { flexDirection: 'row', gap: SPACING.md, width: '100%' },
+  modalBtn: { flex: 1, paddingVertical: SPACING.md, borderRadius: RADIUS.md, alignItems: 'center' },
+  modalBtnCancel: { backgroundColor: COLORS.surface },
+  modalBtnConfirm: { backgroundColor: COLORS.primary },
+  modalBtnCancelText: { color: COLORS.textSecondary, fontWeight: TYPOGRAPHY.semibold },
+  modalBtnConfirmText: { color: '#FFF', fontWeight: TYPOGRAPHY.semibold },
 });

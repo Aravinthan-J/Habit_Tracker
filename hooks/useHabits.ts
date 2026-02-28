@@ -15,6 +15,7 @@ import {
     getLocalHabits,
     deleteLocalHabit,
     queueOperation,
+    generateId,
 } from '@/services/storage/LocalStorageService';
 
 export function useHabits() {
@@ -62,14 +63,19 @@ export function useHabits() {
                 const habit: Habit = { id: docRef.id, ...habitData } as Habit;
                 await saveHabitLocally(habit);
                 return habit;
-            } catch {
+            } catch (firestoreErr) {
+                // Save locally so the habit appears immediately in the UI
+                const tempId = generateId();
+                const habit: Habit = { id: tempId, ...habitData } as Habit;
+                await saveHabitLocally(habit);
                 await queueOperation({
                     operation: 'INSERT',
                     table_name: 'habits',
-                    record_id: 'pending',
+                    record_id: tempId,
                     payload: JSON.stringify(habitData),
                 });
-                throw new Error('Saved locally. Will sync when online.');
+                // Return (not throw) so onSuccess fires and the query refreshes
+                return habit;
             }
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['habits', user?.uid] }),
