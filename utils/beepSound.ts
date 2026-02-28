@@ -1,6 +1,3 @@
-import * as FileSystem from 'expo-file-system';
-import { Audio } from 'expo-av';
-
 // ─── WAV generator ────────────────────────────────────────────────────────────
 
 function writeU32(arr: number[], offset: number, v: number) {
@@ -81,6 +78,8 @@ async function getSoundUri(name: string, freqHz: number, durationSec: number): P
     if (uriCache[name]) return uriCache[name];
     const wav    = generateWav(freqHz, durationSec);
     const base64 = toBase64(wav);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const FileSystem = require('expo-file-system') as typeof import('expo-file-system');
     const uri    = `${FileSystem.cacheDirectory}${name}.wav`;
     await FileSystem.writeAsStringAsync(uri, base64, {
         encoding: FileSystem.EncodingType.Base64,
@@ -97,6 +96,8 @@ async function getSoundUri(name: string, freqHz: number, durationSec: number): P
  */
 export async function playTimerComplete(): Promise<void> {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { Audio } = require('expo-av') as typeof import('expo-av');
         await Audio.setAudioModeAsync({
             playsInSilentModeIOS: true,
             staysActiveInBackground: false,
