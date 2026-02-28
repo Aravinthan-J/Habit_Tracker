@@ -74,32 +74,50 @@ export default function CalendarScreen() {
       const habit = habitMap[c.habit_id];
       if (habit) result[c.date].colors.push(habit.color);
     }
-    const habitCount = selectedHabitId ? 1 : habits.length;
-    for (const data of Object.values(result)) {
+    for (const [date, data] of Object.entries(result)) {
+      const habitCount = selectedHabitId
+        ? 1
+        : habits.filter((h) => !h.created_at || h.created_at.slice(0, 10) <= date).length;
       data.allDone = habitCount > 0 && data.colors.length >= habitCount;
     }
     return result;
-  }, [filteredCompletions, habitMap, habits.length, selectedHabitId]);
+  }, [filteredCompletions, habitMap, habits, selectedHabitId]);
 
   const stats = useMemo(() => {
+    const activeIds = new Set(habits.map((h) => h.id));
     const todayStr = today();
     const pastDays = getDaysInMonth(year, month).filter((d) => d <= todayStr);
-    const totalPossible = pastDays.length * habits.length;
-    const completionRate = totalPossible > 0 ? Math.round((completions.length / totalPossible) * 100) : 0;
+
+    // Per-day: only count habits that existed on that day
+    let totalPossible = 0;
+    let totalCompleted = 0;
     const perfectDays = pastDays.filter((d) => {
-      const count = completions.filter((c) => c.date === d).length;
-      return habits.length > 0 && count >= habits.length;
+      const habitsOnDay = habits.filter((h) => !h.created_at || h.created_at.slice(0, 10) <= d);
+      if (habitsOnDay.length === 0) return false;
+      const doneCount = completions.filter((c) => c.date === d && activeIds.has(c.habit_id)).length;
+      totalPossible += habitsOnDay.length;
+      totalCompleted += Math.min(doneCount, habitsOnDay.length);
+      return doneCount >= habitsOnDay.length;
     }).length;
-    const activeDays = new Set(completions.map((c) => c.date)).size;
+
+    const completionRate = totalPossible > 0
+      ? Math.min(Math.round((totalCompleted / totalPossible) * 100), 100)
+      : 0;
+    const activeDays = new Set(
+      completions.filter((c) => activeIds.has(c.habit_id)).map((c) => c.date)
+    ).size;
     return { completionRate, perfectDays, activeDays };
-  }, [completions, habits.length, year, month]);
+  }, [completions, habits, year, month]);
 
   const dayDetail = useMemo(() => {
     if (!selectedDate) return null;
     const completedIds = new Set(
       completions.filter((c) => c.date === selectedDate).map((c) => c.habit_id)
     );
-    return habits.map((h) => ({ ...h, completed: completedIds.has(h.id) }));
+    // Only include habits that existed on the selected date
+    return habits
+      .filter((h) => !h.created_at || h.created_at.slice(0, 10) <= selectedDate)
+      .map((h) => ({ ...h, completed: completedIds.has(h.id) }));
   }, [selectedDate, completions, habits]);
 
   // Sheet animation helpers

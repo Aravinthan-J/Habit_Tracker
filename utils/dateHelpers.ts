@@ -1,39 +1,48 @@
 /**
- * Returns today's date as YYYY-MM-DD string
+ * Format a local Date object to YYYY-MM-DD using local timezone (not UTC).
+ */
+function localDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+/**
+ * Returns today's date as YYYY-MM-DD string in local timezone.
  */
 export function today(): string {
-    return new Date().toISOString().split('T')[0];
+    return localDateStr(new Date());
 }
 
 /**
- * Format a Date or string to YYYY-MM-DD
+ * Format a Date or YYYY-MM-DD string to YYYY-MM-DD.
+ * Date objects use local timezone. Strings are returned as-is (sliced to 10 chars).
  */
 export function formatDate(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toISOString().split('T')[0];
+    if (typeof date === 'string') return date.slice(0, 10);
+    return localDateStr(date);
 }
 
 /**
- * Get the start and end dates for a given month (YYYY-MM-DD)
+ * Get the start and end dates for a given month (YYYY-MM-DD) in local timezone.
  */
 export function getMonthRange(year: number, month: number): { start: string; end: string } {
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0);
     return {
-        start: formatDate(start),
-        end: formatDate(end),
+        start: localDateStr(new Date(year, month - 1, 1)),
+        end: localDateStr(new Date(year, month, 0)),
     };
 }
 
 /**
- * Get last N days as YYYY-MM-DD strings (newest first)
+ * Get last N days as YYYY-MM-DD strings (newest first) in local timezone.
  */
 export function getLastNDays(n: number): string[] {
     const dates: string[] = [];
     for (let i = 0; i < n; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        dates.push(formatDate(d));
+        dates.push(localDateStr(d));
     }
     return dates;
 }
@@ -88,9 +97,10 @@ export function friendlyDate(dateStr: string): string {
     if (dateStr === today()) return 'Today';
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    if (dateStr === formatDate(yesterday)) return 'Yesterday';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (dateStr === localDateStr(yesterday)) return 'Yesterday';
+    // Parse as local date to avoid UTC midnight shifting the day
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 /**

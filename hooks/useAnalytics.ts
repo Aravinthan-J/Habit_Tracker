@@ -17,7 +17,7 @@ export interface AnalyticsSummary {
 }
 
 function buildSummary(
-    habits: { id: string }[],
+    habits: { id: string; created_at?: string }[],
     completions: { habit_id: string; date: string }[],
     last30: string[],
     stepsMap: Record<string, number> = {},
@@ -31,10 +31,26 @@ function buildSummary(
     const completionsByDate: Record<string, number> = {};
     const ratesByDate: Record<string, number> = {};
 
+    // Track totals for an accurate avg (skip days where no habits existed yet)
+    let rateSum = 0;
+    let rateDays = 0;
+
     for (const date of last30) {
+        // Only include habits that existed on this date
+        const habitsOnDay = habits.filter(
+            (h) => !h.created_at || h.created_at.slice(0, 10) <= date
+        ).length;
         const count = activeCompletions.filter((c) => c.date === date).length;
         completionsByDate[date] = count;
-        ratesByDate[date] = activeHabits > 0 ? Math.min(Math.round((count / activeHabits) * 100), 100) : 0;
+
+        if (habitsOnDay > 0) {
+            const rate = Math.min(Math.round((count / habitsOnDay) * 100), 100);
+            ratesByDate[date] = rate;
+            rateSum += rate;
+            rateDays += 1;
+        } else {
+            ratesByDate[date] = 0;
+        }
     }
 
     let bestStreak = 0;
@@ -44,7 +60,7 @@ function buildSummary(
         if (streak > bestStreak) bestStreak = streak;
     }
 
-    const avgCompletionRate = last30.reduce((sum, d) => sum + (ratesByDate[d] ?? 0), 0) / last30.length;
+    const avgCompletionRate = rateDays > 0 ? Math.round(rateSum / rateDays) : 0;
 
     const weeklyData = getLastNDays(7).reverse().map((date) => ({
         date,
@@ -54,7 +70,7 @@ function buildSummary(
 
     return {
         totalCompletions: activeCompletions.length,
-        avgCompletionRate: Math.round(avgCompletionRate),
+        avgCompletionRate,
         bestStreak,
         activeHabits,
         completionsByDate,
@@ -92,7 +108,7 @@ export function useAnalytics() {
 
                 const completions = completionsSnap.docs.map((d) => d.data() as { habit_id: string; date: string });
                 const habits = habitsSnap.docs
-                    .map((d) => ({ id: d.id, ...d.data() } as { id: string; archived_at: string | null }))
+                    .map((d) => ({ id: d.id, ...d.data() } as { id: string; archived_at: string | null; created_at?: string }))
                     .filter((h) => h.archived_at === null);
 
                 const stepsMap: Record<string, number> = {};

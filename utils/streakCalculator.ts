@@ -9,15 +9,19 @@ export function calculateCurrentStreak(completionDates: string[]): number {
 
     const sorted = [...completionDates].sort((a, b) => b.localeCompare(a));
     const todayStr = formatDate(new Date());
-    const yesterdayStr = formatDate(new Date(Date.now() - 86400000));
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yesterdayStr = formatDate(y);
 
     // Streak must include today or yesterday to be "active"
     if (sorted[0] !== todayStr && sorted[0] !== yesterdayStr) return 0;
 
     let streak = 1;
     for (let i = 1; i < sorted.length; i++) {
-        const prev = new Date(sorted[i - 1]);
-        const curr = new Date(sorted[i]);
+        // Parse as local date (split avoids UTC midnight offset issues)
+        const [py, pm, pd] = sorted[i - 1].split('-').map(Number);
+        const [cy, cm, cd] = sorted[i].split('-').map(Number);
+        const prev = new Date(py, pm - 1, pd);
+        const curr = new Date(cy, cm - 1, cd);
         const diffDays = Math.round((prev.getTime() - curr.getTime()) / 86400000);
         if (diffDays === 1) {
             streak++;
@@ -39,8 +43,10 @@ export function calculateLongestStreak(completionDates: string[]): number {
     let current = 1;
 
     for (let i = 1; i < sorted.length; i++) {
-        const prev = new Date(sorted[i - 1]);
-        const curr = new Date(sorted[i]);
+        const [py, pm, pd] = sorted[i - 1].split('-').map(Number);
+        const [cy, cm, cd] = sorted[i].split('-').map(Number);
+        const prev = new Date(py, pm - 1, pd);
+        const curr = new Date(cy, cm - 1, cd);
         const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
         if (diffDays === 1) {
             current++;
