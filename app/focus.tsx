@@ -11,7 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Accelerometer } from 'expo-sensors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { playTimerComplete } from '@/utils/beepSound';
 
 const { width } = Dimensions.get('window');
 
@@ -56,8 +58,11 @@ export default function FocusMode() {
         let interval: ReturnType<typeof setInterval>;
         if (isActive && seconds > 0) {
             interval = setInterval(() => setSeconds((s) => s - 1), 1000);
-        } else if (seconds === 0) {
+        } else if (seconds === 0 && isActive) {
             setIsActive(false);
+            // Fire completion sound + strong haptic
+            playTimerComplete();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
         return () => clearInterval(interval);
     }, [isActive, seconds]);
