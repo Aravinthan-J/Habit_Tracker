@@ -5,8 +5,9 @@ try {
     Notifications = require('expo-notifications');
     Notifications!.setNotificationHandler({
         handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
+            // Suppress OS foreground alert — we show our own in-app toast instead
+            shouldShowAlert: false,
+            shouldPlaySound: false,
             shouldSetBadge: true,
         }),
     });

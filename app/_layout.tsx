@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,9 +8,13 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { InAppNotification, NotifPayload } from '@/components/ui/InAppNotification';
 import { COLORS } from '@/constants/theme';
 import { View, StyleSheet } from 'react-native';
 import getDatabase from '@/lib/database';
+
+let Notifications: typeof import('expo-notifications') | null = null;
+try { Notifications = require('expo-notifications'); } catch { }
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,8 +29,20 @@ function AppContent() {
   const { isLoading, user } = useAuth();
   useRealtime();
   const { isOnline, isSyncing } = useOfflineSync();
-
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
+  const [activeNotif, setActiveNotif] = useState<NotifPayload | null>(null);
+
+  // Listen for foreground notifications and show custom toast
+  useEffect(() => {
+    if (!Notifications || !user) return;
+    const sub = Notifications.addNotificationReceivedListener((notification) => {
+      setActiveNotif({
+        title: notification.request.content.title ?? 'Habity',
+        body:  notification.request.content.body  ?? '',
+      });
+    });
+    return () => sub.remove();
+  }, [user]);
 
   if (isLoading) return null;
 
@@ -51,6 +67,11 @@ function AppContent() {
       />
 
       {!!user && <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} />}
+
+      <InAppNotification
+        notif={activeNotif}
+        onDismiss={() => setActiveNotif(null)}
+      />
 
       <StatusBar style="light" />
     </>
