@@ -94,7 +94,7 @@ export default function LoginScreen() {
             <Text style={styles.logoText}>H</Text>
           </LinearGradient>
           <Text style={styles.appName}>Habity</Text>
-          <Text style={styles.tagline}>Build habits that last</Text>
+          <Text style={styles.tagline}>Your future self is watching.</Text>
         </View>
 
         {/* Form */}
