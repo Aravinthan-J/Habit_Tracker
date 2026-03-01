@@ -22,14 +22,19 @@ export async function checkAndAwardBadges(
         const earnedIds = new Set(earnedSnap.docs.map((d) => d.data().badge_id as string));
 
 
-        // Fetch all completions from grouped daily docs
+        // Fetch all daily docs — contains both completions and step data
         const dailySnap = await getDocs(collection(db, 'users', userId, 'daily'));
         const completions: { habit_id: string; date: string; completed_at: string }[] = [];
+        const stepData: { steps: number; date: string; distance?: number }[] = [];
         for (const d of dailySnap.docs) {
             const date = d.id;
-            const ids = (d.data().completedHabitIds ?? []) as string[];
+            const data = d.data();
+            const ids = (data.completedHabitIds ?? []) as string[];
             for (const habit_id of ids) {
                 completions.push({ habit_id, date, completed_at: `${date}T00:00:00.000Z` });
+            }
+            if (data.steps != null) {
+                stepData.push({ steps: data.steps as number, date, distance: data.distance });
             }
         }
 
@@ -37,10 +42,6 @@ export async function checkAndAwardBadges(
         const habitsSnap = await getDocs(collection(db, 'users', userId, 'habits'));
         const habits = habitsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as { id: string; created_at: string }));
         const totalHabits = habits.length;
-
-        // Fetch step data
-        const stepsSnap = await getDocs(collection(db, 'users', userId, 'step_data'));
-        const stepData = stepsSnap.docs.map((d) => d.data() as { steps: number; date: string; distance?: number });
 
         // Fetch user profile for step goal
         const profileDoc = await getDoc(doc(db, 'users', userId));

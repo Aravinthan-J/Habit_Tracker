@@ -76,7 +76,7 @@ export interface HabitStats {
 export type SyncOperation = {
     id?: number;
     operation: 'INSERT' | 'UPDATE' | 'DELETE' | 'SET' | 'ARRAY_UNION' | 'ARRAY_REMOVE';
-    table_name: 'habits' | 'completions' | 'daily' | 'step_data';
+    table_name: 'habits' | 'completions' | 'daily';
     record_id: string;
     payload: string;
     created_at?: string;

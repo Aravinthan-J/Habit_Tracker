@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, setDoc, documentId } from 'firebase/firestore';
 import { queueOperation } from '@/services/storage/LocalStorageService';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
@@ -41,15 +41,14 @@ export function useSteps() {
                 };
                 try {
                     await setDoc(
-                        doc(db, 'users', user.uid, 'step_data', pedData.date),
+                        doc(db, 'users', user.uid, 'daily', pedData.date),
                         stepPayload,
                         { merge: true },
                     );
                 } catch {
-                    // Offline — queue for sync when connection returns
                     await queueOperation({
                         operation: 'SET',
-                        table_name: 'step_data',
+                        table_name: 'daily',
                         record_id: pedData.date,
                         payload: JSON.stringify(stepPayload),
                     });
@@ -69,11 +68,13 @@ export function useSteps() {
             const days = getLastNDays(7).reverse();
             try {
                 const snapshot = await getDocs(query(
-                    collection(db, 'users', user.uid, 'step_data'),
-                    where('date', '>=', days[0]),
-                    where('date', '<=', days[6])
+                    collection(db, 'users', user.uid, 'daily'),
+                    where(documentId(), '>=', days[0]),
+                    where(documentId(), '<=', days[6])
                 ));
-                return snapshot.docs.map((d) => d.data());
+                return snapshot.docs
+                    .filter((d) => d.data().steps != null)
+                    .map((d) => ({ date: d.id, ...d.data() }));
             } catch {
                 return [];
             }

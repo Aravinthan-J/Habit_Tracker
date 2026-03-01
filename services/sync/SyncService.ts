@@ -7,7 +7,7 @@ import {
     saveHabitLocally,
 } from '../storage/LocalStorageService';
 
-type SyncableCollection = 'habits' | 'completions' | 'daily' | 'step_data';
+type SyncableCollection = 'habits' | 'completions' | 'daily';
 
 export async function processQueue(): Promise<void> {
     const userId = auth.currentUser?.uid;

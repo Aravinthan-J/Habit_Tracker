@@ -31,24 +31,22 @@ export function useRealtime() {
             () => qc.invalidateQueries({ queryKey: ['habits', uid] }),
         );
 
-        const unsubCompletions = safeSnapshot(
-            collection(db, 'users', uid, 'completions'),
-            () => qc.invalidateQueries({ queryKey: ['completions', uid] }),
-        );
-
         const unsubBadges = safeSnapshot(
             collection(db, 'users', uid, 'user_badges'),
             () => qc.invalidateQueries({ queryKey: ['badges', uid] }),
         );
 
+        // daily collection stores both completions and step data
         const unsubDaily = safeSnapshot(
             collection(db, 'users', uid, 'daily'),
-            () => qc.invalidateQueries({ queryKey: ['completions', uid] }),
+            () => {
+                qc.invalidateQueries({ queryKey: ['completions', uid] });
+                qc.invalidateQueries({ queryKey: ['steps', uid] });
+            },
         );
 
         return () => {
             unsubHabits();
-            unsubCompletions();
             unsubBadges();
             unsubDaily();
         };

@@ -92,37 +92,29 @@ export function useAnalytics() {
             const endDate = last30[last30.length - 1];
 
             try {
-                const [dailySnap, habitsSnap, stepsSnap] = await Promise.all([
+                const [dailySnap, habitsSnap] = await Promise.all([
                     getDocs(query(
                         collection(db, 'users', user.uid, 'daily'),
                         where(documentId(), '>=', startDate),
                         where(documentId(), '<=', endDate)
                     )),
                     getDocs(collection(db, 'users', user.uid, 'habits')),
-                    getDocs(query(
-                        collection(db, 'users', user.uid, 'step_data'),
-                        where('date', '>=', startDate),
-                        where('date', '<=', endDate)
-                    )),
                 ]);
 
                 const completions: { habit_id: string; date: string }[] = [];
+                const stepsMap: Record<string, number> = {};
                 for (const d of dailySnap.docs) {
                     const date = d.id;
-                    const ids = (d.data().completedHabitIds ?? []) as string[];
+                    const data = d.data();
+                    const ids = (data.completedHabitIds ?? []) as string[];
                     for (const habit_id of ids) {
                         completions.push({ habit_id, date });
                     }
+                    if (data.steps != null) stepsMap[date] = data.steps as number;
                 }
                 const habits = habitsSnap.docs
                     .map((d) => ({ id: d.id, ...d.data() } as { id: string; archived_at: string | null; created_at?: string }))
                     .filter((h) => h.archived_at === null);
-
-                const stepsMap: Record<string, number> = {};
-                for (const d of stepsSnap.docs) {
-                    const s = d.data();
-                    stepsMap[s.date] = s.steps;
-                }
 
                 return buildSummary(habits, completions, last30, stepsMap);
             } catch {
