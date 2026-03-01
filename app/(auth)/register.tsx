@@ -153,21 +153,42 @@ export default function RegisterScreen() {
 
         {/* Password strength */}
         {password.length > 0 && (
-          <View style={styles.strengthContainer}>
-            <View style={styles.strengthBar}>
-              {[0, 1, 2, 3].map((i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.strengthSegment,
-                    { backgroundColor: i <= strength - 1 ? STRENGTH_COLORS[strength - 1] : COLORS.surfaceLight },
-                  ]}
-                />
+          <View style={styles.strengthWrapper}>
+            <View style={styles.strengthContainer}>
+              <View style={styles.strengthBar}>
+                {[0, 1, 2, 3].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.strengthSegment,
+                      { backgroundColor: i <= strength - 1 ? STRENGTH_COLORS[strength - 1] : COLORS.surfaceLight },
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={[styles.strengthLabel, { color: STRENGTH_COLORS[strength - 1] ?? COLORS.textMuted }]}>
+                {strength > 0 ? STRENGTH_LABELS[strength - 1] : ''}
+              </Text>
+            </View>
+            <View style={styles.conditionsGrid}>
+              {[
+                { label: 'At least 8 characters', met: password.length >= 8 },
+                { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+                { label: 'One lowercase letter', met: /[a-z]/.test(password) },
+                { label: 'One number', met: /[0-9]/.test(password) },
+              ].map(({ label, met }) => (
+                <View key={label} style={styles.condition}>
+                  <Ionicons
+                    name={met ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={14}
+                    color={met ? COLORS.success : COLORS.textMuted}
+                  />
+                  <Text style={[styles.conditionText, { color: met ? COLORS.success : COLORS.textMuted }]}>
+                    {label}
+                  </Text>
+                </View>
               ))}
             </View>
-            <Text style={[styles.strengthLabel, { color: STRENGTH_COLORS[strength - 1] ?? COLORS.textMuted }]}>
-              {strength > 0 ? STRENGTH_LABELS[strength - 1] : ''}
-            </Text>
           </View>
         )}
 
@@ -245,16 +266,32 @@ const styles = StyleSheet.create({
   },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.cardBorder },
   dividerText: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.xs },
-  strengthContainer: {
+  strengthWrapper: {
     marginTop: -SPACING.md,
     marginBottom: SPACING.lg,
+  },
+  strengthContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   strengthBar: { flex: 1, flexDirection: 'row', gap: 4 },
   strengthSegment: { flex: 1, height: 4, borderRadius: 2 },
   strengthLabel: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium, width: 44 },
+  conditionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    rowGap: SPACING.xs,
+  },
+  condition: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: '48%',
+  },
+  conditionText: { fontSize: TYPOGRAPHY.xs },
   termsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
