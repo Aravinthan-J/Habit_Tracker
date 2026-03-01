@@ -21,6 +21,7 @@ export async function checkAndAwardBadges(
         const earnedSnap = await getDocs(collection(db, 'users', userId, 'user_badges'));
         const earnedIds = new Set(earnedSnap.docs.map((d) => d.data().badge_id as string));
 
+
         // Fetch all completions from grouped daily docs
         const dailySnap = await getDocs(collection(db, 'users', userId, 'daily'));
         const completions: { habit_id: string; date: string; completed_at: string }[] = [];
@@ -46,7 +47,7 @@ export async function checkAndAwardBadges(
         const stepGoal: number = profileDoc.data()?.step_goal ?? 10000;
 
         for (const def of BADGE_DEFINITIONS) {
-            if (earnedIds.has(def.name)) continue;
+            if (earnedIds.has(def.id)) continue;
 
             let qualified = false;
             let qualifyingHabitId: string | undefined = habitId;
@@ -62,29 +63,29 @@ export async function checkAndAwardBadges(
                     }
                 }
             } else if (def.type === 'completion') {
-                if (def.name.includes('Completions Club')) {
+                if (['completion_100', 'completion_500', 'completion_1000', 'completion_5000'].includes(def.id)) {
                     qualified = completions.length >= def.requirement;
-                } else if (def.name === 'Perfect Week') {
+                } else if (def.id === 'completion_perfect_week') {
                     qualified = checkPerfectWeek(completions, habits, 7);
                 }
             } else if (def.type === 'step') {
-                if (def.name === '10K Walker') {
+                if (def.id === 'step_10k') {
                     qualified = stepData.some((s) => s.steps >= 10000);
-                } else if (def.name === 'Step Streak - Week') {
+                } else if (def.id === 'step_streak_7') {
                     qualified = checkStepStreak(stepData, stepGoal, 7);
-                } else if (def.name === 'Step Streak - 2 Weeks') {
+                } else if (def.id === 'step_streak_14') {
                     qualified = checkStepStreak(stepData, stepGoal, 14);
-                } else if (def.name === 'Step Streak - Month') {
+                } else if (def.id === 'step_streak_30') {
                     qualified = checkStepStreak(stepData, stepGoal, 30);
-                } else if (def.name === '100km Milestone') {
+                } else if (def.id === 'step_km_100') {
                     qualified = stepData.reduce((sum, s) => sum + (s.distance ?? 0), 0) >= 100;
-                } else if (def.name === '500km Milestone') {
+                } else if (def.id === 'step_km_500') {
                     qualified = stepData.reduce((sum, s) => sum + (s.distance ?? 0), 0) >= 500;
                 }
             } else if (def.type === 'special') {
-                if (def.name === 'Habit Collector' || def.name === 'Power User') {
+                if (def.id === 'special_collector' || def.id === 'special_power_user') {
                     qualified = totalHabits >= def.requirement;
-                } else if (def.name === 'Consistency King') {
+                } else if (def.id === 'special_consistency') {
                     let activeStreaks = 0;
                     for (const h of habits) {
                         const dates = completions.filter((c) => c.habit_id === h.id).map((c) => c.date);
@@ -97,7 +98,7 @@ export async function checkAndAwardBadges(
             if (qualified) {
                 try {
                     await addDoc(collection(db, 'users', userId, 'user_badges'), {
-                        badge_id: def.name,
+                        badge_id: def.id,
                         user_id: userId,
                         habit_id: qualifyingHabitId ?? null,
                         earned_at: new Date().toISOString(),

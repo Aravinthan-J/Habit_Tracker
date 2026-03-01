@@ -14,7 +14,7 @@ async function computeBadgesLocally(userId: string): Promise<BadgeWithStatus[]> 
     const habits = await getLocalHabits(userId);
     const allCompletions = await getAllLocalCompletions(userId);
 
-    return BADGE_DEFINITIONS.map((def, i) => {
+    return BADGE_DEFINITIONS.map((def) => {
         let earned = false;
         let currentValue = 0;
 
@@ -26,10 +26,10 @@ async function computeBadgesLocally(userId: string): Promise<BadgeWithStatus[]> 
                 if (streak >= def.requirement) earned = true;
             }
         } else if (def.type === 'completion') {
-            if (def.name.includes('Completions Club')) {
+            if (['completion_100', 'completion_500', 'completion_1000', 'completion_5000'].includes(def.id)) {
                 currentValue = allCompletions.length;
                 earned = currentValue >= def.requirement;
-            } else if (def.name === 'Perfect Week') {
+            } else if (def.id === 'completion_perfect_week') {
                 const last7 = getLast30Days().slice(-7);
                 earned = habits.length > 0 && last7.every((date) =>
                     habits.every((h) => allCompletions.some((c) => c.habit_id === h.id && c.date === date))
@@ -37,10 +37,10 @@ async function computeBadgesLocally(userId: string): Promise<BadgeWithStatus[]> 
                 currentValue = earned ? 7 : 0;
             }
         } else if (def.type === 'special') {
-            if (def.name === 'Habit Collector' || def.name === 'Power User') {
+            if (def.id === 'special_collector' || def.id === 'special_power_user') {
                 currentValue = habits.length;
                 earned = currentValue >= def.requirement;
-            } else if (def.name === 'Consistency King') {
+            } else if (def.id === 'special_consistency') {
                 let activeStreaks = 0;
                 for (const h of habits) {
                     const dates = allCompletions.filter((c) => c.habit_id === h.id).map((c) => c.date);
@@ -52,7 +52,7 @@ async function computeBadgesLocally(userId: string): Promise<BadgeWithStatus[]> 
         }
 
         return {
-            id: `local-badge-${i}`,
+            id: def.id,
             name: def.name,
             description: def.description,
             type: def.type,
@@ -88,10 +88,10 @@ export function useBadges() {
                     })
                 );
 
-                return BADGE_DEFINITIONS.map((def, i) => {
-                    const earnedAt = earnedMap.get(def.name) ?? null;
+                return BADGE_DEFINITIONS.map((def) => {
+                    const earnedAt = earnedMap.get(def.id) ?? null;
                     return {
-                        id: `badge-${i}`,
+                        id: def.id,
                         name: def.name,
                         description: def.description,
                         type: def.type,

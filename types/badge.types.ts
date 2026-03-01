@@ -28,6 +28,7 @@ export interface BadgeWithStatus extends Badge {
 }
 
 export interface BadgeDefinition {
+    id: string;
     name: string;
     description: string;
     type: BadgeType;
