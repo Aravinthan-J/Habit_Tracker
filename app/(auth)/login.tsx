@@ -88,7 +88,9 @@ export default function LoginScreen() {
         {/* Header */}
         <View style={styles.header}>
           <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryDark]}
+            colors={['#FF6B6B', '#A855F7', '#6C63FF', '#3B82F6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.logoCircle}
           >
             <Text style={styles.logoText}>H</Text>
