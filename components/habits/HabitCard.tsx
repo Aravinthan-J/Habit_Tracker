@@ -36,16 +36,18 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const goalReached = monthlyGoal > 0 && monthlyCount >= monthlyGoal;
+  // Only lock new check-ins; already-completed habits can still be unchecked
+  const checkboxDisabled = goalReached && !isCompleted;
 
   const handleToggle = useCallback(() => {
-    if (goalReached) return;
+    if (checkboxDisabled) return;
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
     ]).start();
     light();
     onToggle();
-  }, [onToggle, light, goalReached]);
+  }, [onToggle, light, checkboxDisabled]);
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
@@ -89,7 +91,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
               isCompleted={isCompleted}
               color={habit.color}
               onToggle={handleToggle}
-              disabled={goalReached}
+              disabled={checkboxDisabled}
             />
           </View>
         </View>
