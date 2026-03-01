@@ -3,7 +3,7 @@
     "name": "Habity",
     "slug": "habity",
     "version": "1.0.0",
-    "description": "Your daily habit companion",
+    "description": "Build routines, track streaks, win badges. Your friendly habit tracking companion to build lasting routines and celebrate every win.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "habity",
