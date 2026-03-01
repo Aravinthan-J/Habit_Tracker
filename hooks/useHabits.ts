@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     collection,
     getDocs,
-    addDoc,
+    setDoc,
     updateDoc,
     deleteDoc,
     doc,
@@ -59,8 +59,9 @@ export function useHabits() {
             };
 
             try {
-                const docRef = await addDoc(collection(db, 'users', user.uid, 'habits'), habitData);
+                const docRef = doc(collection(db, 'users', user.uid, 'habits'));
                 const habit: Habit = { id: docRef.id, ...habitData } as Habit;
+                await setDoc(docRef, { ...habitData, id: docRef.id });
                 await saveHabitLocally(habit);
                 return habit;
             } catch (firestoreErr) {
@@ -72,7 +73,7 @@ export function useHabits() {
                     operation: 'INSERT',
                     table_name: 'habits',
                     record_id: tempId,
-                    payload: JSON.stringify(habitData),
+                    payload: JSON.stringify({ id: tempId, ...habitData }),
                 });
                 // Return (not throw) so onSuccess fires and the query refreshes
                 return habit;
