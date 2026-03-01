@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useHabits } from '@/hooks/useHabits';
@@ -177,11 +178,18 @@ export default function SettingsScreen() {
         {/* Profile */}
         <Card style={styles.section}>
           <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
-              </Text>
-            </View>
+            <LinearGradient
+              colors={['#FF6B6B', '#A855F7', '#6C63FF', '#3B82F6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatarRing}
+            >
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
+                </Text>
+              </View>
+            </LinearGradient>
             <View>
               <Text style={styles.profileName}>{user?.displayName ?? 'Habity User'}</Text>
               <Text style={styles.profileEmail}>{user?.email}</Text>
@@ -396,11 +404,19 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  avatarRing: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    padding: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primary,
+    width: '100%',
+    height: '100%',
+    borderRadius: 27,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
