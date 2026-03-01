@@ -39,7 +39,7 @@ function AppContent() {
     if (isLoading) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!user && !inAuthGroup) {
-      router.replace('/(auth)');
+      router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
     }
