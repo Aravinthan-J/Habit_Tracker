@@ -6,7 +6,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
@@ -181,17 +183,20 @@ export default function RegisterScreen() {
 
         {/* Terms */}
         <View style={styles.termsRow}>
-          <View
+          <TouchableOpacity
             style={[styles.checkbox, agreed && { backgroundColor: COLORS.primary, borderColor: COLORS.primary }]}
-            accessible
+            onPress={() => setAgreed(!agreed)}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: agreed }}
-            onTouchEnd={() => setAgreed(!agreed)}
-          />
+            activeOpacity={0.7}
+          >
+            {agreed && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </TouchableOpacity>
           <Text style={styles.termsText}>
             I agree to the{' '}
-            <Text style={styles.link}>Terms of Service</Text> and{' '}
-            <Text style={styles.link}>Privacy Policy</Text>
+            <Text style={styles.link} onPress={() => router.push('/terms')}>Terms of Service</Text>
+            {' '}and{' '}
+            <Text style={styles.link} onPress={() => router.push('/privacy')}>Privacy Policy</Text>
           </Text>
         </View>
 
