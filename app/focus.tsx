@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { playTimerComplete } from '@/utils/beepSound';
+import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 
 const { width } = Dimensions.get('window');
 
@@ -25,12 +26,14 @@ const DURATIONS = [
 
 export default function FocusMode() {
     const router = useRouter();
+    const { saveFocusSession } = useAdvancedFeatures();
     const [selectedDuration, setSelectedDuration] = useState(25 * 60);
     const [seconds, setSeconds] = useState(25 * 60);
     const [isActive, setIsActive] = useState(false);
     const [isFaceDown, setIsFaceDown] = useState(false);
     const subscription = useRef<any>(null);
     const prevFaceDown = useRef(false);
+    const startedAtRef = useRef<string | null>(null);
 
     // Accelerometer: detect face-down to auto-start
     useEffect(() => {
@@ -57,12 +60,21 @@ export default function FocusMode() {
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (isActive && seconds > 0) {
+            if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
             interval = setInterval(() => setSeconds((s) => s - 1), 1000);
         } else if (seconds === 0 && isActive) {
             setIsActive(false);
             // Fire completion sound + strong haptic
             playTimerComplete();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            // Persist the completed session
+            saveFocusSession.mutate({
+                duration: Math.round(selectedDuration / 60),
+                started_at: startedAtRef.current ?? new Date().toISOString(),
+                ended_at: new Date().toISOString(),
+                interrupted: false,
+            });
+            startedAtRef.current = null;
         }
         return () => clearInterval(interval);
     }, [isActive, seconds]);
@@ -86,6 +98,7 @@ export default function FocusMode() {
     const handleReset = () => {
         setIsActive(false);
         setSeconds(selectedDuration);
+        startedAtRef.current = null;
     };
 
     const handleDurationSelect = (value: number) => {

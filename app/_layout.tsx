@@ -12,6 +12,7 @@ import { InAppNotification, NotifPayload } from '@/components/ui/InAppNotificati
 import { COLORS } from '@/constants/theme';
 import { View, StyleSheet } from 'react-native';
 import getDatabase from '@/lib/database';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 let Notifications: typeof import('expo-notifications') | null = null;
 try { Notifications = require('expo-notifications'); } catch { }
@@ -83,15 +84,17 @@ function AppContent() {
 export default function RootLayout() {
   useEffect(() => {
     // Warm up the DB singleton early so it's ready before hooks need it
-    getDatabase().catch(console.error);
+    getDatabase().catch((e) => { if (__DEV__) console.error('[DB init]', e); });
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <View style={styles.root}>
-        <AppContent />
-      </View>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <View style={styles.root}>
+          <AppContent />
+        </View>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

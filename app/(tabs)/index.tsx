@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -46,6 +46,26 @@ export default function HomeScreen() {
     [completions, todayStr, activeHabitIds]
   );
 
+  // Pre-compute per-habit maps once — avoids O(n×m) filtering inside renderItem
+  const completionDatesByHabitId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of completions) {
+      if (!map.has(c.habit_id)) map.set(c.habit_id, []);
+      map.get(c.habit_id)!.push(c.date);
+    }
+    return map;
+  }, [completions]);
+
+  const monthlyCountByHabitId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of completions) {
+      if (c.date.startsWith(currentMonth)) {
+        map.set(c.habit_id, (map.get(c.habit_id) ?? 0) + 1);
+      }
+    }
+    return map;
+  }, [completions, currentMonth]);
+
   const completedCount = completedTodayIds.size;
   const totalCount = habits.length;
   const allDone = totalCount > 0 && completedCount === totalCount;
@@ -54,13 +74,13 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const handleToggle = async (habitId: string) => {
+  const handleToggle = useCallback(async (habitId: string) => {
     const isCompleted = completedTodayIds.has(habitId);
     await toggleCompletion.mutateAsync({ habitId, date: todayStr, isCompleted });
     if (!isCompleted) {
       await checkForNewBadges(habitId);
     }
-  };
+  }, [completedTodayIds, todayStr, toggleCompletion, checkForNewBadges]);
 
   const handleRefresh = async () => {
     await Promise.all([refetchHabits(), refetchAdvanced()]);
@@ -138,13 +158,12 @@ export default function HomeScreen() {
             {habitsLoading && <LoadingState count={3} />}
           </View>
         )}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
         renderItem={({ item }) => {
-          const completionDates = completions
-            .filter((c) => c.habit_id === item.id)
-            .map((c) => c.date);
-          const monthlyCount = completions.filter(
-            (c) => c.habit_id === item.id && c.date.startsWith(currentMonth)
-          ).length;
+          const completionDates = completionDatesByHabitId.get(item.id) ?? [];
+          const monthlyCount = monthlyCountByHabitId.get(item.id) ?? 0;
           return (
             <HabitCard
               habit={item}

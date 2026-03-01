@@ -38,6 +38,25 @@ export default function HabitsScreen() {
 
   const activeHabitIds = useMemo(() => new Set(habits.map((h) => h.id)), [habits]);
 
+  const completionDatesByHabitId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of completions) {
+      if (!map.has(c.habit_id)) map.set(c.habit_id, []);
+      map.get(c.habit_id)!.push(c.date);
+    }
+    return map;
+  }, [completions]);
+
+  const monthlyCountByHabitId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of completions) {
+      if (c.date.startsWith(currentMonth)) {
+        map.set(c.habit_id, (map.get(c.habit_id) ?? 0) + 1);
+      }
+    }
+    return map;
+  }, [completions, currentMonth]);
+
   const completedTodayIds = useMemo(
     () => new Set(
       completions
@@ -112,12 +131,8 @@ export default function HabitsScreen() {
           maxToRenderPerBatch={10}
           windowSize={5}
           renderItem={({ item }) => {
-            const completionDates = completions
-              .filter((c) => c.habit_id === item.id)
-              .map((c) => c.date);
-            const monthlyCount = completions.filter(
-              (c) => c.habit_id === item.id && c.date.startsWith(currentMonth)
-            ).length;
+            const completionDates = completionDatesByHabitId.get(item.id) ?? [];
+            const monthlyCount = monthlyCountByHabitId.get(item.id) ?? 0;
             return (
               <HabitCard
                 habit={item}

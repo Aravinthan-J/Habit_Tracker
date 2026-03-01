@@ -3,13 +3,15 @@ import {
     collection,
     getDocs,
     addDoc,
+    setDoc,
+    doc,
     query,
     orderBy,
     where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
-import { Achievement, FocusSession, MetricLog, Metric } from '@/types/advanced.types';
+import { Achievement, FocusSession, FocusSessionInsert, MetricLog, Metric } from '@/types/advanced.types';
 import { queueOperation, generateId } from '@/services/storage/LocalStorageService';
 
 export function useAdvancedFeatures() {
@@ -66,6 +68,23 @@ export function useAdvancedFeatures() {
 
     const queryClient = useQueryClient();
 
+    const saveFocusSession = useMutation({
+        mutationFn: async (session: Omit<FocusSessionInsert, 'id' | 'user_id'>) => {
+            if (!user) throw new Error('Not authenticated');
+            const docRef = doc(collection(db, 'users', user.uid, 'focus_sessions'));
+            const payload: FocusSessionInsert & { id: string } = {
+                id: docRef.id,
+                user_id: user.uid,
+                ...session,
+            };
+            await setDoc(docRef, payload);
+            return payload;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['focus-sessions', user?.uid] });
+        },
+    });
+
     const logMetric = useMutation({
         mutationFn: async ({ metricId, value }: { metricId: string; value: number }) => {
             if (!user) throw new Error('Not authenticated');
@@ -98,6 +117,7 @@ export function useAdvancedFeatures() {
         focusSessions: focusSessionsQuery.data ?? [],
         metrics: metricsQuery.data ?? [],
         isLoading: achievementsQuery.isLoading || focusSessionsQuery.isLoading || metricsQuery.isLoading,
+        saveFocusSession,
         logMetric,
         refetch: () => {
             achievementsQuery.refetch();
