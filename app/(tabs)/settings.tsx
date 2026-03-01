@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 27,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
