@@ -120,7 +120,7 @@ export default function CalendarScreen() {
       .filter((h) => !h.created_at || h.created_at.slice(0, 10) <= selectedDate)
       .map((h) => {
         const monthlyCount = completions.filter(
-          (c) => c.habit_id === h.id && c.date.startsWith(monthStr)
+          (c) => c.habit_id === h.id && c.date.startsWith(monthStr) && c.date <= selectedDate
         ).length;
         return {
           ...h,
@@ -166,7 +166,8 @@ export default function CalendarScreen() {
   };
 
   const completed = dayDetail?.filter((h) => h.completed) ?? [];
-  const incomplete = dayDetail?.filter((h) => !h.completed) ?? [];
+  const goalReachedHabits = dayDetail?.filter((h) => !h.completed && h.goalReached) ?? [];
+  const incomplete = dayDetail?.filter((h) => !h.completed && !h.goalReached) ?? [];
   const stepData = stepQuery.data;
   const steps = stepData?.steps ?? 0;
   const stepPct = Math.min(steps / STEP_GOAL, 1);
@@ -348,6 +349,36 @@ export default function CalendarScreen() {
               </View>
             )}
 
+            {/* Monthly Goal Reached */}
+            {goalReachedHabits.length > 0 && (
+              <View style={styles.sheetSection}>
+                <View style={styles.sheetSectionHeader}>
+                  <Text style={styles.sheetSectionIcon}>🎯</Text>
+                  <Text style={[styles.sheetSectionTitle, { color: COLORS.success }]}>
+                    Monthly Goal Reached
+                  </Text>
+                  <View style={[styles.countBadge, { backgroundColor: COLORS.success + '25' }]}>
+                    <Text style={[styles.countBadgeText, { color: COLORS.success }]}>{goalReachedHabits.length}</Text>
+                  </View>
+                </View>
+                {goalReachedHabits.map((h) => (
+                  <View key={h.id} style={styles.habitRow}>
+                    <View style={[styles.habitColorBar, { backgroundColor: COLORS.success + '80' }]} />
+                    <View style={[styles.habitIconCircle, { backgroundColor: COLORS.success + '20' }]}>
+                      <Text style={styles.habitIcon}>{resolveIcon(h.icon)}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.habitTitle}>{h.title}</Text>
+                      <Text style={{ fontSize: TYPOGRAPHY.xs, color: COLORS.success }}>
+                        {h.monthly_goal}/{h.monthly_goal} goal met this month
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 16 }}>🎯</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Incomplete Habits */}
             {incomplete.length > 0 && (
               <View style={styles.sheetSection}>
@@ -362,27 +393,12 @@ export default function CalendarScreen() {
                 </View>
                 {incomplete.map((h) => (
                   <View key={h.id} style={[styles.habitRow, styles.habitRowIncomplete]}>
-                    <View style={[styles.habitColorBar,
-                      { backgroundColor: h.goalReached ? COLORS.success + '60' : COLORS.textMuted + '40' }
-                    ]} />
+                    <View style={[styles.habitColorBar, { backgroundColor: COLORS.textMuted + '40' }]} />
                     <View style={[styles.habitIconCircle, { backgroundColor: COLORS.surface }]}>
-                      <Text style={[styles.habitIcon, { opacity: h.goalReached ? 1 : 0.5 }]}>
-                        {resolveIcon(h.icon)}
-                      </Text>
+                      <Text style={[styles.habitIcon, { opacity: 0.5 }]}>{resolveIcon(h.icon)}</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.habitTitle, { color: h.goalReached ? COLORS.textSecondary : COLORS.textMuted }]}>
-                        {h.title}
-                      </Text>
-                      {h.goalReached && (
-                        <Text style={{ fontSize: TYPOGRAPHY.xs, color: COLORS.success }}>
-                          Goal reached this month
-                        </Text>
-                      )}
-                    </View>
-                    {h.goalReached
-                      ? <Text style={{ fontSize: 16 }}>🎯</Text>
-                      : <Ionicons name="ellipse-outline" size={20} color={COLORS.textMuted} />}
+                    <Text style={[styles.habitTitle, { color: COLORS.textMuted }]}>{h.title}</Text>
+                    <Ionicons name="ellipse-outline" size={20} color={COLORS.textMuted} />
                   </View>
                 ))}
               </View>
