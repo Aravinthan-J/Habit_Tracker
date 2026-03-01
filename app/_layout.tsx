@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +32,18 @@ function AppContent() {
   const { isOnline, isSyncing } = useOfflineSync();
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
   const [activeNotif, setActiveNotif] = useState<NotifPayload | null>(null);
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (isLoading) return;
+    const inAuthGroup = segments[0] === '(auth)';
+    if (!user && !inAuthGroup) {
+      router.replace('/(auth)');
+    } else if (user && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [user, isLoading]);
 
   // Listen for foreground notifications and show custom toast
   useEffect(() => {
