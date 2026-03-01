@@ -80,8 +80,8 @@ export async function saveCompletionLocally(completion: Completion): Promise<voi
 export async function deleteCompletionLocally(habitId: string, date: string): Promise<void> {
     const db = await getDatabase();
     await db.runAsync(
-        `DELETE FROM local_completions WHERE habit_id = ? AND date = ?`,
-        [habitId, date]
+        `DELETE FROM local_completions WHERE id = ?`,
+        [`${habitId}_${date}`]
     );
 }
 

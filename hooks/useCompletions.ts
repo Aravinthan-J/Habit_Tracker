@@ -64,15 +64,11 @@ export function useCompletions(startDate?: string, endDate?: string) {
         }) => {
             if (!user) throw new Error('Not authenticated');
 
+            const compositeId = `${habitId}_${date}`;
+
             if (isCompleted) {
-                const compositeId = `${habitId}_${date}`;
                 try {
                     await deleteDoc(doc(db, 'users', user.uid, 'completions', compositeId));
-                    await setDoc(
-                        doc(db, 'users', user.uid, 'daily', date),
-                        { [habitId]: false },
-                        { merge: true }
-                    ).catch(() => {});
                 } catch {
                     await queueOperation({
                         operation: 'DELETE',
@@ -83,7 +79,6 @@ export function useCompletions(startDate?: string, endDate?: string) {
                 }
                 await deleteCompletionLocally(habitId, date);
             } else {
-                const compositeId = `${habitId}_${date}`;
                 const completed_at = new Date().toISOString();
                 const newCompletion: Completion = {
                     id: compositeId,
@@ -97,14 +92,8 @@ export function useCompletions(startDate?: string, endDate?: string) {
                         doc(db, 'users', user.uid, 'completions', compositeId),
                         { habit_id: habitId, user_id: user.uid, date, completed_at }
                     );
-                    await setDoc(
-                        doc(db, 'users', user.uid, 'daily', date),
-                        { [habitId]: true },
-                        { merge: true }
-                    ).catch(() => {});
-                    const saved = { ...newCompletion, id: compositeId };
-                    await saveCompletionLocally(saved);
-                    return saved;
+                    await saveCompletionLocally(newCompletion);
+                    return newCompletion;
                 } catch {
                     await saveCompletionLocally(newCompletion);
                     await queueOperation({
@@ -126,7 +115,7 @@ export function useCompletions(startDate?: string, endDate?: string) {
                     return old.filter((c) => !(c.habit_id === habitId && c.date === date));
                 }
                 return [...old, {
-                    id: `optimistic-${habitId}-${date}`,
+                    id: `${habitId}_${date}`,
                     habit_id: habitId,
                     user_id: user?.uid ?? '',
                     date,
