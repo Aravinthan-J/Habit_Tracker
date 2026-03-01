@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, getDoc, documentId, query, where } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, getDoc, documentId, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from '@/types/badge.types';
 import { BADGE_DEFINITIONS } from '@/constants/badges';
@@ -97,7 +97,9 @@ export async function checkAndAwardBadges(
 
             if (qualified) {
                 try {
-                    await addDoc(collection(db, 'users', userId, 'user_badges'), {
+                    const badgeDocRef = doc(collection(db, 'users', userId, 'user_badges'));
+                    await setDoc(badgeDocRef, {
+                        id: badgeDocRef.id,
                         badge_id: def.id,
                         user_id: userId,
                         habit_id: qualifyingHabitId ?? null,
