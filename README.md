@@ -1,145 +1,150 @@
-# Habity 🎯
+# Habity
 
-A production-ready habit tracking mobile app built with **Expo** + **Supabase**.
+> Your daily habit companion — build streaks, track progress, stay consistent.
 
-## Features
-
-- ✅ Email/password authentication
-- ✅ Unlimited habit creation and tracking
-- ✅ Daily completion marking with streak calculations
-- ✅ Calendar view with monthly visualization
-- ✅ 30 achievement badges system
-- ✅ Step tracking via phone pedometer
-- ✅ Smart notifications and reminders
-- ✅ Analytics dashboard with charts
-- ✅ Offline-first with SQLite cache
-- ✅ Real-time sync across devices
-- ✅ Celebration animations + haptic feedback
+Habity is a cross-platform mobile app (iOS & Android) built with **React Native / Expo** and **Firebase**. It helps you build and maintain daily habits through streaks, monthly goals, step tracking, focus sessions, badges, and a full offline-first architecture.
 
 ---
 
-## Quick Start
+## Features
 
-### 1. Set up Supabase
+| Area | Details |
+|------|---------|
+| **Habits** | Create, edit, delete habits with custom icons, colours, and monthly goals |
+| **Daily tracking** | One-tap checkbox with streak counter and monthly progress text |
+| **Monthly goals** | Set a target number of completions per month; checkbox locks automatically once goal is met |
+| **Calendar** | Month-view calendar with per-day breakdown — Completed / Monthly Goal Reached / Not Completed |
+| **Steps** | Live pedometer ring, daily history, distance and calories |
+| **Focus mode** | Pomodoro timer (25 / 45 / 60 min) with face-down auto-start; completed sessions saved to Firestore |
+| **Badges** | 20+ achievement badges across streak, completion, step, and special categories |
+| **Analytics** | Completion rates, streaks, trends, and focus session summaries |
+| **Offline-first** | All writes queue locally in SQLite and sync to Firestore automatically when back online |
+| **Notifications** | Scheduled habit reminders via Expo Notifications |
+| **Auth** | Email/password and Google Sign-In via Firebase Authentication |
+| **Error resilience** | Root-level error boundary; all screens recover gracefully from render errors |
 
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Wait for it to initialize (~2 minutes)
-3. Go to **Project Settings → API** and copy:
-   - **Project URL** (looks like `https://xxxx.supabase.co`)
-   - **anon public** key
+---
 
-4. Go to **SQL Editor** → **New Query**, paste the contents of `supabase/schema.sql`, and click **Run**
+## Tech Stack
 
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in your Supabase values:
-```
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-```
-
-### 3. Install dependencies
-
-```bash
-npm install
-```
-
-### 4. Install `babel-plugin-module-resolver`
-
-```bash
-npm install --save-dev babel-plugin-module-resolver
-```
-
-### 5. Start the app
-
-```bash
-npx expo start
-```
-
-Scan the QR code with **Expo Go** on your phone, or press `i` for iOS Simulator / `a` for Android Emulator.
+| Layer | Technology |
+|-------|-----------|
+| Framework | Expo SDK 55 / React Native 0.83 / Expo Router |
+| Language | TypeScript |
+| Cloud backend | Firebase Firestore + Firebase Auth |
+| Local cache | Expo SQLite (offline queue) |
+| Server state | TanStack React Query v5 |
+| Client state | Zustand |
+| UI | Custom components, Expo Linear Gradient, Expo Vector Icons |
+| Sensors | Expo Sensors (pedometer / accelerometer) |
+| Charts | React Native Chart Kit |
 
 ---
 
 ## Project Structure
 
 ```
-habity/
-├── app/              # Expo Router screens
-│   ├── (auth)/       # Login, register, onboarding
-│   ├── (tabs)/       # Home, calendar, habits, analytics, badges, settings
-│   ├── habit/        # Create & detail screens
-│   └── badge/        # Badge detail screens
-├── components/       # Reusable UI components
-├── hooks/            # Custom React hooks
-├── services/         # Business logic (sync, notifications, pedometer)
-├── store/            # Zustand state management
-├── lib/              # Supabase client, SQLite setup
-├── constants/        # Theme, badges, notifications
-├── types/            # TypeScript type definitions
-├── utils/            # Date helpers, streak calculator, validators
-└── supabase/
-    └── schema.sql    # Database schema — run this in Supabase
+app/
+  (auth)/          Login, register, onboarding
+  (tabs)/          Home, Habits, Calendar, Analytics, Badges, Settings
+  habit/[id].tsx   Habit detail / edit modal
+  habit/new.tsx    New habit modal
+  focus.tsx        Focus mode (Pomodoro timer)
+components/
+  habits/          HabitCard, HabitCheckbox, HabitStats, HabitForm
+  calendar/        MonthCalendar
+  badges/          BadgeUnlockModal, BadgeDetailModal
+  home/            AchievementPreview, FocusHighlights, MetricHighlights
+  shared/          EmptyState, LoadingState
+  ui/              Button, LoadingSpinner, OfflineBanner, InAppNotification
+  ErrorBoundary    Root error boundary
+hooks/             useHabits, useCompletions, useBadges, useAdvancedFeatures, ...
+services/
+  storage/         LocalStorageService (SQLite cache + sync queue)
+  sync/            SyncService (offline -> Firestore replay)
+  badges/          BadgeChecker
+  notifications/   NotificationService
+  health/          PedometerService
+types/             Shared TypeScript interfaces
+utils/             dateHelpers, streakCalculator, iconHelpers
+constants/         theme, badge definitions
+lib/               Firebase client, SQLite initialisation
+firestore.rules    Firestore security rules
 ```
 
 ---
 
-## Step Tracking
+## Getting Started
 
-Step tracking uses the device pedometer (`expo-sensors`). This requires a **physical device** — it won't work in iOS Simulator. The app gracefully hides the step ring on devices where the pedometer is unavailable.
+### Prerequisites
 
-## Offline Support
+- Node.js 18+
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- A Firebase project with **Firestore** and **Authentication** (Email/Password + Google) enabled
 
-The app uses **Expo SQLite** as a local cache. When offline:
-- Habits and completions are read from local SQLite
-- New operations are queued in the `sync_queue` table
-- When connectivity is restored, the queue is synced to Supabase automatically
+### 1. Clone and install
 
-## Notifications
+```bash
+git clone https://github.com/Aravinthan-J/habity.git
+cd habity
+npm install
+```
 
-Notifications require a physical device and user permission. Grant notification permission in Settings when prompted.
+### 2. Configure Firebase
+
+Copy the example env file and fill in your Firebase project values:
+
+```bash
+cp .env.example .env
+```
+
+Then open `lib/firebase.ts` and replace the `GOOGLE_WEB_CLIENT_ID` placeholder with your **Web client ID** from:
+Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration.
+
+### 3. Deploy Firestore security rules
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 4. Run the app
+
+```bash
+npm start        # Expo dev server (scan QR with Expo Go)
+npm run ios      # iOS Simulator
+npm run android  # Android Emulator
+```
+
+> **Note:** Step tracking and face-down focus mode require a **physical device** — they will not work in simulators.
 
 ---
 
 ## Building for Production
 
-```bash
-# Install EAS CLI
-npm install -g eas-cli
+Builds are managed with [EAS Build](https://docs.expo.dev/build/introduction/).
 
-# Log in to Expo
+```bash
+npm install -g eas-cli
 eas login
 
-# Build for iOS (requires Apple Developer account)
-eas build --platform ios
+# Before building, set extra.eas.projectId in app.json to your real EAS project ID
+eas init
 
-# Build for Android
-eas build --platform android
+eas build --platform ios --profile production
+eas build --platform android --profile production
 ```
 
 ---
 
-## Environment Variables
+## Offline Support
 
-| Variable | Description |
-|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon (public) key |
+When the device has no connectivity:
+- Habits and completions are served from the local SQLite cache
+- Writes (create, update, delete, toggle) are queued in the `sync_queue` table with up to 3 retry attempts
+- When connectivity is restored, the sync queue is replayed against Firestore automatically
 
 ---
 
-## Tech Stack
+## License
 
-- **Expo SDK 55** + Expo Router
-- **TypeScript** (strict mode)
-- **Supabase** (auth, database, realtime)
-- **TanStack Query v5** (data fetching)
-- **Zustand** (state management)
-- **Expo SQLite** (offline cache)
-- **React Native Chart Kit** (analytics)
-- **Expo Sensors** (pedometer)
-- **Expo Notifications**
-- **Expo Haptics**
+MIT © 2024 [Aravinthan J](https://github.com/Aravinthan-J)
