@@ -29,7 +29,7 @@
       "package": "com.habity.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundColor": "#6C63FF"
+        "backgroundImage": "./assets/android-icon-background.png"
       },
       "permissions": [
         "ACTIVITY_RECOGNITION",
