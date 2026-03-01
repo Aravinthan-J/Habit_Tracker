@@ -9,14 +9,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBadges } from '@/hooks/useBadges';
 import { BadgeCard } from '@/components/badges/BadgeCard';
+import { BadgeDetailModal } from '@/components/badges/BadgeDetailModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { BadgeWithStatus } from '@/types/badge.types';
 
 type Filter = 'all' | 'earned' | 'locked';
 
 export default function BadgesScreen() {
   const { badges, earnedBadges, unearnedBadges, isLoading } = useBadges();
   const [filter, setFilter] = useState<Filter>('all');
+  const [selectedBadge, setSelectedBadge] = useState<BadgeWithStatus | null>(null);
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -50,9 +53,17 @@ export default function BadgesScreen() {
         data={displayed}
         keyExtractor={(item) => item.id}
         numColumns={3}
-        renderItem={({ item }) => <BadgeCard badge={item} />}
+        renderItem={({ item }) => (
+          <BadgeCard badge={item} onPress={() => setSelectedBadge(item)} />
+        )}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
+      />
+
+      <BadgeDetailModal
+        badge={selectedBadge}
+        visible={selectedBadge !== null}
+        onClose={() => setSelectedBadge(null)}
       />
     </SafeAreaView>
   );
