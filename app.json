@@ -27,8 +27,11 @@
     },
     "android": {
       "package": "com.habity.app",
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundColor": "#6C63FF"
       },
       "permissions": [
