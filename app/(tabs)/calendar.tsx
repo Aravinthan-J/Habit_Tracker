@@ -114,10 +114,20 @@ export default function CalendarScreen() {
     const completedIds = new Set(
       completions.filter((c) => c.date === selectedDate).map((c) => c.habit_id)
     );
+    const monthStr = selectedDate.slice(0, 7);
     // Only include habits that existed on the selected date
     return habits
       .filter((h) => !h.created_at || h.created_at.slice(0, 10) <= selectedDate)
-      .map((h) => ({ ...h, completed: completedIds.has(h.id) }));
+      .map((h) => {
+        const monthlyCount = completions.filter(
+          (c) => c.habit_id === h.id && c.date.startsWith(monthStr)
+        ).length;
+        return {
+          ...h,
+          completed: completedIds.has(h.id),
+          goalReached: h.monthly_goal > 0 && monthlyCount >= h.monthly_goal,
+        };
+      });
   }, [selectedDate, completions, habits]);
 
   // Sheet animation helpers
@@ -352,12 +362,27 @@ export default function CalendarScreen() {
                 </View>
                 {incomplete.map((h) => (
                   <View key={h.id} style={[styles.habitRow, styles.habitRowIncomplete]}>
-                    <View style={[styles.habitColorBar, { backgroundColor: COLORS.textMuted + '40' }]} />
+                    <View style={[styles.habitColorBar,
+                      { backgroundColor: h.goalReached ? COLORS.success + '60' : COLORS.textMuted + '40' }
+                    ]} />
                     <View style={[styles.habitIconCircle, { backgroundColor: COLORS.surface }]}>
-                      <Text style={[styles.habitIcon, { opacity: 0.5 }]}>{resolveIcon(h.icon)}</Text>
+                      <Text style={[styles.habitIcon, { opacity: h.goalReached ? 1 : 0.5 }]}>
+                        {resolveIcon(h.icon)}
+                      </Text>
                     </View>
-                    <Text style={[styles.habitTitle, { color: COLORS.textMuted }]}>{h.title}</Text>
-                    <Ionicons name="ellipse-outline" size={20} color={COLORS.textMuted} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.habitTitle, { color: h.goalReached ? COLORS.textSecondary : COLORS.textMuted }]}>
+                        {h.title}
+                      </Text>
+                      {h.goalReached && (
+                        <Text style={{ fontSize: TYPOGRAPHY.xs, color: COLORS.success }}>
+                          Goal reached this month
+                        </Text>
+                      )}
+                    </View>
+                    {h.goalReached
+                      ? <Text style={{ fontSize: 16 }}>🎯</Text>
+                      : <Ionicons name="ellipse-outline" size={20} color={COLORS.textMuted} />}
                   </View>
                 ))}
               </View>

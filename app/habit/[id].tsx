@@ -17,6 +17,7 @@ import { HabitStats } from '@/components/habits/HabitStats';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { calculateCurrentStreak, calculateLongestStreak, completionRate } from '@/utils/streakCalculator';
+import { today } from '@/utils/dateHelpers';
 import { resolveIcon } from '@/utils/iconHelpers';
 
 export default function HabitDetailScreen() {
@@ -33,6 +34,8 @@ export default function HabitDetailScreen() {
   const currentStreak = calculateCurrentStreak(habitCompletionDates);
   const longestStreak = calculateLongestStreak(habitCompletionDates);
   const rate = completionRate(habitCompletionDates, 30);
+  const currentMonth = today().slice(0, 7);
+  const monthlyCount = habitCompletionDates.filter((d) => d.startsWith(currentMonth)).length;
 
   const handleUpdate = async (values: any) => {
     await updateHabit.mutateAsync({ id: habit.id, ...values });
@@ -86,6 +89,8 @@ export default function HabitDetailScreen() {
               totalCompletions={habitCompletionDates.length}
               completionRate={rate}
               color={habit.color}
+              monthlyGoal={habit.monthly_goal}
+              monthlyCount={monthlyCount}
             />
 
             <TouchableOpacity

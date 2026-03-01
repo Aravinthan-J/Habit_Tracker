@@ -8,6 +8,7 @@ interface HabitCheckboxProps {
   color: string;
   onToggle: () => void;
   size?: number;
+  disabled?: boolean;
 }
 
 export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
@@ -15,6 +16,7 @@ export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
   color,
   onToggle,
   size = 32,
+  disabled = false,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const checkAnim = useRef(new Animated.Value(isCompleted ? 1 : 0)).current;
@@ -41,13 +43,15 @@ export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
 
   const borderColor = isCompleted ? color : COLORS.textMuted;
 
+  const handlePress = () => { if (!disabled) onToggle(); };
+
   return (
     <TouchableOpacity
-      onPress={onToggle}
-      activeOpacity={0.7}
+      onPress={handlePress}
+      activeOpacity={disabled ? 1 : 0.7}
       accessibilityLabel={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: isCompleted }}
+      accessibilityState={{ checked: isCompleted, disabled }}
     >
       <Animated.View
         style={[
@@ -59,6 +63,7 @@ export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
             borderColor,
             backgroundColor: bgColor as any,
             transform: [{ scale: scaleAnim }],
+            opacity: disabled ? 0.45 : 1,
           },
         ]}
       >

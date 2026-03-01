@@ -19,6 +19,8 @@ interface HabitCardProps {
   streak: number;
   onToggle: () => void;
   onPress: () => void;
+  monthlyCount: number;
+  monthlyGoal: number;
 }
 
 export const HabitCard: React.FC<HabitCardProps> = React.memo(({
@@ -27,18 +29,23 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   streak,
   onToggle,
   onPress,
+  monthlyCount,
+  monthlyGoal,
 }) => {
   const { light } = useHaptics();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  const goalReached = monthlyGoal > 0 && monthlyCount >= monthlyGoal;
+
   const handleToggle = useCallback(() => {
+    if (goalReached) return;
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
     ]).start();
     light();
     onToggle();
-  }, [onToggle, light]);
+  }, [onToggle, light, goalReached]);
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
@@ -71,12 +78,18 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
                     </Text>
                   </View>
                 )}
+                {monthlyGoal > 0 && (
+                  <Text style={[styles.monthlyText, { color: goalReached ? COLORS.success : COLORS.textMuted }]}>
+                    {goalReached ? `🎯 ${monthlyGoal}/${monthlyGoal} Goal met!` : `${monthlyCount}/${monthlyGoal} this month`}
+                  </Text>
+                )}
               </View>
             </View>
             <HabitCheckbox
               isCompleted={isCompleted}
               color={habit.color}
               onToggle={handleToggle}
+              disabled={goalReached}
             />
           </View>
         </View>
@@ -125,4 +138,5 @@ const styles = StyleSheet.create({
   streakRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   fire: { fontSize: 12, marginRight: 2 },
   streak: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium },
+  monthlyText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium, marginTop: 2 },
 });

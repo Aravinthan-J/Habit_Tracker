@@ -8,6 +8,8 @@ interface HabitStatsProps {
   totalCompletions: number;
   completionRate: number;
   color: string;
+  monthlyGoal: number;
+  monthlyCount: number;
 }
 
 const StatBox: React.FC<{ label: string; value: string | number; color: string }> = ({
@@ -27,12 +29,18 @@ export const HabitStats: React.FC<HabitStatsProps> = ({
   totalCompletions,
   completionRate,
   color,
+  monthlyGoal,
+  monthlyCount,
 }) => (
   <View style={styles.grid}>
     <StatBox label="Current Streak" value={`${currentStreak}🔥`} color={color} />
     <StatBox label="Longest Streak" value={`${longestStreak}d`} color={COLORS.gold} />
     <StatBox label="Total Done" value={totalCompletions} color={COLORS.accent} />
-    <StatBox label="30-Day Rate" value={`${completionRate}%`} color={COLORS.success} />
+    <StatBox
+      label="This Month"
+      value={monthlyGoal > 0 ? `${monthlyCount}/${monthlyGoal}` : `${monthlyCount}d`}
+      color={monthlyGoal > 0 && monthlyCount >= monthlyGoal ? COLORS.success : COLORS.accent}
+    />
   </View>
 );
 

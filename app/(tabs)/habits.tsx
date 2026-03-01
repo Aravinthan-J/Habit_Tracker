@@ -26,6 +26,7 @@ export default function HabitsScreen() {
   const { habits, isLoading } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
   const todayStr = today();
+  const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredHabits = useMemo(() => {
@@ -114,6 +115,9 @@ export default function HabitsScreen() {
             const completionDates = completions
               .filter((c) => c.habit_id === item.id)
               .map((c) => c.date);
+            const monthlyCount = completions.filter(
+              (c) => c.habit_id === item.id && c.date.startsWith(currentMonth)
+            ).length;
             return (
               <HabitCard
                 habit={item}
@@ -121,6 +125,8 @@ export default function HabitsScreen() {
                 streak={calculateCurrentStreak(completionDates)}
                 onToggle={() => handleToggle(item.id)}
                 onPress={() => router.push(`/habit/${item.id}`)}
+                monthlyCount={monthlyCount}
+                monthlyGoal={item.monthly_goal}
               />
             );
           }}

@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
 
   const todayStr = today();
+  const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
   const activeHabitIds = useMemo(() => new Set(habits.map((h) => h.id)), [habits]);
 
   const completedTodayIds = useMemo(
@@ -141,6 +142,9 @@ export default function HomeScreen() {
           const completionDates = completions
             .filter((c) => c.habit_id === item.id)
             .map((c) => c.date);
+          const monthlyCount = completions.filter(
+            (c) => c.habit_id === item.id && c.date.startsWith(currentMonth)
+          ).length;
           return (
             <HabitCard
               habit={item}
@@ -148,6 +152,8 @@ export default function HomeScreen() {
               streak={calculateCurrentStreak(completionDates)}
               onToggle={() => handleToggle(item.id)}
               onPress={() => { }}
+              monthlyCount={monthlyCount}
+              monthlyGoal={item.monthly_goal}
             />
           );
         }}
