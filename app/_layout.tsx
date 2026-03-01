@@ -57,7 +57,7 @@ function AppContent() {
     return () => sub.remove();
   }, [user]);
 
-  if (isLoading) return null;
+  if (isLoading) return <View style={{ flex: 1, backgroundColor: COLORS.background }} />;
 
   return (
     <>
