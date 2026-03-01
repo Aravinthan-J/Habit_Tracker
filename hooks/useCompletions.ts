@@ -4,10 +4,12 @@ import {
     query,
     where,
     getDocs,
+    updateDoc,
     setDoc,
-    deleteDoc,
     doc,
+    documentId,
 } from 'firebase/firestore';
+import { arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { today, formatDate } from '@/utils/dateHelpers';
@@ -18,6 +20,25 @@ import {
     queueOperation,
 } from '@/services/storage/LocalStorageService';
 import { Completion } from '@/types/habit.types';
+
+function dailyDocsToCompletions(
+    docs: { date: string; completedHabitIds: string[] }[],
+    userId: string
+): Completion[] {
+    const result: Completion[] = [];
+    for (const d of docs) {
+        for (const habitId of d.completedHabitIds ?? []) {
+            result.push({
+                id: `${habitId}_${d.date}`,
+                habit_id: habitId,
+                user_id: userId,
+                date: d.date,
+                completed_at: `${d.date}T00:00:00.000Z`,
+            });
+        }
+    }
+    return result;
+}
 
 export function useCompletions(startDate?: string, endDate?: string) {
     const { user } = useAuthStore();
@@ -33,17 +54,21 @@ export function useCompletions(startDate?: string, endDate?: string) {
             if (!user) return [];
             try {
                 const q = query(
-                    collection(db, 'users', user.uid, 'completions'),
-                    where('date', '>=', sd),
-                    where('date', '<=', ed)
+                    collection(db, 'users', user.uid, 'daily'),
+                    where(documentId(), '>=', sd),
+                    where(documentId(), '<=', ed)
                 );
                 const snapshot = await getDocs(q);
-                const data: Completion[] = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Completion));
+                const dailyDocs = snapshot.docs.map((d) => ({
+                    date: d.id,
+                    completedHabitIds: (d.data().completedHabitIds ?? []) as string[],
+                }));
 
-                for (const c of data) {
+                const completions = dailyDocsToCompletions(dailyDocs, user.uid);
+                for (const c of completions) {
                     await saveCompletionLocally(c);
                 }
-                return data;
+                return completions;
             } catch {
                 return getLocalCompletions(user.uid, sd, ed);
             }
@@ -64,45 +89,40 @@ export function useCompletions(startDate?: string, endDate?: string) {
         }) => {
             if (!user) throw new Error('Not authenticated');
 
-            const compositeId = `${habitId}_${date}`;
+            const dailyRef = doc(db, 'users', user.uid, 'daily', date);
 
             if (isCompleted) {
                 try {
-                    await deleteDoc(doc(db, 'users', user.uid, 'completions', compositeId));
+                    await updateDoc(dailyRef, { completedHabitIds: arrayRemove(habitId) });
                 } catch {
                     await queueOperation({
-                        operation: 'DELETE',
-                        table_name: 'completions',
-                        record_id: compositeId,
-                        payload: JSON.stringify({ habit_id: habitId, date }),
+                        operation: 'ARRAY_REMOVE',
+                        table_name: 'daily',
+                        record_id: date,
+                        payload: JSON.stringify({ habitId }),
                     });
                 }
                 await deleteCompletionLocally(habitId, date);
             } else {
                 const completed_at = new Date().toISOString();
                 const newCompletion: Completion = {
-                    id: compositeId,
+                    id: `${habitId}_${date}`,
                     habit_id: habitId,
                     user_id: user.uid,
                     date,
                     completed_at,
                 };
                 try {
-                    await setDoc(
-                        doc(db, 'users', user.uid, 'completions', compositeId),
-                        { habit_id: habitId, user_id: user.uid, date, completed_at }
-                    );
+                    await setDoc(dailyRef, { completedHabitIds: arrayUnion(habitId) }, { merge: true });
                     await saveCompletionLocally(newCompletion);
-                    return newCompletion;
                 } catch {
                     await saveCompletionLocally(newCompletion);
                     await queueOperation({
-                        operation: 'SET',
-                        table_name: 'completions',
-                        record_id: compositeId,
-                        payload: JSON.stringify({ habit_id: habitId, user_id: user.uid, date, completed_at }),
+                        operation: 'ARRAY_UNION',
+                        table_name: 'daily',
+                        record_id: date,
+                        payload: JSON.stringify({ habitId }),
                     });
-                    return newCompletion;
                 }
             }
         },

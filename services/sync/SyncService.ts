@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import {
     getPendingOperations,
@@ -7,7 +7,7 @@ import {
     saveHabitLocally,
 } from '../storage/LocalStorageService';
 
-type SyncableCollection = 'habits' | 'completions' | 'step_data';
+type SyncableCollection = 'habits' | 'completions' | 'daily' | 'step_data';
 
 export async function processQueue(): Promise<void> {
     const userId = auth.currentUser?.uid;
@@ -29,8 +29,15 @@ export async function processQueue(): Promise<void> {
             } else if (op.operation === 'DELETE') {
                 await deleteDoc(doc(db, 'users', userId, tableName, op.record_id));
             } else if (op.operation === 'SET') {
-                // setDoc with merge — used for documents with a known ID (e.g. step_data/{date})
                 await setDoc(doc(db, 'users', userId, tableName, op.record_id), payload, { merge: true });
+            } else if (op.operation === 'ARRAY_UNION') {
+                const { habitId } = payload;
+                const dailyRef = doc(db, 'users', userId, 'daily', op.record_id);
+                await setDoc(dailyRef, { completedHabitIds: arrayUnion(habitId) }, { merge: true });
+            } else if (op.operation === 'ARRAY_REMOVE') {
+                const { habitId } = payload;
+                const dailyRef = doc(db, 'users', userId, 'daily', op.record_id);
+                await updateDoc(dailyRef, { completedHabitIds: arrayRemove(habitId) });
             }
 
             if (op.id !== undefined) {

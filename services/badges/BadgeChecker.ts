@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, documentId, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from '@/types/badge.types';
 import { BADGE_DEFINITIONS } from '@/constants/badges';
@@ -21,9 +21,16 @@ export async function checkAndAwardBadges(
         const earnedSnap = await getDocs(collection(db, 'users', userId, 'user_badges'));
         const earnedIds = new Set(earnedSnap.docs.map((d) => d.data().badge_id as string));
 
-        // Fetch all completions
-        const completionsSnap = await getDocs(collection(db, 'users', userId, 'completions'));
-        const completions = completionsSnap.docs.map((d) => d.data() as { habit_id: string; date: string; completed_at: string });
+        // Fetch all completions from grouped daily docs
+        const dailySnap = await getDocs(collection(db, 'users', userId, 'daily'));
+        const completions: { habit_id: string; date: string; completed_at: string }[] = [];
+        for (const d of dailySnap.docs) {
+            const date = d.id;
+            const ids = (d.data().completedHabitIds ?? []) as string[];
+            for (const habit_id of ids) {
+                completions.push({ habit_id, date, completed_at: `${date}T00:00:00.000Z` });
+            }
+        }
 
         // Fetch all habits
         const habitsSnap = await getDocs(collection(db, 'users', userId, 'habits'));

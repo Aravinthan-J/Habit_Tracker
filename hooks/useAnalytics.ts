@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { getLast30Days, getLastNDays } from '@/utils/dateHelpers';
@@ -92,11 +92,11 @@ export function useAnalytics() {
             const endDate = last30[last30.length - 1];
 
             try {
-                const [completionsSnap, habitsSnap, stepsSnap] = await Promise.all([
+                const [dailySnap, habitsSnap, stepsSnap] = await Promise.all([
                     getDocs(query(
-                        collection(db, 'users', user.uid, 'completions'),
-                        where('date', '>=', startDate),
-                        where('date', '<=', endDate)
+                        collection(db, 'users', user.uid, 'daily'),
+                        where(documentId(), '>=', startDate),
+                        where(documentId(), '<=', endDate)
                     )),
                     getDocs(collection(db, 'users', user.uid, 'habits')),
                     getDocs(query(
@@ -106,7 +106,14 @@ export function useAnalytics() {
                     )),
                 ]);
 
-                const completions = completionsSnap.docs.map((d) => d.data() as { habit_id: string; date: string });
+                const completions: { habit_id: string; date: string }[] = [];
+                for (const d of dailySnap.docs) {
+                    const date = d.id;
+                    const ids = (d.data().completedHabitIds ?? []) as string[];
+                    for (const habit_id of ids) {
+                        completions.push({ habit_id, date });
+                    }
+                }
                 const habits = habitsSnap.docs
                     .map((d) => ({ id: d.id, ...d.data() } as { id: string; archived_at: string | null; created_at?: string }))
                     .filter((h) => h.archived_at === null);
