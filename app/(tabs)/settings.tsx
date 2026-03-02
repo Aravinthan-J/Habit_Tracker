@@ -20,6 +20,7 @@ import { useHabits } from '@/hooks/useHabits';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
+import { usePreferences } from '@/hooks/usePreferences';
 import { Card } from '@/components/ui/Card';
 import { HABIT_TEMPLATES, HabitTemplate } from '@/constants/templates';
 
@@ -32,8 +33,11 @@ export default function SettingsScreen() {
   const { habits, createHabit } = useHabits();
   const { requestAndScheduleDaily, cancelAll } = useNotifications();
 
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState('20:00');
+  const {
+    stepTrackingEnabled, setStepTrackingEnabled,
+    notificationsEnabled, setNotificationsEnabled,
+    reminderTime, setReminderTime,
+  } = usePreferences();
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [tempHour12, setTempHour12] = useState(8);   // 1–12
   const [tempMinute, setTempMinute]   = useState(0);
@@ -233,6 +237,24 @@ export default function SettingsScreen() {
             label="Focus Mode"
             onPress={() => router.push('/focus')}
             color={COLORS.primary}
+          />
+        </Card>
+
+        {/* Health */}
+        <Text style={styles.sectionTitle}>Health</Text>
+        <Card style={styles.section}>
+          <SettingsRow
+            icon="footsteps-outline"
+            label="Step Tracking"
+            right={
+              <Switch
+                value={stepTrackingEnabled}
+                onValueChange={setStepTrackingEnabled}
+                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
+                thumbColor={stepTrackingEnabled ? COLORS.primary : COLORS.textMuted}
+                accessibilityLabel="Toggle step tracking"
+              />
+            }
           />
         </Card>
 

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtime } from '@/hooks/useRealtime';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { usePreferences } from '@/hooks/usePreferences';
 import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
@@ -13,6 +14,7 @@ import { COLORS } from '@/constants/theme';
 import { View, StyleSheet } from 'react-native';
 import getDatabase from '@/lib/database';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 let Notifications: typeof import('expo-notifications') | null = null;
 try { Notifications = require('expo-notifications'); } catch { }
@@ -28,6 +30,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { isLoading, user } = useAuth();
+  usePreferences();
   useRealtime();
   const { isOnline, isSyncing } = useOfflineSync();
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
@@ -98,6 +101,8 @@ export default function RootLayout() {
   useEffect(() => {
     // Warm up the DB singleton early so it's ready before hooks need it
     getDatabase().catch((e) => { if (__DEV__) console.error('[DB init]', e); });
+    // Hydrate persisted stores after mount to avoid pre-mount state updates
+    usePreferencesStore.persist.rehydrate();
   }, []);
 
   return (

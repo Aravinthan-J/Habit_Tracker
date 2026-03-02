@@ -4,11 +4,13 @@ import { collection, getDocs, query, where, doc, setDoc, documentId } from 'fire
 import { queueOperation } from '@/services/storage/LocalStorageService';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import * as PedometerService from '@/services/health/PedometerService';
 import { getLastNDays, today } from '@/utils/dateHelpers';
 
 export function useSteps() {
     const { user } = useAuthStore();
+    const stepTrackingEnabled = usePreferencesStore((s) => s.stepTrackingEnabled);
     const [liveSteps, setLiveSteps] = useState(0);
     const [isPedometerAvailable, setIsPedometerAvailable] = useState(false);
 
@@ -17,10 +19,10 @@ export function useSteps() {
     }, []);
 
     useEffect(() => {
-        if (!isPedometerAvailable) return;
+        if (!isPedometerAvailable || !stepTrackingEnabled) return;
         const sub = PedometerService.subscribeToPedometer(setLiveSteps);
         return () => sub.remove();
-    }, [isPedometerAvailable]);
+    }, [isPedometerAvailable, stepTrackingEnabled]);
 
     const todayStepsQuery = useQuery({
         queryKey: ['steps', user?.uid, today()],
@@ -57,7 +59,7 @@ export function useSteps() {
 
             return pedData;
         },
-        enabled: !!user && isPedometerAvailable,
+        enabled: !!user && isPedometerAvailable && stepTrackingEnabled,
         refetchInterval: 60000,
     });
 
