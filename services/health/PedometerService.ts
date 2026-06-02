@@ -3,12 +3,21 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { formatDate } from '@/utils/dateHelpers';
 import { STEPS_PER_KM, CALORIES_PER_STEP, ACTIVE_MINUTES_PER_STEP } from '@/lib/constants';
+import { getNativeStepData, getNativeStepsForRange } from './NativeHealthService';
 
 // Pedometer.getStepCountAsync (date-range query) is iOS-only.
 // On Android we accumulate watchStepCount deltas and persist them to AsyncStorage.
 const STEP_RANGE_SUPPORTED = Platform.OS === 'ios';
 
 const androidStepsKey = (date: string) => `android_steps_${date}`;
+
+export interface StepData {
+    date: string;
+    steps: number;
+    distance: number;
+    calories: number;
+    activeMinutes: number;
+}
 
 function stepsToData(steps: number, date: string): StepData {
     return {
@@ -18,14 +27,6 @@ function stepsToData(steps: number, date: string): StepData {
         calories: Math.round(steps * CALORIES_PER_STEP),
         activeMinutes: Math.round(steps * ACTIVE_MINUTES_PER_STEP),
     };
-}
-
-export interface StepData {
-    date: string;
-    steps: number;
-    distance: number;
-    calories: number;
-    activeMinutes: number;
 }
 
 export async function isPedometerAvailable(): Promise<boolean> {
@@ -39,8 +40,12 @@ export async function isPedometerAvailable(): Promise<boolean> {
 export async function getTodaySteps(): Promise<StepData | null> {
     const date = formatDate(new Date());
 
+    // Try native health first — gives accurate distance & calories from the OS
+    const native = await getNativeStepData(date);
+    if (native) return native;
+
+    // Fallback: expo-sensors pedometer + manual calculation
     if (!STEP_RANGE_SUPPORTED) {
-        // Android: read accumulated steps that subscribeToPedometer writes
         try {
             const stored = await AsyncStorage.getItem(androidStepsKey(date));
             const steps = stored ? parseInt(stored, 10) : 0;
@@ -50,7 +55,6 @@ export async function getTodaySteps(): Promise<StepData | null> {
         }
     }
 
-    // iOS: accurate date-range query via CoreMotion
     const available = await isPedometerAvailable();
     if (!available) return null;
 
@@ -68,6 +72,10 @@ export async function getTodaySteps(): Promise<StepData | null> {
 }
 
 export async function getStepsForDateRange(start: Date, end: Date): Promise<number> {
+    // Try native HealthKit first (iOS only, supports historical data)
+    const nativeSteps = await getNativeStepsForRange(start, end);
+    if (nativeSteps > 0) return nativeSteps;
+
     if (!STEP_RANGE_SUPPORTED) return 0;
 
     const available = await isPedometerAvailable();
@@ -88,12 +96,10 @@ export function subscribeToPedometer(
         const date = formatDate(new Date());
         const key = androidStepsKey(date);
 
-        // Steps accumulated during this session (added on top of the persisted baseline)
         let sessionSteps = 0;
         let baseline = 0;
         let ready = false;
 
-        // Load today's persisted baseline before counting starts
         AsyncStorage.getItem(key).then((stored) => {
             baseline = stored ? parseInt(stored, 10) : 0;
             ready = true;
@@ -101,13 +107,11 @@ export function subscribeToPedometer(
         });
 
         const sub = Pedometer.watchStepCount((result) => {
-            // result.steps is the per-event delta on Android
             sessionSteps += result.steps;
             const total = baseline + sessionSteps;
             callback(total);
 
             if (ready) {
-                // Persist so getTodaySteps() always returns up-to-date data
                 AsyncStorage.setItem(key, String(total)).catch(() => {});
             }
         });
@@ -115,7 +119,7 @@ export function subscribeToPedometer(
         return sub;
     }
 
-    // iOS: watchStepCount already returns cumulative steps since subscription start
+    // iOS: CMPedometer live subscription
     return Pedometer.watchStepCount((result) => {
         callback(result.steps);
     });
