@@ -38,7 +38,10 @@
         "ACTIVITY_RECOGNITION",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
       ]
     },
     "web": {
@@ -62,7 +65,24 @@
           "enableFTS": false
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Habity reads your step count, distance, and calories from Apple Health to display accurate activity data.",
+          "healthUpdatePermission": "Habity does not write any data to Apple Health."
+        }
+      ],
+      "react-native-health-connect",
+      "./plugins/withHealthConnectDelegate",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

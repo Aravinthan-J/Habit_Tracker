@@ -19,6 +19,7 @@
     "expo": "~55.0.3",
     "expo-auth-session": "~55.0.6",
     "expo-av": "^16.0.8",
+    "expo-build-properties": "^56.0.16",
     "expo-constants": "~55.0.7",
     "expo-file-system": "~55.0.10",
     "expo-haptics": "~55.0.8",
