@@ -41,7 +41,8 @@
         "SCHEDULE_EXACT_ALARM",
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_DISTANCE",
-        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_EXERCISE"
       ]
     },
     "web": {

@@ -113,6 +113,7 @@ async function initHealthConnect(): Promise<boolean> {
             { accessType: 'read', recordType: 'Steps' },
             { accessType: 'read', recordType: 'Distance' },
             { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
+            { accessType: 'read', recordType: 'ExerciseSession' },
         ]);
         hcAvailable = true;
     } catch {
@@ -150,12 +151,24 @@ async function getHealthConnectDay(date: string): Promise<StepData | null> {
         const distanceKm = (distAgg as any).DISTANCE?.inKilometers ?? 0;
         const calories = Math.round((calAgg as any).ACTIVE_CALORIES_TOTAL?.inKilocalories ?? 0);
 
+        // Active minutes = total logged exercise-session duration for the day.
+        // Resilient: if the Exercise permission/data is missing, fall back to 0
+        // without failing the steps/distance/calorie read above.
+        let activeMinutes = 0;
+        try {
+            const exAgg = await aggregateRecord({ recordType: 'ExerciseSession', timeRangeFilter });
+            const seconds = (exAgg as any).EXERCISE_DURATION_TOTAL?.inSeconds ?? 0;
+            activeMinutes = Math.round(seconds / 60);
+        } catch {
+            activeMinutes = 0;
+        }
+
         return {
             date,
             steps,
             distance: parseFloat(distanceKm.toFixed(2)),
             calories,
-            activeMinutes: 0,
+            activeMinutes,
         };
     } catch {
         return null;

@@ -163,6 +163,13 @@ export default function HomeScreen() {
                   </Text>
                   <Text style={[styles.stepMetricLabel, { color: COLORS.textMuted }]}>kcal</Text>
                 </View>
+                <View style={[styles.stepMetricDivider, { backgroundColor: COLORS.cardBorder }]} />
+                <View style={styles.stepMetric}>
+                  <Text style={[styles.stepMetricValue, { color: COLORS.textPrimary }]}>
+                    {todaySteps?.activeMinutes ?? 0}
+                  </Text>
+                  <Text style={[styles.stepMetricLabel, { color: COLORS.textMuted }]}>min</Text>
+                </View>
               </View>
               {!isPedometerAvailable && (
                 <Text style={[styles.pedometerHint, { color: COLORS.textMuted }]}>Pedometer not available on this device</Text>
