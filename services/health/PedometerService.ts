@@ -10,6 +10,7 @@ import { getNativeStepData, getNativeStepsForRange } from './NativeHealthService
 const STEP_RANGE_SUPPORTED = Platform.OS === 'ios';
 
 const androidStepsKey = (date: string) => `android_steps_${date}`;
+const BASELINE_RESET_FLAG = 'android_steps_reset_v1';
 
 export interface StepData {
     date: string;
@@ -96,19 +97,35 @@ export function subscribeToPedometer(
         const date = formatDate(new Date());
         const key = androidStepsKey(date);
 
-        let sessionSteps = 0;
+        // On Android, expo-sensors reports result.steps as the CUMULATIVE count
+        // since this subscription started (TYPE_STEP_COUNTER), not a per-event
+        // delta. So we add it to today's persisted baseline directly — never sum.
         let baseline = 0;
         let ready = false;
+        let lastSessionSteps = 0;
 
-        AsyncStorage.getItem(key).then((stored) => {
-            baseline = stored ? parseInt(stored, 10) : 0;
-            ready = true;
-            callback(baseline + sessionSteps);
-        });
+        // One-time migration: a previous version summed cumulative counts, inflating
+        // the persisted baseline. Clear stale step keys once so today starts clean.
+        AsyncStorage.getItem(BASELINE_RESET_FLAG)
+            .then(async (done) => {
+                if (!done) {
+                    const allKeys = await AsyncStorage.getAllKeys();
+                    const stepKeys = allKeys.filter((k) => k.startsWith('android_steps_'));
+                    if (stepKeys.length) await AsyncStorage.multiRemove(stepKeys);
+                    await AsyncStorage.setItem(BASELINE_RESET_FLAG, '1');
+                    return null;
+                }
+                return AsyncStorage.getItem(key);
+            })
+            .then((stored) => {
+                baseline = stored ? parseInt(stored, 10) : 0;
+                ready = true;
+                callback(baseline + lastSessionSteps);
+            });
 
         const sub = Pedometer.watchStepCount((result) => {
-            sessionSteps += result.steps;
-            const total = baseline + sessionSteps;
+            lastSessionSteps = result.steps;
+            const total = baseline + result.steps;
             callback(total);
 
             if (ready) {

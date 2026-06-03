@@ -123,7 +123,7 @@ async function initHealthConnect(): Promise<boolean> {
 
 async function getHealthConnectDay(date: string): Promise<StepData | null> {
     if (!HC) return null;
-    const { readRecords } = HC;
+    const { aggregateRecord } = HC;
 
     const start = new Date(date);
     start.setHours(0, 0, 0, 0);
@@ -137,25 +137,23 @@ async function getHealthConnectDay(date: string): Promise<StepData | null> {
     };
 
     try {
-        const [stepsRes, distRes, calRes] = await Promise.all([
-            readRecords('Steps', { timeRangeFilter }),
-            readRecords('Distance', { timeRangeFilter }),
-            readRecords('ActiveCaloriesBurned', { timeRangeFilter }),
+        // aggregateRecord de-duplicates overlapping records across data origins
+        // (device + Google Fit + Samsung Health, etc). Summing raw readRecords()
+        // double-counts when multiple apps write steps.
+        const [stepsAgg, distAgg, calAgg] = await Promise.all([
+            aggregateRecord({ recordType: 'Steps', timeRangeFilter }),
+            aggregateRecord({ recordType: 'Distance', timeRangeFilter }),
+            aggregateRecord({ recordType: 'ActiveCaloriesBurned', timeRangeFilter }),
         ]);
 
-        const steps = stepsRes.records.reduce((s, r) => s + (r as any).count, 0);
-        const distanceMeters = distRes.records.reduce(
-            (s, r) => s + ((r as any).distance?.inMeters ?? 0),
-            0,
-        );
-        const calories = Math.round(
-            calRes.records.reduce((s, r) => s + ((r as any).energy?.inKilocalories ?? 0), 0),
-        );
+        const steps = Math.round((stepsAgg as any).COUNT_TOTAL ?? 0);
+        const distanceKm = (distAgg as any).DISTANCE?.inKilometers ?? 0;
+        const calories = Math.round((calAgg as any).ACTIVE_CALORIES_TOTAL?.inKilocalories ?? 0);
 
         return {
             date,
             steps,
-            distance: parseFloat((distanceMeters / 1000).toFixed(2)),
+            distance: parseFloat(distanceKm.toFixed(2)),
             calories,
             activeMinutes: 0,
         };

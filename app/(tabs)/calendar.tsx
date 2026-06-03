@@ -47,7 +47,7 @@ export default function CalendarScreen() {
     queryFn: async () => {
       if (!user || !selectedDate) return null;
       try {
-        const snap = await getDoc(doc(db, 'users', user.uid, 'step_data', selectedDate));
+        const snap = await getDoc(doc(db, 'users', user.uid, 'daily', selectedDate));
         return snap.exists() ? snap.data() : null;
       } catch {
         return null;
@@ -302,7 +302,7 @@ export default function CalendarScreen() {
                 <View style={styles.stepExtras}>
                   {stepData?.distance != null && (
                     <View style={styles.stepExtra}>
-                      <Text style={styles.stepExtraValue}>{(stepData.distance / 1000).toFixed(1)} km</Text>
+                      <Text style={styles.stepExtraValue}>{stepData.distance.toFixed(2)} km</Text>
                       <Text style={styles.stepExtraLabel}>Distance</Text>
                     </View>
                   )}
