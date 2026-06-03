@@ -33,6 +33,45 @@ export function calculateCurrentStreak(completionDates: string[]): number {
 }
 
 /**
+ * Calculate the current streak, treating "frozen" dates as bridges that keep the
+ * streak alive without incrementing the count (Streak Freeze feature).
+ * A frozen day connects the days around it; only completed days add to the streak.
+ */
+export function calculateCurrentStreakWithFreezes(
+    completionDates: string[],
+    freezeDates: string[],
+): number {
+    if (completionDates.length === 0) return 0;
+
+    const completed = new Set(completionDates);
+    const frozen = new Set(freezeDates);
+
+    const cursor = new Date();
+    let ds = formatDate(cursor);
+
+    // Streak is "active" only if today or yesterday is completed/frozen.
+    if (!completed.has(ds) && !frozen.has(ds)) {
+        cursor.setDate(cursor.getDate() - 1);
+        ds = formatDate(cursor);
+        if (!completed.has(ds) && !frozen.has(ds)) return 0;
+    }
+
+    let streak = 0;
+    while (true) {
+        ds = formatDate(cursor);
+        if (completed.has(ds)) {
+            streak++;
+        } else if (frozen.has(ds)) {
+            // bridge: keeps the streak alive but does not add to it
+        } else {
+            break;
+        }
+        cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+}
+
+/**
  * Calculate the longest streak from a sorted list of completion dates
  */
 export function calculateLongestStreak(completionDates: string[]): number {

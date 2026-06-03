@@ -21,9 +21,10 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { today } from '@/utils/dateHelpers';
-import { calculateCurrentStreak } from '@/utils/streakCalculator';
+import { calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
 import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
+import { useStreakFreeze } from '@/hooks/useStreakFreeze';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const { todaySteps, liveSteps, isPedometerAvailable } = useSteps();
   const { checkForNewBadges } = useBadges();
   const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
+  const { balance: freezeBalance, maxFreezes, freezeDates } = useStreakFreeze();
 
   const todayStr = today();
   const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
@@ -107,6 +109,13 @@ export default function HomeScreen() {
                 <Text style={[styles.greeting, { color: COLORS.textMuted }]}>{greeting},</Text>
                 <Text style={[styles.name, { color: COLORS.textPrimary }]}>{user?.displayName ?? 'there'} 👋</Text>
               </View>
+              <View
+                style={[styles.freezePill, { backgroundColor: COLORS.surface, borderColor: COLORS.cardBorder }]}
+                accessibilityLabel={`${freezeBalance} of ${maxFreezes} streak freezes available`}
+              >
+                <Text style={styles.freezeIcon}>🧊</Text>
+                <Text style={[styles.freezeCount, { color: COLORS.textPrimary }]}>{freezeBalance}</Text>
+              </View>
             </LinearGradient>
 
             {/* Progress banner */}
@@ -136,10 +145,25 @@ export default function HomeScreen() {
             <View style={[styles.stepSection, { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }]}>
               <Text style={[styles.sectionTitle, { color: COLORS.textSecondary }]}>Steps Today</Text>
               <StepProgressRing
-                steps={liveSteps || todaySteps?.steps || 0}
+                steps={Math.max(liveSteps, todaySteps?.steps ?? 0)}
                 goal={stepGoal}
                 size={160}
               />
+              <View style={styles.stepMetricsRow}>
+                <View style={styles.stepMetric}>
+                  <Text style={[styles.stepMetricValue, { color: COLORS.textPrimary }]}>
+                    {(todaySteps?.distance ?? 0).toFixed(2)}
+                  </Text>
+                  <Text style={[styles.stepMetricLabel, { color: COLORS.textMuted }]}>km</Text>
+                </View>
+                <View style={[styles.stepMetricDivider, { backgroundColor: COLORS.cardBorder }]} />
+                <View style={styles.stepMetric}>
+                  <Text style={[styles.stepMetricValue, { color: COLORS.textPrimary }]}>
+                    {todaySteps?.calories ?? 0}
+                  </Text>
+                  <Text style={[styles.stepMetricLabel, { color: COLORS.textMuted }]}>kcal</Text>
+                </View>
+              </View>
               {!isPedometerAvailable && (
                 <Text style={[styles.pedometerHint, { color: COLORS.textMuted }]}>Pedometer not available on this device</Text>
               )}
@@ -168,7 +192,7 @@ export default function HomeScreen() {
             <HabitCard
               habit={item}
               isCompleted={completedTodayIds.has(item.id)}
-              streak={calculateCurrentStreak(completionDates)}
+              streak={calculateCurrentStreakWithFreezes(completionDates, freezeDates)}
               onToggle={() => handleToggle(item.id)}
               onPress={() => { }}
               monthlyCount={monthlyCount}
@@ -202,6 +226,16 @@ const styles = StyleSheet.create({
   },
   greeting: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm },
   name: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxl, fontWeight: TYPOGRAPHY.bold },
+  freezePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+  },
+  freezeIcon: { fontSize: 16, marginRight: 4 },
+  freezeCount: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.bold },
   progressBanner: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.lg,
@@ -232,6 +266,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
+  stepMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.lg,
+  },
+  stepMetric: { alignItems: 'center', paddingHorizontal: SPACING.xl },
+  stepMetricValue: { fontSize: TYPOGRAPHY.lg, fontWeight: TYPOGRAPHY.bold },
+  stepMetricLabel: {
+    fontSize: TYPOGRAPHY.xs,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  stepMetricDivider: { width: 1, height: 28 },
   pedometerHint: {
     color: COLORS.textMuted,
     fontSize: TYPOGRAPHY.xs,
