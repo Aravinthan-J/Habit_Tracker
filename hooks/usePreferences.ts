@@ -19,6 +19,7 @@ export function usePreferences() {
             if (data.step_tracking_enabled != null) store.setStepTrackingEnabled(data.step_tracking_enabled);
             if (data.water_reminder_enabled != null) store.setWaterReminderEnabled(data.water_reminder_enabled);
             if (data.water_interval_hours != null) store.setWaterIntervalHours(data.water_interval_hours);
+            if (data.water_goal_glasses != null) store.setWaterGoalGlasses(data.water_goal_glasses);
         });
     }, [user?.uid]);
 
@@ -52,16 +53,24 @@ export function usePreferences() {
         await setDoc(doc(db, 'users', user.uid), { water_interval_hours: value }, { merge: true });
     };
 
+    const setWaterGoalGlasses = async (value: number) => {
+        store.setWaterGoalGlasses(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { water_goal_glasses: value }, { merge: true });
+    };
+
     return {
         notificationsEnabled: store.notificationsEnabled,
         reminderTime: store.reminderTime,
         stepTrackingEnabled: store.stepTrackingEnabled,
         waterReminderEnabled: store.waterReminderEnabled,
         waterIntervalHours: store.waterIntervalHours,
+        waterGoalGlasses: store.waterGoalGlasses,
         setNotificationsEnabled,
         setReminderTime,
         setStepTrackingEnabled,
         setWaterReminderEnabled,
         setWaterIntervalHours,
+        setWaterGoalGlasses,
     };
 }

@@ -13,6 +13,8 @@ interface PreferencesState {
     setWaterReminderEnabled: (value: boolean) => void;
     waterIntervalHours: number;
     setWaterIntervalHours: (value: number) => void;
+    waterGoalGlasses: number;
+    setWaterGoalGlasses: (value: number) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -28,6 +30,8 @@ export const usePreferencesStore = create<PreferencesState>()(
             setWaterReminderEnabled: (value) => set({ waterReminderEnabled: value }),
             waterIntervalHours: 2,
             setWaterIntervalHours: (value) => set({ waterIntervalHours: value }),
+            waterGoalGlasses: 8,
+            setWaterGoalGlasses: (value) => set({ waterGoalGlasses: value }),
         }),
         {
             name: 'user-preferences',

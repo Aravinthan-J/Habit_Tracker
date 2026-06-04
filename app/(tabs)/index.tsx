@@ -14,6 +14,7 @@ import { useSteps } from '@/hooks/useSteps';
 import { useBadges } from '@/hooks/useBadges';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { StepProgressRing } from '@/components/steps/StepProgressRing';
+import { WaterTracker } from '@/components/water/WaterTracker';
 import AchievementPreview from '@/components/home/AchievementPreview';
 import FocusHighlights from '@/components/home/FocusHighlights';
 import MetricHighlights from '@/components/home/MetricHighlights';
@@ -175,6 +176,9 @@ export default function HomeScreen() {
                 <Text style={[styles.pedometerHint, { color: COLORS.textMuted }]}>Pedometer not available on this device</Text>
               )}
             </View>
+
+            {/* Water Tracker */}
+            <WaterTracker />
 
             {/* Achievement Preview */}
             <AchievementPreview achievements={recentAchievements as any} />
