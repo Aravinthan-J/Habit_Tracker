@@ -28,11 +28,25 @@ export function useNotifications() {
         await NotificationService.cancelDailyReminder();
     }, []);
 
+    const scheduleWater = useCallback(async (intervalHours: number) => {
+        const granted = await requestPermissions();
+        if (!granted) return false;
+        // Active window: 8 AM – 10 PM
+        await NotificationService.scheduleWaterReminders(intervalHours, 8, 22);
+        return true;
+    }, []);
+
+    const cancelWater = useCallback(async () => {
+        await NotificationService.cancelWaterReminders();
+    }, []);
+
     return {
         requestAndScheduleDaily,
         scheduleHabitReminder,
         cancelHabitReminder,
         cancelAll,
+        scheduleWater,
+        cancelWater,
         requestPermissions,
     };
 }

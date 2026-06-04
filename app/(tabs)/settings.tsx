@@ -31,12 +31,14 @@ export default function SettingsScreen() {
   const { signOut } = useAuth();
   const { user } = useAuthStore();
   const { habits, createHabit } = useHabits();
-  const { requestAndScheduleDaily, cancelAll } = useNotifications();
+  const { requestAndScheduleDaily, cancelAll, scheduleWater, cancelWater } = useNotifications();
 
   const {
     stepTrackingEnabled, setStepTrackingEnabled,
     notificationsEnabled, setNotificationsEnabled,
     reminderTime, setReminderTime,
+    waterReminderEnabled, setWaterReminderEnabled,
+    waterIntervalHours, setWaterIntervalHours,
   } = usePreferences();
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [tempHour12, setTempHour12] = useState(8);   // 1–12
@@ -64,6 +66,27 @@ export default function SettingsScreen() {
     } else {
       await cancelAll();
     }
+  };
+
+  // ── Water reminder ──────────────────────────────────────────────────────────
+  const toggleWaterReminder = async (value: boolean) => {
+    setWaterReminderEnabled(value);
+    if (value) {
+      const success = await scheduleWater(waterIntervalHours);
+      if (!success) {
+        setWaterReminderEnabled(false);
+        Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
+      }
+    } else {
+      await cancelWater();
+    }
+  };
+
+  const cycleWaterInterval = async () => {
+    const options = [1, 2, 3, 4];
+    const next = options[(options.indexOf(waterIntervalHours) + 1) % options.length];
+    setWaterIntervalHours(next);
+    if (waterReminderEnabled) await scheduleWater(next);
   };
 
   // ── Time picker helpers ───────────────────────────────────────────────────
@@ -280,6 +303,27 @@ export default function SettingsScreen() {
             value={format12h(reminderTime)}
             onPress={openTimePicker}
           />
+          <SettingsRow
+            icon="water-outline"
+            label="Water Reminder"
+            right={
+              <Switch
+                value={waterReminderEnabled}
+                onValueChange={toggleWaterReminder}
+                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
+                thumbColor={waterReminderEnabled ? COLORS.primary : COLORS.textMuted}
+                accessibilityLabel="Toggle water reminder"
+              />
+            }
+          />
+          {waterReminderEnabled && (
+            <SettingsRow
+              icon="repeat-outline"
+              label="Water Interval"
+              value={`Every ${waterIntervalHours} ${waterIntervalHours === 1 ? 'hour' : 'hours'}`}
+              onPress={cycleWaterInterval}
+            />
+          )}
         </Card>
 
         {/* About */}
@@ -453,10 +497,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.cardBorder,
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: SPACING.sm },
   rowIcon: { marginRight: SPACING.md },
   rowLabel: { fontSize: TYPOGRAPHY.md },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, flexShrink: 0 },
   rowValue: { fontSize: TYPOGRAPHY.sm, color: COLORS.textMuted },
 
   // Time picker sheet

@@ -9,6 +9,10 @@ interface PreferencesState {
     setNotificationsEnabled: (value: boolean) => void;
     reminderTime: string;
     setReminderTime: (value: string) => void;
+    waterReminderEnabled: boolean;
+    setWaterReminderEnabled: (value: boolean) => void;
+    waterIntervalHours: number;
+    setWaterIntervalHours: (value: number) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -20,6 +24,10 @@ export const usePreferencesStore = create<PreferencesState>()(
             setNotificationsEnabled: (value) => set({ notificationsEnabled: value }),
             reminderTime: '20:00',
             setReminderTime: (value) => set({ reminderTime: value }),
+            waterReminderEnabled: false,
+            setWaterReminderEnabled: (value) => set({ waterReminderEnabled: value }),
+            waterIntervalHours: 2,
+            setWaterIntervalHours: (value) => set({ waterIntervalHours: value }),
         }),
         {
             name: 'user-preferences',

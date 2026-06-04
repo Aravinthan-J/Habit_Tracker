@@ -17,6 +17,8 @@ export function usePreferences() {
             if (data.notifications_enabled != null) store.setNotificationsEnabled(data.notifications_enabled);
             if (data.reminder_time != null) store.setReminderTime(data.reminder_time);
             if (data.step_tracking_enabled != null) store.setStepTrackingEnabled(data.step_tracking_enabled);
+            if (data.water_reminder_enabled != null) store.setWaterReminderEnabled(data.water_reminder_enabled);
+            if (data.water_interval_hours != null) store.setWaterIntervalHours(data.water_interval_hours);
         });
     }, [user?.uid]);
 
@@ -38,12 +40,28 @@ export function usePreferences() {
         await setDoc(doc(db, 'users', user.uid), { step_tracking_enabled: value }, { merge: true });
     };
 
+    const setWaterReminderEnabled = async (value: boolean) => {
+        store.setWaterReminderEnabled(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { water_reminder_enabled: value }, { merge: true });
+    };
+
+    const setWaterIntervalHours = async (value: number) => {
+        store.setWaterIntervalHours(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { water_interval_hours: value }, { merge: true });
+    };
+
     return {
         notificationsEnabled: store.notificationsEnabled,
         reminderTime: store.reminderTime,
         stepTrackingEnabled: store.stepTrackingEnabled,
+        waterReminderEnabled: store.waterReminderEnabled,
+        waterIntervalHours: store.waterIntervalHours,
         setNotificationsEnabled,
         setReminderTime,
         setStepTrackingEnabled,
+        setWaterReminderEnabled,
+        setWaterIntervalHours,
     };
 }

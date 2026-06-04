@@ -81,6 +81,53 @@ export async function cancelHabitReminder(habitId: string): Promise<void> {
     await Notifications.cancelScheduledNotificationAsync(`habit-reminder-${habitId}`).catch(() => { });
 }
 
+const WATER_PREFIX = 'water-reminder-';
+const WATER_MESSAGES = [
+    'Time to hydrate — grab a glass of water! 💧',
+    'Stay refreshed. Take a few sips of water. 💧',
+    'Hydration check! Your body will thank you. 💧',
+    'Keep it flowing — drink some water now. 💧',
+];
+
+/**
+ * Schedule repeating daily water reminders every `intervalHours` between
+ * `startHour` and `endHour` (inclusive). Each slot is its own DAILY trigger.
+ */
+export async function scheduleWaterReminders(
+    intervalHours: number,
+    startHour: number,
+    endHour: number,
+): Promise<void> {
+    if (!Notifications) return;
+    await cancelWaterReminders();
+    let i = 0;
+    for (let h = startHour; h <= endHour; h += intervalHours) {
+        await Notifications.scheduleNotificationAsync({
+            identifier: `${WATER_PREFIX}${h}`,
+            content: {
+                title: '💧 Water Reminder',
+                body: WATER_MESSAGES[i++ % WATER_MESSAGES.length],
+                sound: true,
+            },
+            trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DAILY,
+                hour: h,
+                minute: 0,
+            },
+        }).catch(() => { });
+    }
+}
+
+export async function cancelWaterReminders(): Promise<void> {
+    if (!Notifications) return;
+    const all = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+    for (const n of all) {
+        if (n.identifier?.startsWith(WATER_PREFIX)) {
+            await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => { });
+        }
+    }
+}
+
 export async function sendImmediateNotification(title: string, body: string): Promise<void> {
     if (!Notifications) return;
     await Notifications.scheduleNotificationAsync({
