@@ -8,14 +8,16 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useHabits } from '@/hooks/useHabits';
 import { useCompletions } from '@/hooks/useCompletions';
 import { HabitForm } from '@/components/habits/HabitForm';
 import { HabitStats } from '@/components/habits/HabitStats';
+import { HabitMonthHeatmap } from '@/components/habits/HabitMonthHeatmap';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { calculateCurrentStreak, calculateLongestStreak, completionRate } from '@/utils/streakCalculator';
 import { today } from '@/utils/dateHelpers';
 import { resolveIcon } from '@/utils/iconHelpers';
@@ -73,11 +75,26 @@ export default function HabitDetailScreen() {
       </View>
 
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Color accent banner */}
-        <View style={[styles.colorBanner, { backgroundColor: habit.color + '22' }]}>
-          <Text style={styles.habitEmoji}>{resolveIcon(habit.icon)}</Text>
-          <View style={[styles.colorDot, { backgroundColor: habit.color }]} />
-        </View>
+        {/* Hero banner */}
+        <LinearGradient
+          colors={[habit.color, habit.color + 'AA'] as const}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroIcon}>
+            <Text style={styles.habitEmoji}>{resolveIcon(habit.icon)}</Text>
+          </View>
+          <Text style={styles.heroTitle} numberOfLines={1}>{habit.title}</Text>
+          <View style={styles.heroBadges}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>🔥 {currentStreak} day streak</Text>
+            </View>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>🎯 {monthlyCount}/{habit.monthly_goal} this month</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
         {/* Stats */}
         {!editing && (
@@ -92,6 +109,9 @@ export default function HabitDetailScreen() {
               monthlyGoal={habit.monthly_goal}
               monthlyCount={monthlyCount}
             />
+
+            <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>History</Text>
+            <HabitMonthHeatmap completionDates={habitCompletionDates} color={habit.color} />
 
             <TouchableOpacity
               style={styles.deleteBtn}
@@ -139,17 +159,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   body: { flex: 1, paddingHorizontal: SPACING.xl },
-  colorBanner: {
-    height: 100,
-    borderRadius: 16,
+  hero: {
+    borderRadius: 20,
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xl,
+  },
+  heroIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xl,
-    flexDirection: 'row',
-    gap: SPACING.md,
+    marginBottom: SPACING.md,
   },
-  habitEmoji: { fontSize: 48 },
-  colorDot: { width: 16, height: 16, borderRadius: 8 },
+  habitEmoji: { fontSize: 40 },
+  heroTitle: {
+    fontSize: TYPOGRAPHY.xl,
+    fontWeight: TYPOGRAPHY.bold,
+    color: '#FFFFFF',
+    maxWidth: '90%',
+  },
+  heroBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md, justifyContent: 'center' },
+  heroBadge: {
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 5,
+    borderRadius: RADIUS.lg,
+  },
+  heroBadgeText: { color: '#FFFFFF', fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.semibold },
   sectionTitle: {
     color: COLORS.textPrimary,
     fontSize: TYPOGRAPHY.lg,
