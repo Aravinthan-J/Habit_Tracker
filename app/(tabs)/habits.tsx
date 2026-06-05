@@ -18,8 +18,11 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button } from '@/components/ui/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
-import { today } from '@/utils/dateHelpers';
+import { today, getLastNDays } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
+
+type HabitFilter = 'all' | 'pending' | 'done';
+const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function HabitsScreen() {
   const router = useRouter();
@@ -28,13 +31,16 @@ export default function HabitsScreen() {
   const todayStr = today();
   const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<HabitFilter>('all');
 
-  const filteredHabits = useMemo(() => {
-    if (!searchQuery) return habits;
-    return habits.filter(h =>
-      h.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [habits, searchQuery]);
+  const weekDates = useMemo(() => getLastNDays(7).reverse(), []); // oldest → today
+  const weekLabels = useMemo(
+    () => weekDates.map((d) => {
+      const [y, m, dd] = d.split('-').map(Number);
+      return DOW[new Date(y, m - 1, dd).getDay()];
+    }).join(''),
+    [weekDates],
+  );
 
   const activeHabitIds = useMemo(() => new Set(habits.map((h) => h.id)), [habits]);
 
@@ -65,6 +71,19 @@ export default function HabitsScreen() {
     ),
     [completions, todayStr, activeHabitIds]
   );
+
+  const doneToday = completedTodayIds.size;
+  const totalHabits = habits.length;
+
+  const visibleHabits = useMemo(() => {
+    let list = habits;
+    if (searchQuery) {
+      list = list.filter((h) => h.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    if (filter === 'pending') list = list.filter((h) => !completedTodayIds.has(h.id));
+    else if (filter === 'done') list = list.filter((h) => completedTodayIds.has(h.id));
+    return list;
+  }, [habits, searchQuery, filter, completedTodayIds]);
 
   const handleToggle = (habitId: string) => {
     const isCompleted = completedTodayIds.has(habitId);
@@ -110,6 +129,52 @@ export default function HabitsScreen() {
             )}
           </View>
         )}
+
+        {totalHabits > 0 && (
+          <>
+            {/* Today summary */}
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryText, { color: COLORS.textSecondary }]}>
+                {doneToday === totalHabits ? '🎉 All done today!' : `${doneToday}/${totalHabits} done today`}
+              </Text>
+            </View>
+            <View style={[styles.summaryTrack, { backgroundColor: COLORS.surface }]}>
+              <View
+                style={[
+                  styles.summaryFill,
+                  {
+                    width: `${(doneToday / totalHabits) * 100}%`,
+                    backgroundColor: doneToday === totalHabits ? COLORS.success : COLORS.primary,
+                  },
+                ]}
+              />
+            </View>
+
+            {/* Filter chips */}
+            <View style={styles.chipsRow}>
+              {(['all', 'pending', 'done'] as HabitFilter[]).map((f) => {
+                const active = filter === f;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setFilter(f)}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: active ? COLORS.primary : COLORS.surface + '88',
+                        borderColor: active ? COLORS.primary : COLORS.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.chipText, { color: active ? '#FFFFFF' : COLORS.textSecondary }]}>
+                      {f === 'all' ? 'All' : f === 'pending' ? 'Pending' : 'Done'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
       </LinearGradient>
 
       {isLoading ? (
@@ -125,7 +190,7 @@ export default function HabitsScreen() {
         />
       ) : (
         <FlatList
-          data={filteredHabits}
+          data={visibleHabits}
           keyExtractor={(item) => item.id}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
@@ -133,6 +198,8 @@ export default function HabitsScreen() {
           renderItem={({ item }) => {
             const completionDates = completionDatesByHabitId.get(item.id) ?? [];
             const monthlyCount = monthlyCountByHabitId.get(item.id) ?? 0;
+            const dset = new Set(completionDates);
+            const weekStatus = weekDates.map((d) => (dset.has(d) ? '1' : '0')).join('');
             return (
               <HabitCard
                 habit={item}
@@ -142,9 +209,22 @@ export default function HabitsScreen() {
                 onPress={() => router.push(`/habit/${item.id}`)}
                 monthlyCount={monthlyCount}
                 monthlyGoal={item.monthly_goal}
+                weekStatus={weekStatus}
+                weekLabels={weekLabels}
               />
             );
           }}
+          ListEmptyComponent={
+            <EmptyState
+              icon={filter === 'done' ? 'checkmark-done-outline' : 'sparkles-outline'}
+              title={filter === 'done' ? 'Nothing completed yet' : 'All caught up!'}
+              subtitle={
+                filter === 'done'
+                  ? 'Complete a habit to see it here.'
+                  : 'No habits match this filter right now.'
+              }
+            />
+          }
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         />
@@ -196,4 +276,16 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.md,
     paddingVertical: 8,
   },
+  summaryRow: { marginTop: SPACING.sm, marginBottom: SPACING.xs },
+  summaryText: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.medium },
+  summaryTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  summaryFill: { height: '100%', borderRadius: 3 },
+  chipsRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md },
+  chip: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+  },
+  chipText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.semibold },
 });

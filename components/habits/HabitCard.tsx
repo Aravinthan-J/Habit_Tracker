@@ -21,6 +21,11 @@ interface HabitCardProps {
   onPress: () => void;
   monthlyCount: number;
   monthlyGoal: number;
+  /** Last 7 days as '1'/'0' chars (oldest→newest, today last). Passed as a
+   *  string so React.memo stays effective. */
+  weekStatus?: string;
+  /** Weekday initials for the 7 days, e.g. "SMTWTFS" aligned with weekStatus. */
+  weekLabels?: string;
 }
 
 export const HabitCard: React.FC<HabitCardProps> = React.memo(({
@@ -31,6 +36,8 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   onPress,
   monthlyCount,
   monthlyGoal,
+  weekStatus,
+  weekLabels,
 }) => {
   const { light } = useHaptics();
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -84,6 +91,32 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
                   <Text style={[styles.monthlyText, { color: goalReached ? COLORS.success : COLORS.textMuted }]}>
                     {goalReached ? `🎯 ${monthlyGoal}/${monthlyGoal} Goal met!` : `${monthlyCount}/${monthlyGoal} this month`}
                   </Text>
+                )}
+                {weekStatus?.length === 7 && (
+                  <View style={styles.weekRow}>
+                    {weekStatus.split('').map((ch, i) => {
+                      const done = ch === '1';
+                      const isToday = i === 6;
+                      return (
+                        <View key={i} style={styles.weekDay}>
+                          <View
+                            style={[
+                              styles.weekDot,
+                              done
+                                ? { backgroundColor: habit.color }
+                                : { borderWidth: 1.5, borderColor: COLORS.cardBorder },
+                              isToday && !done && { borderColor: habit.color },
+                            ]}
+                          />
+                          {!!weekLabels && (
+                            <Text style={[styles.weekLabel, { color: isToday ? habit.color : COLORS.textMuted }]}>
+                              {weekLabels[i]}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
                 )}
               </View>
             </View>
@@ -141,4 +174,8 @@ const styles = StyleSheet.create({
   fire: { fontSize: 12, marginRight: 2 },
   streak: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium },
   monthlyText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium, marginTop: 2 },
+  weekRow: { flexDirection: 'row', marginTop: 8 },
+  weekDay: { alignItems: 'center', marginRight: 9 },
+  weekDot: { width: 9, height: 9, borderRadius: 5, marginBottom: 3 },
+  weekLabel: { fontSize: 9, fontWeight: TYPOGRAPHY.medium },
 });
