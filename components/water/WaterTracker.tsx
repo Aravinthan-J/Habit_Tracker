@@ -1,18 +1,59 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 import { useWater } from '@/hooks/useWater';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useHabits } from '@/hooks/useHabits';
+import { useCompletions } from '@/hooks/useCompletions';
+import { usePreferences } from '@/hooks/usePreferences';
+import { useNotifications } from '@/hooks/useNotifications';
+import { today } from '@/utils/dateHelpers';
 
 const GOAL_OPTIONS = [6, 8, 10, 12];
 const WATER_BLUE = '#3BA7FF';
 
 export const WaterTracker: React.FC = () => {
     const { glasses, goal, increment, decrement, setGoal } = useWater();
-    const { light } = useHaptics();
+    const { light, success } = useHaptics();
+    const { habits } = useHabits();
+    const { completions, toggleCompletion } = useCompletions();
 
     const reached = glasses >= goal;
+
+    // When the daily goal is reached, auto-complete a "Drink Water" habit (once/day).
+    const waterHabit = habits.find((h) => h.title.toLowerCase().includes('water'));
+    const dateStr = today();
+    const waterHabitDone =
+        !!waterHabit && completions.some((c) => c.habit_id === waterHabit.id && c.date === dateStr);
+    const autoCompletedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (reached && waterHabit && !waterHabitDone && autoCompletedRef.current !== dateStr) {
+            autoCompletedRef.current = dateStr;
+            success?.();
+            toggleCompletion.mutate({ habitId: waterHabit.id, date: dateStr, isCompleted: false });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reached, waterHabit?.id, waterHabitDone, dateStr]);
+
+    // Stop nagging once today's goal is reached; resume reminders on a new day
+    // (or if the user drops back below goal). Only when reminders are enabled.
+    const { waterReminderEnabled, waterIntervalHours } = usePreferences();
+    const { scheduleWater, cancelWater } = useNotifications();
+    const reminderStateRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!waterReminderEnabled) return;
+        if (reached && reminderStateRef.current !== `off-${dateStr}`) {
+            cancelWater();
+            reminderStateRef.current = `off-${dateStr}`;
+        } else if (!reached && reminderStateRef.current !== `on-${dateStr}`) {
+            scheduleWater(waterIntervalHours);
+            reminderStateRef.current = `on-${dateStr}`;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reached, waterReminderEnabled, waterIntervalHours, dateStr]);
     const cycleGoal = () => {
         light();
         const next = GOAL_OPTIONS[(GOAL_OPTIONS.indexOf(goal) + 1) % GOAL_OPTIONS.length];
