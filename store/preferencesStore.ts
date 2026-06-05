@@ -15,6 +15,8 @@ interface PreferencesState {
     setWaterIntervalHours: (value: number) => void;
     waterGoalGlasses: number;
     setWaterGoalGlasses: (value: number) => void;
+    petTone: 'gentle' | 'savage';
+    setPetTone: (value: 'gentle' | 'savage') => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -32,6 +34,8 @@ export const usePreferencesStore = create<PreferencesState>()(
             setWaterIntervalHours: (value) => set({ waterIntervalHours: value }),
             waterGoalGlasses: 8,
             setWaterGoalGlasses: (value) => set({ waterGoalGlasses: value }),
+            petTone: 'gentle',
+            setPetTone: (value) => set({ petTone: value }),
         }),
         {
             name: 'user-preferences',

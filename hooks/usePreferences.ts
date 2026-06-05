@@ -20,6 +20,7 @@ export function usePreferences() {
             if (data.water_reminder_enabled != null) store.setWaterReminderEnabled(data.water_reminder_enabled);
             if (data.water_interval_hours != null) store.setWaterIntervalHours(data.water_interval_hours);
             if (data.water_goal_glasses != null) store.setWaterGoalGlasses(data.water_goal_glasses);
+            if (data.pet_tone === 'gentle' || data.pet_tone === 'savage') store.setPetTone(data.pet_tone);
         });
     }, [user?.uid]);
 
@@ -59,6 +60,12 @@ export function usePreferences() {
         await setDoc(doc(db, 'users', user.uid), { water_goal_glasses: value }, { merge: true });
     };
 
+    const setPetTone = async (value: 'gentle' | 'savage') => {
+        store.setPetTone(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { pet_tone: value }, { merge: true });
+    };
+
     return {
         notificationsEnabled: store.notificationsEnabled,
         reminderTime: store.reminderTime,
@@ -66,11 +73,13 @@ export function usePreferences() {
         waterReminderEnabled: store.waterReminderEnabled,
         waterIntervalHours: store.waterIntervalHours,
         waterGoalGlasses: store.waterGoalGlasses,
+        petTone: store.petTone,
         setNotificationsEnabled,
         setReminderTime,
         setStepTrackingEnabled,
         setWaterReminderEnabled,
         setWaterIntervalHours,
         setWaterGoalGlasses,
+        setPetTone,
     };
 }

@@ -15,6 +15,7 @@ import { useBadges } from '@/hooks/useBadges';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { StepProgressRing } from '@/components/steps/StepProgressRing';
 import { WaterTracker } from '@/components/water/WaterTracker';
+import { HabitPet } from '@/components/pet/HabitPet';
 import AchievementPreview from '@/components/home/AchievementPreview';
 import FocusHighlights from '@/components/home/FocusHighlights';
 import MetricHighlights from '@/components/home/MetricHighlights';
@@ -118,6 +119,9 @@ export default function HomeScreen() {
                 <Text style={[styles.freezeCount, { color: COLORS.textPrimary }]}>{freezeBalance}</Text>
               </View>
             </LinearGradient>
+
+            {/* Habit Pet */}
+            <HabitPet />
 
             {/* Progress banner */}
             {totalCount > 0 && (
