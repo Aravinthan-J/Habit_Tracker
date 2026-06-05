@@ -5,7 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { Metric } from '@/types/advanced.types';
 import { BarChart } from '@/components/analytics/BarChart';
+import { LineChart } from '@/components/analytics/LineChart';
 import { InsightCard } from '@/components/analytics/InsightCard';
+import { resolveIcon } from '@/utils/iconHelpers';
 import MetricLogger from '@/components/MetricLogger';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -29,6 +31,14 @@ export default function AnalyticsScreen() {
 
   const perfectDays = data.weeklyData.filter((d) => d.rate === 100).length;
 
+  // 30-day trend line (sparse labels to avoid crowding)
+  const trendData = {
+    labels: data.trend.map((t, i) => (i % 6 === 0 ? t.date.slice(8, 10) : '')),
+    datasets: [{ data: data.trend.map((t) => t.rate) }],
+  };
+
+  const breakdown = data.habitBreakdown;
+
   const rate = data.avgCompletionRate;
   const rateColor = rate >= 80 ? COLORS.success : rate >= 50 ? COLORS.primary : COLORS.accentOrange;
 
@@ -45,6 +55,16 @@ export default function AnalyticsScreen() {
   }
   if (data.totalCompletions >= 100) {
     insights.push({ text: `${data.totalCompletions} total completions — you've built a real habit practice!`, type: 'positive' });
+  }
+  if (breakdown.length >= 2) {
+    const best = breakdown[0];
+    const worst = breakdown[breakdown.length - 1];
+    if (best.rate >= 50) {
+      insights.push({ text: `Strongest habit: ${best.title} at ${best.rate}% 💪`, type: 'positive' });
+    }
+    if (worst.rate < 50) {
+      insights.push({ text: `${worst.title} needs love — only ${worst.rate}%. Small steps! 🌱`, type: 'warning' });
+    }
   }
 
   return (
@@ -92,6 +112,33 @@ export default function AnalyticsScreen() {
             maxValue={100}
           />
         </View>
+
+        {/* 30-day Trend */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>30-Day Trend</Text>
+          <LineChart data={trendData} color={rateColor} />
+        </View>
+
+        {/* Per-habit breakdown */}
+        {breakdown.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Per-Habit Breakdown</Text>
+            <View style={[styles.breakdownCard, { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }]}>
+              {breakdown.map((h, i) => (
+                <View key={h.id} style={[styles.breakdownRow, i > 0 && styles.breakdownDivider]}>
+                  <Text style={styles.breakdownEmoji}>{resolveIcon(h.icon)}</Text>
+                  <View style={styles.breakdownMid}>
+                    <Text style={[styles.breakdownTitle, { color: COLORS.textPrimary }]} numberOfLines={1}>{h.title}</Text>
+                    <View style={[styles.breakdownTrack, { backgroundColor: COLORS.surface }]}>
+                      <View style={[styles.breakdownFill, { width: `${h.rate}%`, backgroundColor: h.color }]} />
+                    </View>
+                  </View>
+                  <Text style={[styles.breakdownRate, { color: h.color }]}>{h.rate}%</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Insights */}
         {insights.length > 0 && (
@@ -217,4 +264,22 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.semibold,
     marginBottom: SPACING.md,
   },
+
+  breakdownCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.lg,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+  },
+  breakdownDivider: { borderTopWidth: 1, borderTopColor: COLORS.cardBorder },
+  breakdownEmoji: { fontSize: 22, marginRight: SPACING.md },
+  breakdownMid: { flex: 1 },
+  breakdownTitle: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.medium, marginBottom: 6 },
+  breakdownTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  breakdownFill: { height: '100%', borderRadius: 3 },
+  breakdownRate: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.bold, marginLeft: SPACING.md, width: 44, textAlign: 'right' },
 });

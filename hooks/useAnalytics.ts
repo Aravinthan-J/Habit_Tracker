@@ -6,6 +6,15 @@ import { getLast30Days, getLastNDays } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
 import { getLocalHabits, getAllLocalCompletions } from '@/services/storage/LocalStorageService';
 
+export interface HabitBreakdown {
+    id: string;
+    title: string;
+    color: string;
+    icon: string | null;
+    rate: number;
+    count: number;
+}
+
 export interface AnalyticsSummary {
     totalCompletions: number;
     avgCompletionRate: number;
@@ -14,10 +23,12 @@ export interface AnalyticsSummary {
     completionsByDate: Record<string, number>;
     ratesByDate: Record<string, number>;
     weeklyData: Array<{ date: string; rate: number; steps: number }>;
+    trend: Array<{ date: string; rate: number }>;
+    habitBreakdown: HabitBreakdown[];
 }
 
 function buildSummary(
-    habits: { id: string; created_at?: string }[],
+    habits: { id: string; created_at?: string; title?: string; color?: string; icon?: string | null }[],
     completions: { habit_id: string; date: string }[],
     last30: string[],
     stepsMap: Record<string, number> = {},
@@ -68,6 +79,25 @@ function buildSummary(
         steps: stepsMap[date] ?? 0,
     }));
 
+    const trend = last30.map((date) => ({ date, rate: ratesByDate[date] ?? 0 }));
+
+    const last30Set = new Set(last30);
+    const habitBreakdown: HabitBreakdown[] = habits
+        .map((h) => {
+            const possibleDays = last30.filter((d) => !h.created_at || h.created_at.slice(0, 10) <= d).length;
+            const count = activeCompletions.filter((c) => c.habit_id === h.id && last30Set.has(c.date)).length;
+            const rate = possibleDays > 0 ? Math.min(Math.round((count / possibleDays) * 100), 100) : 0;
+            return {
+                id: h.id,
+                title: h.title ?? 'Habit',
+                color: h.color ?? '#6C63FF',
+                icon: h.icon ?? null,
+                rate,
+                count,
+            };
+        })
+        .sort((a, b) => b.rate - a.rate);
+
     return {
         totalCompletions: activeCompletions.length,
         avgCompletionRate,
@@ -76,6 +106,8 @@ function buildSummary(
         completionsByDate,
         ratesByDate,
         weeklyData,
+        trend,
+        habitBreakdown,
     };
 }
 
