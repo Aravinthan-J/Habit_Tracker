@@ -96,3 +96,21 @@ export function pickPetMessage(tier: PetTier, tone: PetTone): string {
     const dayIndex = Math.floor(Date.now() / 86400000);
     return arr[dayIndex % arr.length];
 }
+
+/** Build a tone-flavoured "badge almost unlocked" notification. */
+export function buildBadgeNudgeNotification(
+    badgeName: string,
+    remainingText: string,
+    tone: PetTone,
+): { title: string; body: string } {
+    if (tone === 'savage') {
+        return {
+            title: '🔥 Pip is watching',
+            body: `Just ${remainingText} from "${badgeName}". Don't choke now. 💀`,
+        };
+    }
+    return {
+        title: '🎯 So close!',
+        body: `Only ${remainingText} to unlock "${badgeName}". You've got this! 💪`,
+    };
+}

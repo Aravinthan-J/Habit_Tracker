@@ -128,6 +128,26 @@ export async function cancelWaterReminders(): Promise<void> {
     }
 }
 
+/** A once-daily "badge almost unlocked" nudge at the given hour. */
+export async function scheduleBadgeNudge(hour: number, title: string, body: string): Promise<void> {
+    if (!Notifications) return;
+    await cancelBadgeNudge();
+    await Notifications.scheduleNotificationAsync({
+        identifier: 'badge-nudge',
+        content: { title, body, sound: true },
+        trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute: 0,
+        },
+    }).catch(() => { });
+}
+
+export async function cancelBadgeNudge(): Promise<void> {
+    if (!Notifications) return;
+    await Notifications.cancelScheduledNotificationAsync('badge-nudge').catch(() => { });
+}
+
 export async function sendImmediateNotification(title: string, body: string): Promise<void> {
     if (!Notifications) return;
     await Notifications.scheduleNotificationAsync({

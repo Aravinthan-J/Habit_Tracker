@@ -40,6 +40,14 @@ export function useNotifications() {
         await NotificationService.cancelWaterReminders();
     }, []);
 
+    const scheduleBadgeNudge = useCallback(async (title: string, body: string) => {
+        await NotificationService.scheduleBadgeNudge(18, title, body); // 6 PM
+    }, []);
+
+    const cancelBadgeNudge = useCallback(async () => {
+        await NotificationService.cancelBadgeNudge();
+    }, []);
+
     return {
         requestAndScheduleDaily,
         scheduleHabitReminder,
@@ -47,6 +55,8 @@ export function useNotifications() {
         cancelAll,
         scheduleWater,
         cancelWater,
+        scheduleBadgeNudge,
+        cancelBadgeNudge,
         requestPermissions,
     };
 }

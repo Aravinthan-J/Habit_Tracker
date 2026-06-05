@@ -16,6 +16,7 @@ import { HabitCard } from '@/components/habits/HabitCard';
 import { StepProgressRing } from '@/components/steps/StepProgressRing';
 import { WaterTracker } from '@/components/water/WaterTracker';
 import { HabitPet } from '@/components/pet/HabitPet';
+import { BadgeNudgeCard } from '@/components/badges/BadgeNudgeCard';
 import AchievementPreview from '@/components/home/AchievementPreview';
 import FocusHighlights from '@/components/home/FocusHighlights';
 import MetricHighlights from '@/components/home/MetricHighlights';
@@ -180,6 +181,9 @@ export default function HomeScreen() {
                 <Text style={[styles.pedometerHint, { color: COLORS.textMuted }]}>Pedometer not available on this device</Text>
               )}
             </View>
+
+            {/* Badge Progress Nudge */}
+            <BadgeNudgeCard />
 
             {/* Water Tracker */}
             <WaterTracker />
