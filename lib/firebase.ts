@@ -33,3 +33,9 @@ export const GOOGLE_ANDROID_CLIENT_ID = '20069212711-oj3minl0m0eko1ukk9i1rrq58jd
 // Web client ID — find it at:
 // Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration → Web client ID
 export const GOOGLE_WEB_CLIENT_ID = '20069212711-oj3minl0m0eko1ukk9i1rrq58jdp5tmi.apps.googleusercontent.com';
+
+// iOS client ID — required by expo-auth-session on iOS, otherwise the login
+// screen throws at render. Falls back to the web client so the app runs; for
+// real Google Sign-In on iOS, create a dedicated iOS OAuth client in Google
+// Cloud Console and set its reversed-client-id URL scheme.
+export const GOOGLE_IOS_CLIENT_ID = '20069212711-oj3minl0m0eko1ukk9i1rrq58jdp5tmi.apps.googleusercontent.com';

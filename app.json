@@ -68,12 +68,6 @@
       ],
       "expo-web-browser",
       [
-        "expo-av",
-        {
-          "microphonePermission": false
-        }
-      ],
-      [
         "react-native-health",
         {
           "healthSharePermission": "Habity reads your step count, distance, and calories from Apple Health to display accurate activity data.",
@@ -88,6 +82,13 @@
           "android": {
             "minSdkVersion": 26
           }
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ]
     ],

@@ -79,7 +79,7 @@ async function getSoundUri(name: string, freqHz: number, durationSec: number): P
     const wav    = generateWav(freqHz, durationSec);
     const base64 = toBase64(wav);
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const FileSystem = require('expo-file-system') as typeof import('expo-file-system');
+    const FileSystem = require('expo-file-system/legacy') as typeof import('expo-file-system/legacy');
     const uri    = `${FileSystem.cacheDirectory}${name}.wav`;
     await FileSystem.writeAsStringAsync(uri, base64, {
         encoding: FileSystem.EncodingType.Base64,
@@ -97,11 +97,8 @@ async function getSoundUri(name: string, freqHz: number, durationSec: number): P
 export async function playTimerComplete(): Promise<void> {
     try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { Audio } = require('expo-av') as typeof import('expo-av');
-        await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            staysActiveInBackground: false,
-        });
+        const { createAudioPlayer, setAudioModeAsync } = require('expo-audio') as typeof import('expo-audio');
+        await setAudioModeAsync({ playsInSilentMode: true });
 
         // Three ascending tones: C5 (523Hz), E5 (659Hz), G5 (784Hz)
         const tones: Array<[string, number]> = [
@@ -112,12 +109,15 @@ export async function playTimerComplete(): Promise<void> {
 
         for (const [name, freq] of tones) {
             const uri = await getSoundUri(name, freq, 0.35);
-            const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+            const player = createAudioPlayer({ uri });
+            player.play();
             // Wait for tone to finish before playing the next
             await new Promise<void>((resolve) => {
-                sound.setOnPlaybackStatusUpdate((status) => {
-                    if (status.isLoaded && status.didJustFinish) {
-                        sound.unloadAsync().finally(resolve);
+                const sub = player.addListener('playbackStatusUpdate', (status) => {
+                    if (status.didJustFinish) {
+                        sub.remove();
+                        player.remove();
+                        resolve();
                     }
                 });
             });
