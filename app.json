@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.habity.app",
+      "bundleIdentifier": "com.habity.app.aravi",
       "infoPlist": {
         "NSMotionUsageDescription": "Habity uses motion sensors to track your daily steps and activity goals.",
         "NSUserNotificationUsageDescription": "Habity sends you reminders to complete your daily habits.",
