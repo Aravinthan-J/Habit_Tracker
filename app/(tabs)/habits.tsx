@@ -200,6 +200,9 @@ export default function HabitsScreen() {
             const monthlyCount = monthlyCountByHabitId.get(item.id) ?? 0;
             const dset = new Set(completionDates);
             const weekStatus = weekDates.map((d) => (dset.has(d) ? '1' : '0')).join('');
+            const stackAfterTitle = item.stack_after
+              ? habits.find((h) => h.id === item.stack_after)?.title
+              : undefined;
             return (
               <HabitCard
                 habit={item}
@@ -211,6 +214,7 @@ export default function HabitsScreen() {
                 monthlyGoal={item.monthly_goal}
                 weekStatus={weekStatus}
                 weekLabels={weekLabels}
+                stackAfterTitle={stackAfterTitle}
               />
             );
           }}

@@ -18,8 +18,14 @@ import {
     deleteCompletionLocally,
     getLocalCompletions,
     queueOperation,
+    logCompletionTime,
+    deleteCompletionTimeLog,
 } from '@/services/storage/LocalStorageService';
-import { Completion } from '@/types/habit.types';
+import {
+    cancelSmartReminderOccurrence,
+    sendImmediateNotification,
+} from '@/services/notifications/NotificationService';
+import { Completion, Habit } from '@/types/habit.types';
 
 function dailyDocsToCompletions(
     docs: { date: string; completedHabitIds: string[] }[],
@@ -77,6 +83,29 @@ export function useCompletions(startDate?: string, endDate?: string) {
         staleTime: 1000 * 15,
     });
 
+    // Habit stacking: when a habit is completed, nudge the habits stacked after it
+    const nudgeStackedHabits = async (habitId: string, date: string) => {
+        const habits = qc.getQueryData<Habit[]>(['habits', user?.uid]) ?? [];
+        const completed = habits.find((h) => h.id === habitId);
+        if (!completed) return;
+
+        const doneToday = new Set(
+            (qc.getQueryData<Completion[]>(queryKey) ?? [])
+                .filter((c) => c.date === date)
+                .map((c) => c.habit_id)
+        );
+        doneToday.add(habitId);
+
+        for (const next of habits) {
+            if (next.stack_after === habitId && !doneToday.has(next.id)) {
+                await sendImmediateNotification(
+                    '⛓️ Keep the chain going',
+                    `"${completed.title}" done! Next up: "${next.title}"`
+                ).catch(() => { });
+            }
+        }
+    };
+
     const toggleCompletion = useMutation({
         mutationFn: async ({
             habitId,
@@ -103,6 +132,7 @@ export function useCompletions(startDate?: string, endDate?: string) {
                     });
                 }
                 await deleteCompletionLocally(habitId, date);
+                await deleteCompletionTimeLog(habitId, date).catch(() => { });
             } else {
                 const completed_at = new Date().toISOString();
                 const newCompletion: Completion = {
@@ -123,6 +153,14 @@ export function useCompletions(startDate?: string, endDate?: string) {
                         record_id: date,
                         payload: JSON.stringify({ habitId }),
                     });
+                }
+
+                if (date === today()) {
+                    const now = new Date();
+                    // Feed the smart-reminder pattern and skip today's reminder
+                    await logCompletionTime(habitId, user.uid, date, now.getHours() * 60 + now.getMinutes()).catch(() => { });
+                    await cancelSmartReminderOccurrence(habitId, date);
+                    await nudgeStackedHabits(habitId, date);
                 }
             }
         },

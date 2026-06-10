@@ -7,6 +7,10 @@ export interface Habit {
     icon: string | null;
     notifications_enabled: boolean;
     reminder_time: string | null;
+    /** Learn the user's typical completion time and remind around it. */
+    smart_reminder?: boolean;
+    /** Habit stacking: id of the habit this one should follow. */
+    stack_after?: string | null;
     created_at: string;
     updated_at: string;
     archived_at: string | null;
@@ -21,6 +25,8 @@ export interface HabitInsert {
     icon?: string | null;
     notifications_enabled?: boolean;
     reminder_time?: string | null;
+    smart_reminder?: boolean;
+    stack_after?: string | null;
     created_at?: string;
     updated_at?: string;
     archived_at?: string | null;
@@ -35,6 +41,8 @@ export interface HabitUpdate {
     icon?: string | null;
     notifications_enabled?: boolean;
     reminder_time?: string | null;
+    smart_reminder?: boolean;
+    stack_after?: string | null;
     updated_at?: string;
     archived_at?: string | null;
 }

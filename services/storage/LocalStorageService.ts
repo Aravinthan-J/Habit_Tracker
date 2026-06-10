@@ -24,8 +24,8 @@ export async function saveHabitLocally(habit: Habit): Promise<void> {
 
     await db.runAsync(
         `INSERT OR REPLACE INTO local_habits
-     (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time, created_at, updated_at, archived_at, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+     (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time, smart_reminder, stack_after, created_at, updated_at, archived_at, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
             habit.id,
             habit.user_id,
@@ -35,6 +35,8 @@ export async function saveHabitLocally(habit: Habit): Promise<void> {
             habit.icon ?? null,
             habit.notifications_enabled ? 1 : 0,
             habit.reminder_time ?? null,
+            habit.smart_reminder ? 1 : 0,
+            habit.stack_after ?? null,
             habit.created_at,
             habit.updated_at,
             habit.archived_at ?? null,
@@ -60,6 +62,7 @@ function rowToHabit(row: any): Habit {
     return {
         ...row,
         notifications_enabled: row.notifications_enabled === 1,
+        smart_reminder: row.smart_reminder === 1,
     };
 }
 
@@ -99,6 +102,40 @@ export async function getAllLocalCompletions(userId: string): Promise<Completion
         `SELECT * FROM local_completions WHERE user_id = ? ORDER BY date DESC`,
         [userId]
     );
+}
+
+// ─── Completion time log (smart reminders) ──────────────────────────────────
+// The Firestore daily docs only store which habits were completed, not when,
+// so the time of day is recorded locally at check-off time.
+
+export async function logCompletionTime(
+    habitId: string,
+    userId: string,
+    date: string,
+    minutesOfDay: number
+): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync(
+        `INSERT OR REPLACE INTO completion_time_log (habit_id, user_id, date, minutes_of_day) VALUES (?, ?, ?, ?)`,
+        [habitId, userId, date, minutesOfDay]
+    );
+}
+
+export async function deleteCompletionTimeLog(habitId: string, date: string): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync(
+        `DELETE FROM completion_time_log WHERE habit_id = ? AND date = ?`,
+        [habitId, date]
+    );
+}
+
+export async function getCompletionTimes(habitId: string, limit = 30): Promise<number[]> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<{ minutes_of_day: number }>(
+        `SELECT minutes_of_day FROM completion_time_log WHERE habit_id = ? ORDER BY date DESC LIMIT ?`,
+        [habitId, limit]
+    );
+    return rows.map((r) => r.minutes_of_day);
 }
 
 // ─── Sync Queue ───────────────────────────────────────────────────────────────

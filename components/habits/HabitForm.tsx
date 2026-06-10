@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,13 +14,22 @@ import { Button } from '@/components/ui/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
 import { validateHabitTitle, validateMonthlyGoal } from '@/utils/validators';
 import { Habit } from '@/types/habit.types';
+import { useHabits } from '@/hooks/useHabits';
+import { resolveIcon } from '@/utils/iconHelpers';
 
 const HABIT_ICONS = ['✨', '💪', '📚', '🏃', '🧘', '🥗', '💧', '🎯', '🏋️', '🎨', '🎵', '🌿', '😴', '🚴', '🧠'];
 const GOAL_PRESETS = [10, 15, 20, 25, 30];
 
 interface HabitFormProps {
   initialValues?: Partial<Habit>;
-  onSubmit: (values: { title: string; monthly_goal: number; color: string; icon: string }) => void;
+  onSubmit: (values: {
+    title: string;
+    monthly_goal: number;
+    color: string;
+    icon: string;
+    smart_reminder: boolean;
+    stack_after: string | null;
+  }) => void;
   onCancel: () => void;
   isLoading?: boolean;
   submitLabel?: string;
@@ -36,8 +46,25 @@ export const HabitForm: React.FC<HabitFormProps> = ({
   const [monthlyGoal, setMonthlyGoal] = useState(String(initialValues?.monthly_goal ?? 20));
   const [color, setColor] = useState(initialValues?.color ?? COLORS.habitColors[0]);
   const [icon, setIcon] = useState(initialValues?.icon ?? '✨');
+  const [smartReminder, setSmartReminder] = useState(initialValues?.smart_reminder ?? false);
+  const [stackAfter, setStackAfter] = useState<string | null>(initialValues?.stack_after ?? null);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [goalError, setGoalError] = useState<string | null>(null);
+
+  const { habits } = useHabits();
+
+  // Habits this one can be stacked after: not itself, and not anything whose
+  // chain already leads back here (would create a cycle).
+  const stackCandidates = habits.filter((h) => {
+    if (h.id === initialValues?.id) return false;
+    if (!initialValues?.id) return true;
+    let cursor: Habit | undefined = h;
+    for (let depth = 0; cursor && depth < habits.length; depth++) {
+      if (cursor.stack_after === initialValues.id) return false;
+      cursor = habits.find((x) => x.id === cursor!.stack_after);
+    }
+    return true;
+  });
 
   const colorPalette = COLORS.habitColors;
 
@@ -48,7 +75,14 @@ export const HabitForm: React.FC<HabitFormProps> = ({
     setGoalError(goalErr);
     if (titleErr || goalErr) return;
 
-    onSubmit({ title: title.trim(), monthly_goal: Number(monthlyGoal), color, icon });
+    onSubmit({
+      title: title.trim(),
+      monthly_goal: Number(monthlyGoal),
+      color,
+      icon,
+      smart_reminder: smartReminder,
+      stack_after: stackAfter,
+    });
   };
 
   return (
@@ -158,6 +192,75 @@ export const HabitForm: React.FC<HabitFormProps> = ({
         hint="How many days per month do you want to complete this habit?"
       />
 
+      {/* Smart reminder */}
+      <Text style={styles.sectionLabel}>Reminders</Text>
+      <View style={[styles.settingCard, { borderColor: COLORS.cardBorder }]}>
+        <View style={styles.settingText}>
+          <Text style={styles.settingTitle}>Smart reminder</Text>
+          <Text style={styles.settingHint}>
+            Learns when you usually complete this habit and reminds you around that time — skipped once you're done for the day.
+          </Text>
+        </View>
+        <Switch
+          value={smartReminder}
+          onValueChange={setSmartReminder}
+          trackColor={{ false: COLORS.surfaceLight, true: color }}
+          thumbColor="#FFFFFF"
+          accessibilityLabel="Toggle smart reminder"
+        />
+      </View>
+
+      {/* Habit stacking */}
+      {stackCandidates.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>Stack After (optional)</Text>
+          <Text style={styles.settingHint}>
+            Chain this habit to another — you'll get a nudge to do it right after.
+          </Text>
+          <View style={styles.stackList}>
+            <TouchableOpacity
+              onPress={() => setStackAfter(null)}
+              style={[
+                styles.stackChip,
+                {
+                  backgroundColor: stackAfter === null ? color : COLORS.surface,
+                  borderColor: stackAfter === null ? color : COLORS.cardBorder,
+                },
+              ]}
+            >
+              <Text style={[styles.stackChipText, { color: stackAfter === null ? '#FFFFFF' : COLORS.textSecondary }]}>
+                None
+              </Text>
+            </TouchableOpacity>
+            {stackCandidates.map((h) => {
+              const selected = stackAfter === h.id;
+              return (
+                <TouchableOpacity
+                  key={h.id}
+                  onPress={() => setStackAfter(selected ? null : h.id)}
+                  style={[
+                    styles.stackChip,
+                    {
+                      backgroundColor: selected ? color : COLORS.surface,
+                      borderColor: selected ? color : COLORS.cardBorder,
+                    },
+                  ]}
+                  accessibilityLabel={`Stack after ${h.title}`}
+                >
+                  <Text style={styles.stackChipEmoji}>{resolveIcon(h.icon)}</Text>
+                  <Text
+                    style={[styles.stackChipText, { color: selected ? '#FFFFFF' : COLORS.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {h.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </>
+      )}
+
       <View style={styles.actions}>
         <Button title="Cancel" onPress={onCancel} variant="ghost" style={styles.cancelBtn} />
         <Button
@@ -255,6 +358,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   goalChipText: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.bold },
+  settingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+    gap: SPACING.md,
+  },
+  settingText: { flex: 1 },
+  settingTitle: {
+    color: COLORS.textPrimary,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.semibold,
+    marginBottom: 2,
+  },
+  settingHint: {
+    color: COLORS.textMuted,
+    fontSize: TYPOGRAPHY.xs,
+    lineHeight: 16,
+    marginBottom: SPACING.sm,
+  },
+  stackList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  stackChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    maxWidth: '100%',
+  },
+  stackChipEmoji: { fontSize: 14 },
+  stackChipText: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold, flexShrink: 1 },
   actions: {
     flexDirection: 'row',
     gap: SPACING.md,

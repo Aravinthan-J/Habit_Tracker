@@ -70,7 +70,24 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       created_at TEXT DEFAULT (datetime('now')),
       attempts INTEGER DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS completion_time_log (
+      habit_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      minutes_of_day INTEGER NOT NULL,
+      PRIMARY KEY (habit_id, date)
+    );
   `);
+
+    // Additive migrations for tables created before these columns existed.
+    // SQLite has no ADD COLUMN IF NOT EXISTS, so ignore "duplicate column" errors.
+    for (const stmt of [
+        `ALTER TABLE local_habits ADD COLUMN smart_reminder INTEGER DEFAULT 0`,
+        `ALTER TABLE local_habits ADD COLUMN stack_after TEXT`,
+    ]) {
+        await db.execAsync(stmt).catch(() => { });
+    }
 }
 
 export default getDatabase;

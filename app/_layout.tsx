@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRealtime } from '@/hooks/useRealtime';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { usePreferences } from '@/hooks/usePreferences';
+import { useSmartReminders } from '@/hooks/useSmartReminders';
 import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
@@ -32,6 +33,7 @@ function AppContent() {
   const { isLoading, user } = useAuth();
   usePreferences();
   useRealtime();
+  useSmartReminders();
   const { isOnline, isSyncing } = useOfflineSync();
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
   const [activeNotif, setActiveNotif] = useState<NotifPayload | null>(null);
@@ -60,6 +62,16 @@ function AppContent() {
     return () => sub.remove();
   }, [user]);
 
+  // Deep-link when a notification is tapped (e.g. weekly review, smart reminders)
+  useEffect(() => {
+    if (!Notifications || !user) return;
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === 'string') router.push(url as any);
+    });
+    return () => sub.remove();
+  }, [user]);
+
   if (isLoading) return <View style={{ flex: 1, backgroundColor: COLORS.background }} />;
 
   return (
@@ -73,6 +85,7 @@ function AppContent() {
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="badge/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="review" options={{ presentation: 'modal' }} />
         <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
         <Stack.Screen name="support" options={{ presentation: 'modal' }} />
         <Stack.Screen name="terms" options={{ presentation: 'modal' }} />

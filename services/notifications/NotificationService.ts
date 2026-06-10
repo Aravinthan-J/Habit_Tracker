@@ -148,6 +148,74 @@ export async function cancelBadgeNudge(): Promise<void> {
     await Notifications.cancelScheduledNotificationAsync('badge-nudge').catch(() => { });
 }
 
+// ─── Smart reminders ─────────────────────────────────────────────────────────
+// One-shot (date trigger) reminders, one per habit per day, so that a day can
+// be skipped once the habit is already completed. Re-synced on app open and
+// on every completion toggle.
+
+const SMART_PREFIX = 'smart-reminder-';
+
+export function smartReminderId(habitId: string, dateStr: string): string {
+    return `${SMART_PREFIX}${habitId}_${dateStr}`;
+}
+
+export async function scheduleSmartReminderOccurrence(
+    habitId: string,
+    dateStr: string,
+    fireAt: Date,
+    body: string
+): Promise<void> {
+    if (!Notifications) return;
+    await Notifications.scheduleNotificationAsync({
+        identifier: smartReminderId(habitId, dateStr),
+        content: {
+            title: '⏰ Habit reminder',
+            body,
+            sound: true,
+            data: { url: `/habit/${habitId}` },
+        },
+        trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: fireAt,
+        },
+    }).catch(() => { });
+}
+
+export async function cancelSmartReminderOccurrence(habitId: string, dateStr: string): Promise<void> {
+    if (!Notifications) return;
+    await Notifications.cancelScheduledNotificationAsync(smartReminderId(habitId, dateStr)).catch(() => { });
+}
+
+export async function cancelAllSmartReminders(): Promise<void> {
+    if (!Notifications) return;
+    const all = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+    for (const n of all) {
+        if (n.identifier?.startsWith(SMART_PREFIX)) {
+            await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => { });
+        }
+    }
+}
+
+/** Weekly review recap, every Sunday evening. Tapping it opens the review screen. */
+export async function scheduleWeeklyReviewReminder(hour = 18): Promise<void> {
+    if (!Notifications) return;
+    await Notifications.scheduleNotificationAsync({
+        identifier: 'weekly-review',
+        content: {
+            title: '📊 Your week in review',
+            body: 'See your completion rate, best habit and streaks for this week.',
+            sound: true,
+            data: { url: '/review' },
+        },
+        trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+            weekday: 1, // Sunday
+            hour,
+            minute: 0,
+        },
+    }).catch(() => { });
+}
+
 export async function sendImmediateNotification(title: string, body: string): Promise<void> {
     if (!Notifications) return;
     await Notifications.scheduleNotificationAsync({

@@ -26,6 +26,8 @@ interface HabitCardProps {
   weekStatus?: string;
   /** Weekday initials for the 7 days, e.g. "SMTWTFS" aligned with weekStatus. */
   weekLabels?: string;
+  /** Habit stacking: title of the habit this one follows, if any. */
+  stackAfterTitle?: string;
 }
 
 export const HabitCard: React.FC<HabitCardProps> = React.memo(({
@@ -38,6 +40,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   monthlyGoal,
   weekStatus,
   weekLabels,
+  stackAfterTitle,
 }) => {
   const { light } = useHaptics();
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -86,6 +89,11 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
                       {streak} day streak
                     </Text>
                   </View>
+                )}
+                {!!stackAfterTitle && (
+                  <Text style={[styles.stackText, { color: COLORS.textMuted }]} numberOfLines={1}>
+                    ⛓ after {stackAfterTitle}
+                  </Text>
                 )}
                 {monthlyGoal > 0 && (
                   <Text style={[styles.monthlyText, { color: goalReached ? COLORS.success : COLORS.textMuted }]}>
@@ -174,6 +182,7 @@ const styles = StyleSheet.create({
   fire: { fontSize: 12, marginRight: 2 },
   streak: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium },
   monthlyText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium, marginTop: 2 },
+  stackText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium, marginTop: 2 },
   weekRow: { flexDirection: 'row', marginTop: 8 },
   weekDay: { alignItems: 'center', marginRight: 9 },
   weekDot: { width: 9, height: 9, borderRadius: 5, marginBottom: 3 },

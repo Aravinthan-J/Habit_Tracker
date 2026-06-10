@@ -1,6 +1,7 @@
 import React from 'react';
-import { ScrollView, RefreshControl, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, RefreshControl, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { Metric } from '@/types/advanced.types';
@@ -14,6 +15,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
 
 export default function AnalyticsScreen() {
+  const router = useRouter();
   const { data, isLoading, refetch } = useAnalytics();
   const { metrics, logMetric } = useAdvancedFeatures();
 
@@ -76,8 +78,18 @@ export default function AnalyticsScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Analytics</Text>
-          <Text style={styles.subtitle}>Last 30 days</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Analytics</Text>
+            <Text style={styles.subtitle}>Last 30 days</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.reviewBtn}
+            onPress={() => router.push('/review' as any)}
+            accessibilityLabel="Open weekly review"
+          >
+            <Ionicons name="sparkles-outline" size={16} color={COLORS.primary} />
+            <Text style={styles.reviewBtnText}>Weekly Review</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Hero Completion Rate */}
@@ -191,7 +203,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
+  reviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary + '18',
+    borderColor: COLORS.primary + '40',
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.lg,
+  },
+  reviewBtnText: { color: COLORS.primary, fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold },
   title: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxl, fontWeight: TYPOGRAPHY.bold },
   subtitle: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
 
