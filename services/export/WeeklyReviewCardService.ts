@@ -10,7 +10,7 @@ export async function shareWeeklyReviewCard(stats: WeeklyReviewStats, userName: 
     const deltaColor = stats.delta >= 0 ? '#4CAF50' : '#FF6584';
 
     const streakRows = stats.topStreaks
-        .map((s) => `<div class="row"><span>🔥 ${s.title}</span><b>${s.streak} days</b></div>`)
+        .map((s) => `<div class="row"><span>🔥 ${s.title}</span><b>${s.streak} ${s.unit}${s.streak === 1 ? '' : 's'}</b></div>`)
         .join('');
 
     const html = `
@@ -52,8 +52,8 @@ export async function shareWeeklyReviewCard(stats: WeeklyReviewStats, userName: 
               <div class="stat"><b>${stats.newStreaks.length}</b><span>New streaks</span></div>
             </div>
 
-            ${stats.bestHabit ? `<div class="highlight">🏆 Best habit: <b>${stats.bestHabit.title}</b> — ${stats.bestHabit.count}/7 days</div>` : ''}
-            ${stats.worstHabit ? `<div class="highlight">🌱 Needs love: <b>${stats.worstHabit.title}</b> — ${stats.worstHabit.count}/7 days</div>` : ''}
+            ${stats.bestHabit ? `<div class="highlight">🏆 Best habit: <b>${stats.bestHabit.title}</b> — ${stats.bestHabit.detail}</div>` : ''}
+            ${stats.worstHabit ? `<div class="highlight">🌱 Needs love: <b>${stats.worstHabit.title}</b> — ${stats.worstHabit.detail}</div>` : ''}
 
             ${streakRows ? `<div style="margin-top:16px">${streakRows}</div>` : ''}
 

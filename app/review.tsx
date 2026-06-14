@@ -96,7 +96,7 @@ export default function WeeklyReviewScreen() {
             <HighlightCard
               emoji="🏆"
               title="Best habit"
-              subtitle={`${stats.bestHabit.title} — ${stats.bestHabit.count}/7 days`}
+              subtitle={`${stats.bestHabit.title} — ${stats.bestHabit.detail}`}
               color={stats.bestHabit.color}
             />
           )}
@@ -104,20 +104,20 @@ export default function WeeklyReviewScreen() {
             <HighlightCard
               emoji="🌱"
               title="Needs some love"
-              subtitle={`${stats.worstHabit.title} — only ${stats.worstHabit.count}/7 days`}
+              subtitle={`${stats.worstHabit.title} — ${stats.worstHabit.weekly ? stats.worstHabit.detail : `only ${stats.worstHabit.detail}`}`}
               color={COLORS.accentOrange}
             />
           )}
 
           {/* Streak changes */}
           {stats.newStreaks.length > 0 && (
-            <StreakSection title="🔥 New streaks this week" items={stats.newStreaks} suffix="day streak" />
+            <StreakSection title="🔥 New streaks this week" items={stats.newStreaks} mode="new" />
           )}
           {stats.lostStreaks.length > 0 && (
-            <StreakSection title="💔 Streaks lost" items={stats.lostStreaks} suffix="day streak broken" />
+            <StreakSection title="💔 Streaks lost" items={stats.lostStreaks} mode="lost" />
           )}
           {stats.topStreaks.length > 0 && (
-            <StreakSection title="⚡ Current streaks" items={stats.topStreaks} suffix="days and counting" />
+            <StreakSection title="⚡ Current streaks" items={stats.topStreaks} mode="top" />
           )}
         </ScrollView>
       )}
@@ -152,7 +152,14 @@ function HighlightCard({ emoji, title, subtitle, color }: {
   );
 }
 
-function StreakSection({ title, items, suffix }: { title: string; items: StreakChange[]; suffix: string }) {
+function streakPhrase(s: StreakChange, mode: 'new' | 'lost' | 'top'): string {
+  const noun = s.unit; // 'day' | 'week'
+  if (mode === 'new') return `${s.streak} ${noun} streak`;
+  if (mode === 'lost') return `${s.streak} ${noun} streak broken`;
+  return `${s.streak} ${noun}${s.streak === 1 ? '' : 's'} and counting`;
+}
+
+function StreakSection({ title, items, mode }: { title: string; items: StreakChange[]; mode: 'new' | 'lost' | 'top' }) {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   return (
@@ -163,7 +170,7 @@ function StreakSection({ title, items, suffix }: { title: string; items: StreakC
           <View key={s.id} style={[styles.streakRow, i > 0 && styles.streakDivider]}>
             <Text style={styles.streakEmoji}>{resolveIcon(s.icon)}</Text>
             <Text style={styles.streakTitle} numberOfLines={1}>{s.title}</Text>
-            <Text style={[styles.streakCount, { color: s.color }]}>{s.streak} {suffix}</Text>
+            <Text style={[styles.streakCount, { color: s.color }]}>{streakPhrase(s, mode)}</Text>
           </View>
         ))}
       </View>
