@@ -14,12 +14,15 @@ import { Button } from '@/components/ui/Button';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { validateHabitTitle, validateMonthlyGoal } from '@/utils/validators';
-import { Habit } from '@/types/habit.types';
+import { Habit, HabitFrequency } from '@/types/habit.types';
 import { useHabits } from '@/hooks/useHabits';
 import { resolveIcon } from '@/utils/iconHelpers';
 
 const HABIT_ICONS = ['✨', '💪', '📚', '🏃', '🧘', '🥗', '💧', '🎯', '🏋️', '🎨', '🎵', '🌿', '😴', '🚴', '🧠'];
 const GOAL_PRESETS = [10, 15, 20, 25, 30];
+const WEEKLY_GOAL_PRESETS = [1, 2, 3, 4];
+const DEFAULT_DAILY_GOAL = 20;
+const DEFAULT_WEEKLY_GOAL = 4;
 
 interface HabitFormProps {
   initialValues?: Partial<Habit>;
@@ -28,6 +31,7 @@ interface HabitFormProps {
     monthly_goal: number;
     color: string;
     icon: string;
+    frequency: HabitFrequency;
     smart_reminder: boolean;
     stack_after: string | null;
   }) => void;
@@ -46,7 +50,10 @@ export const HabitForm: React.FC<HabitFormProps> = ({
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const [title, setTitle] = useState(initialValues?.title ?? '');
-  const [monthlyGoal, setMonthlyGoal] = useState(String(initialValues?.monthly_goal ?? 20));
+  const [frequency, setFrequency] = useState<HabitFrequency>(initialValues?.frequency ?? 'daily');
+  const [monthlyGoal, setMonthlyGoal] = useState(
+    String(initialValues?.monthly_goal ?? (initialValues?.frequency === 'weekly' ? DEFAULT_WEEKLY_GOAL : DEFAULT_DAILY_GOAL)),
+  );
   const [color, setColor] = useState(initialValues?.color ?? COLORS.habitColors[0]);
   const [icon, setIcon] = useState(initialValues?.icon ?? '✨');
   const [smartReminder, setSmartReminder] = useState(initialValues?.smart_reminder ?? false);
@@ -70,6 +77,17 @@ export const HabitForm: React.FC<HabitFormProps> = ({
   });
 
   const colorPalette = COLORS.habitColors;
+  const isWeekly = frequency === 'weekly';
+  const goalPresets = isWeekly ? WEEKLY_GOAL_PRESETS : GOAL_PRESETS;
+  const goalUnit = isWeekly ? 'weeks' : 'days';
+
+  const changeFrequency = (next: HabitFrequency) => {
+    if (next === frequency) return;
+    setFrequency(next);
+    // Reset the goal to a sensible default for the new cadence.
+    setMonthlyGoal(String(next === 'weekly' ? DEFAULT_WEEKLY_GOAL : DEFAULT_DAILY_GOAL));
+    setGoalError(null);
+  };
 
   const handleSubmit = () => {
     const titleErr = validateHabitTitle(title);
@@ -83,6 +101,7 @@ export const HabitForm: React.FC<HabitFormProps> = ({
       monthly_goal: Number(monthlyGoal),
       color,
       icon,
+      frequency,
       smart_reminder: smartReminder,
       stack_after: stackAfter,
     });
@@ -107,8 +126,10 @@ export const HabitForm: React.FC<HabitFormProps> = ({
           {title.trim() || 'Your new habit'}
         </Text>
         <View style={[styles.previewGoalPill, { backgroundColor: color + '22' }]}>
-          <Ionicons name="calendar-outline" size={12} color={color} />
-          <Text style={[styles.previewGoalText, { color }]}>{monthlyGoal || 0} days / month</Text>
+          <Ionicons name={isWeekly ? 'repeat-outline' : 'calendar-outline'} size={12} color={color} />
+          <Text style={[styles.previewGoalText, { color }]}>
+            {isWeekly ? `Weekly · ${monthlyGoal || 0} weeks / month` : `${monthlyGoal || 0} days / month`}
+          </Text>
         </View>
       </LinearGradient>
 
@@ -163,10 +184,39 @@ export const HabitForm: React.FC<HabitFormProps> = ({
         })}
       </View>
 
+      {/* Frequency */}
+      <Text style={styles.sectionLabel}>Frequency</Text>
+      <View style={styles.freqRow}>
+        {([
+          { key: 'daily' as const, label: 'Daily', icon: 'sunny-outline' as const, sub: 'Every day' },
+          { key: 'weekly' as const, label: 'Weekly', icon: 'repeat-outline' as const, sub: 'Once a week' },
+        ]).map((opt) => {
+          const selected = frequency === opt.key;
+          return (
+            <TouchableOpacity
+              key={opt.key}
+              onPress={() => changeFrequency(opt.key)}
+              style={[
+                styles.freqChip,
+                {
+                  backgroundColor: selected ? color + '1F' : COLORS.surface,
+                  borderColor: selected ? color : COLORS.cardBorder,
+                },
+              ]}
+              accessibilityLabel={`Frequency ${opt.label}`}
+            >
+              <Ionicons name={opt.icon} size={18} color={selected ? color : COLORS.textMuted} />
+              <Text style={[styles.freqLabel, { color: selected ? COLORS.textPrimary : COLORS.textSecondary }]}>{opt.label}</Text>
+              <Text style={[styles.freqSub, { color: COLORS.textMuted }]}>{opt.sub}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       {/* Monthly goal quick picks */}
-      <Text style={styles.sectionLabel}>Monthly Goal</Text>
+      <Text style={styles.sectionLabel}>{isWeekly ? 'Monthly Goal (weeks)' : 'Monthly Goal'}</Text>
       <View style={styles.goalRow}>
-        {GOAL_PRESETS.map((g) => {
+        {goalPresets.map((g) => {
           const selected = Number(monthlyGoal) === g;
           return (
             <TouchableOpacity
@@ -186,13 +236,15 @@ export const HabitForm: React.FC<HabitFormProps> = ({
         })}
       </View>
       <Input
-        placeholder="Custom (days)"
+        placeholder={`Custom (${goalUnit})`}
         value={monthlyGoal}
         onChangeText={setMonthlyGoal}
         error={goalError}
         keyboardType="numeric"
-        leftIcon="calendar-outline"
-        hint="How many days per month do you want to complete this habit?"
+        leftIcon={isWeekly ? 'repeat-outline' : 'calendar-outline'}
+        hint={isWeekly
+          ? 'How many weeks per month do you want to complete this habit?'
+          : 'How many days per month do you want to complete this habit?'}
       />
 
       {/* Smart reminder */}
@@ -348,6 +400,21 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     borderWidth: 3,
     borderColor: COLORS.textPrimary,
   },
+  freqRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  freqChip: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    gap: 2,
+  },
+  freqLabel: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.semibold, marginTop: 2 },
+  freqSub: { fontSize: TYPOGRAPHY.xs },
   goalRow: {
     flexDirection: 'row',
     gap: SPACING.sm,

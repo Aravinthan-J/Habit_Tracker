@@ -33,6 +33,7 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       icon TEXT,
       notifications_enabled INTEGER DEFAULT 1,
       reminder_time TEXT,
+      frequency TEXT DEFAULT 'daily',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
       archived_at TEXT,
@@ -85,6 +86,7 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
     for (const stmt of [
         `ALTER TABLE local_habits ADD COLUMN smart_reminder INTEGER DEFAULT 0`,
         `ALTER TABLE local_habits ADD COLUMN stack_after TEXT`,
+        `ALTER TABLE local_habits ADD COLUMN frequency TEXT DEFAULT 'daily'`,
     ]) {
         await db.execAsync(stmt).catch(() => { });
     }

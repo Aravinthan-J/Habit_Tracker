@@ -21,6 +21,7 @@ import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/t
 import { useTheme } from '@/contexts/ThemeContext';
 import { today, getLastNDays } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
+import { inWeekCompletion, calculateWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
 
 type HabitFilter = 'all' | 'pending' | 'done';
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -75,7 +76,19 @@ export default function HabitsScreen() {
     [completions, todayStr, activeHabitIds]
   );
 
-  const doneToday = completedTodayIds.size;
+  // Frequency-aware "done": weekly habits count if done anytime this week.
+  const doneHabitIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const h of habits) {
+      const done = h.frequency === 'weekly'
+        ? inWeekCompletion(completionDatesByHabitId.get(h.id) ?? []) !== null
+        : completedTodayIds.has(h.id);
+      if (done) s.add(h.id);
+    }
+    return s;
+  }, [habits, completionDatesByHabitId, completedTodayIds]);
+
+  const doneToday = doneHabitIds.size;
   const totalHabits = habits.length;
 
   const visibleHabits = useMemo(() => {
@@ -83,12 +96,22 @@ export default function HabitsScreen() {
     if (searchQuery) {
       list = list.filter((h) => h.title.toLowerCase().includes(searchQuery.toLowerCase()));
     }
-    if (filter === 'pending') list = list.filter((h) => !completedTodayIds.has(h.id));
-    else if (filter === 'done') list = list.filter((h) => completedTodayIds.has(h.id));
+    if (filter === 'pending') list = list.filter((h) => !doneHabitIds.has(h.id));
+    else if (filter === 'done') list = list.filter((h) => doneHabitIds.has(h.id));
     return list;
-  }, [habits, searchQuery, filter, completedTodayIds]);
+  }, [habits, searchQuery, filter, doneHabitIds]);
 
   const handleToggle = (habitId: string) => {
+    const habit = habits.find((h) => h.id === habitId);
+    if (habit?.frequency === 'weekly') {
+      const inWeek = inWeekCompletion(completionDatesByHabitId.get(habitId) ?? []);
+      if (inWeek) {
+        toggleCompletion.mutate({ habitId, date: inWeek, isCompleted: true });
+      } else {
+        toggleCompletion.mutate({ habitId, date: todayStr, isCompleted: false });
+      }
+      return;
+    }
     const isCompleted = completedTodayIds.has(habitId);
     toggleCompletion.mutate({ habitId, date: todayStr, isCompleted });
   };
@@ -200,7 +223,10 @@ export default function HabitsScreen() {
           windowSize={5}
           renderItem={({ item }) => {
             const completionDates = completionDatesByHabitId.get(item.id) ?? [];
-            const monthlyCount = monthlyCountByHabitId.get(item.id) ?? 0;
+            const weekly = item.frequency === 'weekly';
+            const monthlyCount = weekly
+              ? weeksCompletedInMonth(completionDates, currentMonth)
+              : (monthlyCountByHabitId.get(item.id) ?? 0);
             const dset = new Set(completionDates);
             const weekStatus = weekDates.map((d) => (dset.has(d) ? '1' : '0')).join('');
             const stackAfterTitle = item.stack_after
@@ -209,8 +235,8 @@ export default function HabitsScreen() {
             return (
               <HabitCard
                 habit={item}
-                isCompleted={completedTodayIds.has(item.id)}
-                streak={calculateCurrentStreak(completionDates)}
+                isCompleted={doneHabitIds.has(item.id)}
+                streak={weekly ? calculateWeeklyStreak(completionDates) : calculateCurrentStreak(completionDates)}
                 onToggle={() => handleToggle(item.id)}
                 onPress={() => router.push(`/habit/${item.id}`)}
                 monthlyCount={monthlyCount}

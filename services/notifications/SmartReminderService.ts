@@ -41,11 +41,16 @@ function parseTimeStr(time: string): number | null {
  */
 export async function syncSmartReminders(
     habits: Habit[],
-    completedTodayIds: Set<string>
+    completedTodayIds: Set<string>,
+    /** Habits already satisfied for their period (e.g. weekly habits done this
+     *  week) — skipped entirely so they aren't reminded every day. */
+    skipHabitIds: Set<string> = new Set()
 ): Promise<void> {
     await cancelAllSmartReminders();
 
-    const smartHabits = habits.filter((h) => h.smart_reminder && h.notifications_enabled !== false);
+    const smartHabits = habits.filter(
+        (h) => h.smart_reminder && h.notifications_enabled !== false && !skipHabitIds.has(h.id),
+    );
     if (smartHabits.length === 0) return;
 
     const now = new Date();

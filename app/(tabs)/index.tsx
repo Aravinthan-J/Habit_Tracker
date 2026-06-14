@@ -26,6 +26,7 @@ import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
+import { inWeekCompletion, calculateWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
 import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { useStreakFreeze } from '@/hooks/useStreakFreeze';
@@ -77,7 +78,19 @@ export default function HomeScreen() {
     return map;
   }, [completions, currentMonth]);
 
-  const completedCount = completedTodayIds.size;
+  // "Done" accounts for frequency: weekly habits count if done anytime this week.
+  const doneHabitIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const h of habits) {
+      const done = h.frequency === 'weekly'
+        ? inWeekCompletion(completionDatesByHabitId.get(h.id) ?? []) !== null
+        : completedTodayIds.has(h.id);
+      if (done) s.add(h.id);
+    }
+    return s;
+  }, [habits, completionDatesByHabitId, completedTodayIds]);
+
+  const completedCount = doneHabitIds.size;
   const totalCount = habits.length;
   const allDone = totalCount > 0 && completedCount === totalCount;
   const stepGoal = 10000;
@@ -86,12 +99,24 @@ export default function HomeScreen() {
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   const handleToggle = useCallback(async (habitId: string) => {
+    const habit = habits.find((h) => h.id === habitId);
+    if (habit?.frequency === 'weekly') {
+      const inWeek = inWeekCompletion(completionDatesByHabitId.get(habitId) ?? []);
+      if (inWeek) {
+        // Undo this week's completion.
+        await toggleCompletion.mutateAsync({ habitId, date: inWeek, isCompleted: true });
+      } else {
+        await toggleCompletion.mutateAsync({ habitId, date: todayStr, isCompleted: false });
+        await checkForNewBadges(habitId);
+      }
+      return;
+    }
     const isCompleted = completedTodayIds.has(habitId);
     await toggleCompletion.mutateAsync({ habitId, date: todayStr, isCompleted });
     if (!isCompleted) {
       await checkForNewBadges(habitId);
     }
-  }, [completedTodayIds, todayStr, toggleCompletion, checkForNewBadges]);
+  }, [habits, completionDatesByHabitId, completedTodayIds, todayStr, toggleCompletion, checkForNewBadges]);
 
   const handleRefresh = async () => {
     await Promise.all([refetchHabits(), refetchAdvanced()]);
@@ -214,12 +239,17 @@ export default function HomeScreen() {
         windowSize={5}
         renderItem={({ item }) => {
           const completionDates = completionDatesByHabitId.get(item.id) ?? [];
-          const monthlyCount = monthlyCountByHabitId.get(item.id) ?? 0;
+          const weekly = item.frequency === 'weekly';
+          const monthlyCount = weekly
+            ? weeksCompletedInMonth(completionDates, currentMonth)
+            : (monthlyCountByHabitId.get(item.id) ?? 0);
           return (
             <HabitCard
               habit={item}
-              isCompleted={completedTodayIds.has(item.id)}
-              streak={calculateCurrentStreakWithFreezes(completionDates, freezeDates)}
+              isCompleted={doneHabitIds.has(item.id)}
+              streak={weekly
+                ? calculateWeeklyStreak(completionDates)
+                : calculateCurrentStreakWithFreezes(completionDates, freezeDates)}
               onToggle={() => handleToggle(item.id)}
               onPress={() => { }}
               monthlyCount={monthlyCount}

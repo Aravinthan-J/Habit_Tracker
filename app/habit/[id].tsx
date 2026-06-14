@@ -20,6 +20,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { calculateCurrentStreak, calculateLongestStreak, completionRate } from '@/utils/streakCalculator';
+import { calculateWeeklyStreak, calculateLongestWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
 import { today } from '@/utils/dateHelpers';
 import { resolveIcon } from '@/utils/iconHelpers';
 
@@ -36,11 +37,19 @@ export default function HabitDetailScreen() {
   if (!habit) return <LoadingSpinner />;
 
   const habitCompletionDates = completions.filter((c) => c.habit_id === id).map((c) => c.date);
-  const currentStreak = calculateCurrentStreak(habitCompletionDates);
-  const longestStreak = calculateLongestStreak(habitCompletionDates);
+  const weekly = habit.frequency === 'weekly';
+  const currentStreak = weekly
+    ? calculateWeeklyStreak(habitCompletionDates)
+    : calculateCurrentStreak(habitCompletionDates);
+  const longestStreak = weekly
+    ? calculateLongestWeeklyStreak(habitCompletionDates)
+    : calculateLongestStreak(habitCompletionDates);
   const rate = completionRate(habitCompletionDates, 30);
   const currentMonth = today().slice(0, 7);
-  const monthlyCount = habitCompletionDates.filter((d) => d.startsWith(currentMonth)).length;
+  const monthlyCount = weekly
+    ? weeksCompletedInMonth(habitCompletionDates, currentMonth)
+    : habitCompletionDates.filter((d) => d.startsWith(currentMonth)).length;
+  const streakUnit = weekly ? 'week' : 'day';
 
   const handleUpdate = async (values: any) => {
     await updateHabit.mutateAsync({ id: habit.id, ...values });
@@ -91,10 +100,10 @@ export default function HabitDetailScreen() {
           <Text style={styles.heroTitle} numberOfLines={1}>{habit.title}</Text>
           <View style={styles.heroBadges}>
             <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>🔥 {currentStreak} day streak</Text>
+              <Text style={styles.heroBadgeText}>🔥 {currentStreak} {streakUnit} streak</Text>
             </View>
             <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>🎯 {monthlyCount}/{habit.monthly_goal} this month</Text>
+              <Text style={styles.heroBadgeText}>🎯 {monthlyCount}/{habit.monthly_goal} {weekly ? 'weeks ' : ''}this month</Text>
             </View>
           </View>
         </LinearGradient>
@@ -111,6 +120,7 @@ export default function HabitDetailScreen() {
               color={habit.color}
               monthlyGoal={habit.monthly_goal}
               monthlyCount={monthlyCount}
+              unit={weekly ? 'w' : 'd'}
             />
 
             <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>History</Text>

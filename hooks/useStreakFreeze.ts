@@ -42,9 +42,11 @@ export function useStreakFreeze() {
         const date = today();
         if (store.lastMaintenanceDate === date) return;
 
-        const completionDatesByHabit = habits.map((h) =>
-            getHabitCompletionDates(completions, h.id),
-        );
+        // Streak Freeze is a daily-streak concept; weekly habits have expected
+        // off-days that must not be treated as "missed" or burn freezes.
+        const completionDatesByHabit = habits
+            .filter((h) => h.frequency !== 'weekly')
+            .map((h) => getHabitCompletionDates(completions, h.id));
         const result = runFreezeMaintenance({
             today: date,
             completionDatesByHabit,

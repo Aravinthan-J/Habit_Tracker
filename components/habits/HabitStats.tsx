@@ -11,6 +11,8 @@ interface HabitStatsProps {
   color: string;
   monthlyGoal: number;
   monthlyCount: number;
+  /** Short unit for streak/count values: 'd' (daily, default) or 'w' (weekly). */
+  unit?: 'd' | 'w';
 }
 
 const StatBox: React.FC<{ label: string; value: string | number; color: string }> = ({
@@ -36,17 +38,18 @@ export const HabitStats: React.FC<HabitStatsProps> = ({
   color,
   monthlyGoal,
   monthlyCount,
+  unit = 'd',
 }) => {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   return (
   <View style={styles.grid}>
     <StatBox label="Current Streak" value={`${currentStreak}🔥`} color={color} />
-    <StatBox label="Longest Streak" value={`${longestStreak}d`} color={COLORS.gold} />
+    <StatBox label="Longest Streak" value={`${longestStreak}${unit}`} color={COLORS.gold} />
     <StatBox label="Total Done" value={totalCompletions} color={COLORS.accent} />
     <StatBox
       label="This Month"
-      value={monthlyGoal > 0 ? `${monthlyCount}/${monthlyGoal}` : `${monthlyCount}d`}
+      value={monthlyGoal > 0 ? `${monthlyCount}/${monthlyGoal}` : `${monthlyCount}${unit}`}
       color={monthlyGoal > 0 && monthlyCount >= monthlyGoal ? COLORS.success : COLORS.accent}
     />
   </View>

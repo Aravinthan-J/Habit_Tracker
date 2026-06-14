@@ -7,6 +7,7 @@ import {
     scheduleWeeklyReviewReminder,
 } from '@/services/notifications/NotificationService';
 import { today } from '@/utils/dateHelpers';
+import { inWeekCompletion } from '@/utils/frequency';
 
 /**
  * Keeps smart reminders in sync with habits and today's completions.
@@ -42,7 +43,16 @@ export function useSmartReminders() {
                 if (!granted) return;
             }
             const completedToday = new Set(completedTodayKey ? completedTodayKey.split(',') : []);
-            await syncSmartReminders(habits, completedToday).catch(() => { });
+            // Weekly habits already done this week shouldn't be reminded again until next week.
+            const weeklyDone = new Set(
+                habits
+                    .filter((h) => h.frequency === 'weekly')
+                    .filter((h) => inWeekCompletion(
+                        completions.filter((c) => c.habit_id === h.id).map((c) => c.date),
+                    ) !== null)
+                    .map((h) => h.id),
+            );
+            await syncSmartReminders(habits, completedToday, weeklyDone).catch(() => { });
             await scheduleWeeklyReviewReminder().catch(() => { });
         }, 1500);
 

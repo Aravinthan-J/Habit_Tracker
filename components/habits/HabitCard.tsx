@@ -48,6 +48,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   const { light } = useHaptics();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  const weekly = habit.frequency === 'weekly';
   const goalReached = monthlyGoal > 0 && monthlyCount >= monthlyGoal;
   // Only lock new check-ins; already-completed habits can still be unchecked
   const checkboxDisabled = goalReached && !isCompleted;
@@ -67,7 +68,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.9}
-        accessibilityLabel={`${habit.title}, ${isCompleted ? 'completed' : 'not completed'}, ${streak} day streak`}
+        accessibilityLabel={`${habit.title}, ${weekly ? 'weekly habit, ' : ''}${isCompleted ? 'completed' : 'not completed'}, ${streak} ${weekly ? 'week' : 'day'} streak`}
       >
         <View style={[
           styles.card,
@@ -84,12 +85,19 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
                 <Text style={styles.icon}>{resolveIcon(habit.icon)}</Text>
               </View>
               <View style={styles.info}>
-                <Text style={[styles.title, { color: COLORS.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
+                <View style={styles.titleRow}>
+                  <Text style={[styles.title, { color: COLORS.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
+                  {weekly && (
+                    <View style={[styles.freqBadge, { backgroundColor: habit.color + '22', borderColor: habit.color + '55' }]}>
+                      <Text style={[styles.freqBadgeText, { color: habit.color }]}>WEEKLY</Text>
+                    </View>
+                  )}
+                </View>
                 {streak > 0 && (
                   <View style={styles.streakRow}>
                     <Text style={styles.fire}>🔥</Text>
                     <Text style={[styles.streak, { color: habit.color }]}>
-                      {streak} day streak
+                      {streak} {weekly ? (streak === 1 ? 'week' : 'week') : 'day'} streak
                     </Text>
                   </View>
                 )}
@@ -100,7 +108,9 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
                 )}
                 {monthlyGoal > 0 && (
                   <Text style={[styles.monthlyText, { color: goalReached ? COLORS.success : COLORS.textMuted }]}>
-                    {goalReached ? `🎯 ${monthlyGoal}/${monthlyGoal} Goal met!` : `${monthlyCount}/${monthlyGoal} this month`}
+                    {goalReached
+                      ? `🎯 ${monthlyGoal}/${monthlyGoal} Goal met!`
+                      : `${monthlyCount}/${monthlyGoal} ${weekly ? 'weeks' : ''} this month`}
                   </Text>
                 )}
                 {weekStatus?.length === 7 && (
@@ -176,11 +186,20 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   },
   icon: { fontSize: 22 },
   info: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   title: {
     color: COLORS.textPrimary,
     fontSize: TYPOGRAPHY.md,
     fontWeight: TYPOGRAPHY.semibold,
+    flexShrink: 1,
   },
+  freqBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+  },
+  freqBadgeText: { fontSize: 9, fontWeight: TYPOGRAPHY.bold, letterSpacing: 0.5 },
   streakRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   fire: { fontSize: 12, marginRight: 2 },
   streak: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.medium },

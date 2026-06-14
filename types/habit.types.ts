@@ -1,3 +1,5 @@
+export type HabitFrequency = 'daily' | 'weekly';
+
 export interface Habit {
     id: string;
     user_id: string;
@@ -7,6 +9,8 @@ export interface Habit {
     icon: string | null;
     notifications_enabled: boolean;
     reminder_time: string | null;
+    /** How often the habit should be done. 'weekly' = once per calendar week. */
+    frequency?: HabitFrequency;
     /** Learn the user's typical completion time and remind around it. */
     smart_reminder?: boolean;
     /** Habit stacking: id of the habit this one should follow. */
@@ -25,6 +29,7 @@ export interface HabitInsert {
     icon?: string | null;
     notifications_enabled?: boolean;
     reminder_time?: string | null;
+    frequency?: HabitFrequency;
     smart_reminder?: boolean;
     stack_after?: string | null;
     created_at?: string;
@@ -41,6 +46,7 @@ export interface HabitUpdate {
     icon?: string | null;
     notifications_enabled?: boolean;
     reminder_time?: string | null;
+    frequency?: HabitFrequency;
     smart_reminder?: boolean;
     stack_after?: string | null;
     updated_at?: string;

@@ -24,8 +24,8 @@ export async function saveHabitLocally(habit: Habit): Promise<void> {
 
     await db.runAsync(
         `INSERT OR REPLACE INTO local_habits
-     (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time, smart_reminder, stack_after, created_at, updated_at, archived_at, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+     (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time, frequency, smart_reminder, stack_after, created_at, updated_at, archived_at, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
             habit.id,
             habit.user_id,
@@ -35,6 +35,7 @@ export async function saveHabitLocally(habit: Habit): Promise<void> {
             habit.icon ?? null,
             habit.notifications_enabled ? 1 : 0,
             habit.reminder_time ?? null,
+            habit.frequency ?? 'daily',
             habit.smart_reminder ? 1 : 0,
             habit.stack_after ?? null,
             habit.created_at,
@@ -63,6 +64,7 @@ function rowToHabit(row: any): Habit {
         ...row,
         notifications_enabled: row.notifications_enabled === 1,
         smart_reminder: row.smart_reminder === 1,
+        frequency: row.frequency === 'weekly' ? 'weekly' : 'daily',
     };
 }
 
