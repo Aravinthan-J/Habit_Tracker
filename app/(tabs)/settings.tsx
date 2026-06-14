@@ -12,7 +12,10 @@ import {
   Dimensions,
   Share,
   TextInput,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,7 +36,7 @@ export default function SettingsScreen() {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const router = useRouter();
-  const { signOut, updateDisplayName } = useAuth();
+  const { signOut, updateDisplayName, updateProfilePhoto } = useAuth();
   const { user } = useAuthStore();
   const { habits, createHabit } = useHabits();
   const { requestAndScheduleDaily, cancelAll, scheduleWater, cancelWater } = useNotifications();
@@ -71,6 +74,28 @@ export default function SettingsScreen() {
     setSavingName(false);
     if (error) { Alert.alert('Could not save', error.message); return; }
     setNameModalVisible(false);
+  };
+
+  // ── Profile photo ───────────────────────────────────────────────────────────
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const pickProfilePhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission needed', 'Allow photo access to set a profile picture.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+    });
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+    setUploadingPhoto(true);
+    const { error } = await updateProfilePhoto(result.assets[0].uri);
+    setUploadingPhoto(false);
+    if (error) Alert.alert('Could not update photo', error.message);
   };
 
   // ── What's New ────────────────────────────────────────────────────────────
@@ -234,28 +259,41 @@ export default function SettingsScreen() {
 
         {/* Profile */}
         <Card style={styles.section}>
-          <TouchableOpacity style={styles.profileRow} onPress={openNameEditor} activeOpacity={0.8} accessibilityLabel="Edit profile name">
-            <LinearGradient
-              colors={['#FF6B6B', '#A855F7', '#6C63FF', '#3B82F6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatarRing}
-            >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
-                </Text>
+          <View style={styles.profileRow}>
+            <TouchableOpacity onPress={pickProfilePhoto} activeOpacity={0.8} accessibilityLabel="Change profile picture">
+              <LinearGradient
+                colors={['#FF6B6B', '#A855F7', '#6C63FF', '#3B82F6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarRing}
+              >
+                <View style={styles.avatar}>
+                  {uploadingPhoto ? (
+                    <ActivityIndicator color={COLORS.textPrimary} />
+                  ) : user?.photoURL ? (
+                    <Image source={{ uri: user.photoURL }} style={styles.avatarImg} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
+                    </Text>
+                  )}
+                </View>
+              </LinearGradient>
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={12} color="#fff" />
               </View>
-            </LinearGradient>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{user?.displayName ?? 'Habity User'}</Text>
-              <Text style={styles.profileEmail}>{user?.email}</Text>
-            </View>
-            <View style={styles.editPill}>
-              <Ionicons name="pencil" size={14} color={COLORS.primary} />
-              <Text style={styles.editPillText}>Edit</Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.profileInfo} onPress={openNameEditor} activeOpacity={0.8} accessibilityLabel="Edit profile name">
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileName}>{user?.displayName ?? 'Habity User'}</Text>
+                <Text style={styles.profileEmail}>{user?.email}</Text>
+              </View>
+              <View style={styles.editPill}>
+                <Ionicons name="pencil" size={14} color={COLORS.primary} />
+                <Text style={styles.editPillText}>Edit</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </Card>
 
         {/* Appearance */}
@@ -661,6 +699,27 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xl, fontWeight: TYPOGRAPHY.bold },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 27 },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
   profileName: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.semibold },
   profileEmail: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
   editPill: {

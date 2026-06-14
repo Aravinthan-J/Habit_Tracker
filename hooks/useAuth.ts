@@ -10,7 +10,8 @@ import {
     signInWithCredential,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { isValidEmail, isValidPassword } from '@/utils/validators';
 
@@ -64,6 +65,28 @@ export function useAuth() {
         clear();
     };
 
+    const updateProfilePhoto = async (localUri: string) => {
+        if (!auth.currentUser) return { error: { message: 'Not signed in' } };
+        try {
+            // Upload the picked image to Firebase Storage, then save its URL.
+            const res = await fetch(localUri);
+            const blob = await res.blob();
+            const path = `avatars/${auth.currentUser.uid}.jpg`;
+            const fileRef = storageRef(storage, path);
+            await uploadBytes(fileRef, blob);
+            const url = await getDownloadURL(fileRef);
+
+            await updateProfile(auth.currentUser, { photoURL: url });
+            await setDoc(doc(db, 'users', auth.currentUser.uid),
+                { photo_url: url, updated_at: new Date().toISOString() },
+                { merge: true });
+            setUser(auth.currentUser);
+            return { error: null };
+        } catch (err: any) {
+            return { error: { message: err.message ?? 'Upload failed' } };
+        }
+    };
+
     const updateDisplayName = async (name: string) => {
         const trimmed = name.trim();
         if (!auth.currentUser) return { error: { message: 'Not signed in' } };
@@ -110,5 +133,5 @@ export function useAuth() {
         }
     };
 
-    return { user, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle, updateDisplayName };
+    return { user, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle, updateDisplayName, updateProfilePhoto };
 }
