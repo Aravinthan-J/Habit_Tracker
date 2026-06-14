@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface StepProgressRingProps {
   steps: number;
@@ -16,6 +17,8 @@ export const StepProgressRing: React.FC<StepProgressRingProps> = ({
   size = 180,
   strokeWidth = 14,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const progress = Math.min(steps / goal, 1);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -77,7 +80,7 @@ export const StepProgressRing: React.FC<StepProgressRingProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: { alignItems: 'center', justifyContent: 'center' },
   center: {
     position: 'absolute',

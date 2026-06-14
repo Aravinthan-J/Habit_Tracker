@@ -9,7 +9,8 @@ import {
   AccessibilityRole,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ButtonProps {
   title: string;
@@ -34,6 +35,8 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   accessibilityLabel,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const isDisabled = disabled || loading;
 
   const sizeStyles = {
@@ -114,7 +117,7 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',

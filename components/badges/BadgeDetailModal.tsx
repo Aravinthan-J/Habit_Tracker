@@ -2,7 +2,8 @@ import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { BadgeWithStatus } from '@/types/badge.types';
 import { TIER_COLORS, TIER_GLOW } from '@/constants/badges';
 
@@ -34,6 +35,8 @@ interface BadgeDetailModalProps {
 }
 
 export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({ badge, visible, onClose }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     if (!badge) return null;
 
     const tierColor = TIER_COLORS[badge.tier];
@@ -131,7 +134,7 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({ badge, visib
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: COLORS.overlay,

@@ -11,11 +11,11 @@ import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { InAppNotification, NotifPayload } from '@/components/ui/InAppNotification';
-import { COLORS } from '@/constants/theme';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import getDatabase from '@/lib/database';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 let Notifications: typeof import('expo-notifications') | null = null;
 try { Notifications = require('expo-notifications'); } catch { }
@@ -30,6 +30,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  const { colors, isDark } = useTheme();
   const { isLoading, user } = useAuth();
   usePreferences();
   useRealtime();
@@ -72,10 +73,10 @@ function AppContent() {
     return () => sub.remove();
   }, [user]);
 
-  if (isLoading) return <View style={{ flex: 1, backgroundColor: COLORS.background }} />;
+  if (isLoading) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack screenOptions={{ headerShown: false }}>
         {!user ? (
           <Stack.Screen name="(auth)" />
@@ -105,8 +106,8 @@ function AppContent() {
         onDismiss={() => setActiveNotif(null)}
       />
 
-      <StatusBar style="light" />
-    </>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </View>
   );
 }
 
@@ -121,14 +122,10 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <View style={styles.root}>
+        <ThemeProvider>
           <AppContent />
-        </View>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-});

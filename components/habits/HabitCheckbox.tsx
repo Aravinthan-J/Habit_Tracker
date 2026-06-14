@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { Animated, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, RADIUS } from '@/constants/theme';
+import { RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface HabitCheckboxProps {
   isCompleted: boolean;
@@ -18,6 +19,8 @@ export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
   size = 32,
   disabled = false,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const checkAnim = useRef(new Animated.Value(isCompleted ? 1 : 0)).current;
 
@@ -77,7 +80,7 @@ export const HabitCheckbox: React.FC<HabitCheckboxProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   checkbox: {
     borderWidth: 2.5,
     justifyContent: 'center',

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
-import { usePreferencesStore } from '@/store/preferencesStore';
+import { usePreferencesStore, ThemeMode } from '@/store/preferencesStore';
 
 export function usePreferences() {
     const { user } = useAuthStore();
@@ -21,8 +21,15 @@ export function usePreferences() {
             if (data.water_interval_hours != null) store.setWaterIntervalHours(data.water_interval_hours);
             if (data.water_goal_glasses != null) store.setWaterGoalGlasses(data.water_goal_glasses);
             if (data.pet_tone === 'gentle' || data.pet_tone === 'savage') store.setPetTone(data.pet_tone);
+            if (data.theme_mode === 'light' || data.theme_mode === 'dark' || data.theme_mode === 'system') store.setThemeMode(data.theme_mode);
         });
     }, [user?.uid]);
+
+    const setThemeMode = async (value: ThemeMode) => {
+        store.setThemeMode(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { theme_mode: value }, { merge: true });
+    };
 
     const setNotificationsEnabled = async (value: boolean) => {
         store.setNotificationsEnabled(value);
@@ -67,6 +74,8 @@ export function usePreferences() {
     };
 
     return {
+        themeMode: store.themeMode,
+        setThemeMode,
         notificationsEnabled: store.notificationsEnabled,
         reminderTime: store.reminderTime,
         stepTrackingEnabled: store.stepTrackingEnabled,

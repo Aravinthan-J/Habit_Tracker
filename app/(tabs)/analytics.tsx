@@ -12,9 +12,12 @@ import { resolveIcon } from '@/utils/iconHelpers';
 import MetricLogger from '@/components/MetricLogger';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AnalyticsScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const router = useRouter();
   const { data, isLoading, refetch } = useAnalytics();
   const { metrics, logMetric } = useAdvancedFeatures();
@@ -183,6 +186,8 @@ export default function AnalyticsScreen() {
 function StatBox({ icon, value, label, color, unit }: {
   icon: any; value: string; label: string; color: string; unit?: string;
 }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={[styles.statBox, { borderColor: color + '30' }]}>
       <View style={[styles.statIcon, { backgroundColor: color + '18' }]}>
@@ -195,7 +200,7 @@ function StatBox({ icon, value, label, color, unit }: {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 40 },
 

@@ -3,12 +3,15 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const LAST_UPDATED = 'March 2025';
 const CONTACT_EMAIL = 'support@habity.app';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -18,10 +21,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Para({ children }: { children: React.ReactNode }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return <Text style={styles.para}>{children}</Text>;
 }
 
 function Bullet({ children }: { children: React.ReactNode }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={styles.bulletRow}>
       <Text style={styles.bulletDot}>•</Text>
@@ -31,6 +38,8 @@ function Bullet({ children }: { children: React.ReactNode }) {
 }
 
 export default function PrivacyPolicy() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const router = useRouter();
 
   return (
@@ -128,7 +137,7 @@ export default function PrivacyPolicy() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

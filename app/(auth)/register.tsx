@@ -16,7 +16,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GoogleButton } from '@/components/ui/GoogleButton';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { passwordStrength } from '@/utils/validators';
 import { GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '@/lib/firebase';
 
@@ -26,6 +27,8 @@ const STRENGTH_COLORS = ['#F44336', '#FF9800', '#FFEB3B', '#4CAF50'];
 const STRENGTH_LABELS = ['Weak', 'Fair', 'Good', 'Strong'];
 
 export default function RegisterScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -243,7 +246,7 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: COLORS.background },
   container: {
     flexGrow: 1,

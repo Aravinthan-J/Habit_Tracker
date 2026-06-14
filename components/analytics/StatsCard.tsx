@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface StatsCardProps {
@@ -15,9 +16,12 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   icon,
   value,
   label,
-  color = COLORS.primary,
+  color: colorProp,
   subtitle,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  const color = colorProp ?? COLORS.primary;
   return (
     <View style={[
       styles.card,
@@ -38,7 +42,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   card: {
     flex: 1,
     borderRadius: RADIUS.lg,

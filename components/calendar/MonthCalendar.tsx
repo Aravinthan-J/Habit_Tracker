@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getDaysInMonth, formatDate } from '@/utils/dateHelpers';
 
 export interface DayData {
@@ -25,6 +26,8 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   selectedDate,
   onDayPress,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const days = getDaysInMonth(year, month);
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
   const todayStr = formatDate(new Date());
@@ -93,7 +96,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     marginBottom: SPACING.sm,

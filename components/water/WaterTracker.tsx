@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useWater } from '@/hooks/useWater';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useHabits } from '@/hooks/useHabits';
@@ -14,6 +15,8 @@ const GOAL_OPTIONS = [6, 8, 10, 12];
 const WATER_BLUE = '#3BA7FF';
 
 export const WaterTracker: React.FC = () => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const { glasses, goal, increment, decrement, setGoal } = useWater();
     const { light, success } = useHaptics();
     const { habits } = useHabits();
@@ -118,7 +121,7 @@ export const WaterTracker: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     card: {
         marginHorizontal: SPACING.xl,
         marginBottom: SPACING.lg,

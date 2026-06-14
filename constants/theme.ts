@@ -1,4 +1,9 @@
-export const COLORS = {
+// ── Color palettes ──────────────────────────────────────────────────────────
+// Both palettes expose the exact same keys so any screen can be rendered in
+// either theme. `COLORS` stays exported (= dark) for backward compatibility,
+// but themed screens should pull colors from `useTheme()` instead.
+
+export const darkColors = {
     primary: '#6C63FF',
     primaryLight: '#8B84FF',
     primaryDark: '#4D44DB',
@@ -40,6 +45,59 @@ export const COLORS = {
     overlay: 'rgba(0,0,0,0.6)',
     cardBorder: 'rgba(255,255,255,0.08)',
 };
+
+export const lightColors: typeof darkColors = {
+    primary: '#6C63FF',
+    primaryLight: '#8B84FF',
+    primaryDark: '#4D44DB',
+    secondary: '#FF6584',
+    accent: '#1FB7A1',
+    accentOrange: '#F2820C',
+
+    // Backgrounds
+    background: '#F3F4F8',
+    surface: '#FFFFFF',
+    surfaceLight: '#E9EAF2',
+    card: '#FFFFFF',
+
+    // Text
+    textPrimary: '#15162A',
+    textSecondary: '#54566F',
+    textMuted: '#9293A6',
+
+    // Status
+    success: '#2E9B43',
+    warning: '#E08600',
+    error: '#E03131',
+    info: '#1C7ED6',
+
+    // Badge tier colors
+    bronze: '#B5702B',
+    silver: '#9AA0A6',
+    gold: '#D9A406',
+    platinum: '#8C97A0',
+
+    // Habit palette
+    habitColors: [
+        '#6C63FF', '#FF6584', '#43CFBA', '#FF9A3C',
+        '#A855F7', '#06B6D4', '#F59E0B', '#10B981',
+        '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899',
+    ],
+
+    // Transparent
+    overlay: 'rgba(0,0,0,0.4)',
+    cardBorder: 'rgba(0,0,0,0.08)',
+};
+
+export type ThemeColors = typeof darkColors;
+
+export type ColorScheme = 'light' | 'dark';
+
+export const getColors = (scheme: ColorScheme): ThemeColors =>
+    scheme === 'light' ? lightColors : darkColors;
+
+// Backward-compatible default export used by not-yet-themed modules.
+export const COLORS = darkColors;
 
 export const TYPOGRAPHY = {
     // Font sizes

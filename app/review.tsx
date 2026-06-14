@@ -17,9 +17,12 @@ import { computeWeeklyReview, StreakChange } from '@/utils/weeklyReview';
 import { shareWeeklyReviewCard } from '@/services/export/WeeklyReviewCardService';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { resolveIcon } from '@/utils/iconHelpers';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function WeeklyReviewScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const router = useRouter();
   const { habits } = useHabits();
   const { completions } = useCompletions();
@@ -123,6 +126,8 @@ export default function WeeklyReviewScreen() {
 }
 
 function StatPill({ value, label, color }: { value: string; label: string; color: string }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={[styles.statPill, { borderColor: color + '30' }]}>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -134,6 +139,8 @@ function StatPill({ value, label, color }: { value: string; label: string; color
 function HighlightCard({ emoji, title, subtitle, color }: {
   emoji: string; title: string; subtitle: string; color: string;
 }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={[styles.highlight, { borderColor: color + '40', backgroundColor: color + '12' }]}>
       <Text style={styles.highlightEmoji}>{emoji}</Text>
@@ -146,6 +153,8 @@ function HighlightCard({ emoji, title, subtitle, color }: {
 }
 
 function StreakSection({ title, items, suffix }: { title: string; items: StreakChange[]; suffix: string }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -162,7 +171,7 @@ function StreakSection({ title, items, suffix }: { title: string; items: StreakC
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

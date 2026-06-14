@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { BadgeWithStatus } from '@/types/badge.types';
 import { TIER_COLORS, TIER_GLOW } from '@/constants/badges';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,8 @@ interface BadgeCardProps {
 }
 
 export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const tierColor = TIER_COLORS[badge.tier];
   const glowColor = TIER_GLOW[badge.tier];
 
@@ -59,7 +62,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   wrapper: {
     flex: 1,
     margin: SPACING.xs,

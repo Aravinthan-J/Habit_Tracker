@@ -5,7 +5,8 @@ import {
   View,
   Dimensions,
 } from 'react-native';
-import { COLORS } from '@/constants/theme';
+import { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PARTICLE_COUNT = 60;
@@ -15,8 +16,8 @@ function randomBetween(a: number, b: number) {
 }
 
 const CONFETTI_COLORS = [
-  COLORS.primary, COLORS.secondary, COLORS.accent, COLORS.accentOrange,
-  COLORS.gold, '#FF6584', '#43CFBA', '#F59E0B',
+  '#6C63FF', '#FF6584', '#43CFBA', '#FF9A3C',
+  '#FFD700', '#FF6584', '#43CFBA', '#F59E0B',
 ];
 
 interface Particle {
@@ -29,6 +30,8 @@ interface Particle {
 }
 
 export const ConfettiAnimation: React.FC<{ onFinish?: () => void }> = ({ onFinish }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const particles = useRef<Particle[]>(
     Array.from({ length: PARTICLE_COUNT }, () => ({
       x: new Animated.Value(randomBetween(0, SCREEN_WIDTH)),
@@ -103,7 +106,7 @@ export const ConfettiAnimation: React.FC<{ onFinish?: () => void }> = ({ onFinis
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   particle: {
     position: 'absolute',
     top: 0,

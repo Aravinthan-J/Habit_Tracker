@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FocusHighlightsProps {
     totalMinutes: number;
@@ -9,6 +10,8 @@ interface FocusHighlightsProps {
 }
 
 export default function FocusHighlights({ totalMinutes, sessionsCount }: FocusHighlightsProps) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
 
@@ -33,7 +36,7 @@ export default function FocusHighlights({ totalMinutes, sessionsCount }: FocusHi
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     container: {
         marginHorizontal: SPACING.xl,
         padding: SPACING.lg,

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { TIER_COLORS } from '@/constants/badges';
 import { useBadgeProgress } from '@/hooks/useBadgeProgress';
 import { formatRemaining } from '@/utils/badgeProgress';
@@ -9,6 +10,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { buildBadgeNudgeNotification } from '@/constants/petMessages';
 
 export const BadgeNudgeCard: React.FC = () => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const { closest, nearest } = useBadgeProgress();
     const { notificationsEnabled, petTone } = usePreferences();
     const { scheduleBadgeNudge, cancelBadgeNudge } = useNotifications();
@@ -62,7 +65,7 @@ export const BadgeNudgeCard: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     card: {
         marginHorizontal: SPACING.xl,
         marginBottom: SPACING.lg,

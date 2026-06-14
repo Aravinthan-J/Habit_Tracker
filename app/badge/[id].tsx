@@ -10,12 +10,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useBadges } from '@/hooks/useBadges';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { TIER_COLORS } from '@/constants/badges';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function BadgeDetailScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { badges, isLoading } = useBadges();
@@ -80,7 +83,7 @@ export default function BadgeDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: { padding: SPACING.xl, paddingBottom: 0 },
   content: { padding: SPACING.xl },

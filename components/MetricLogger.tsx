@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Metric } from '@/types/advanced.types';
 
 interface MetricLoggerProps {
@@ -12,6 +13,8 @@ interface MetricLoggerProps {
 }
 
 export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const [value, setValue] = useState('');
 
     const handleSubmit = () => {
@@ -107,7 +110,7 @@ export default function MetricLogger({ metric, onLog }: MetricLoggerProps) {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     container: {
         padding: SPACING.md,
         borderRadius: RADIUS.md,

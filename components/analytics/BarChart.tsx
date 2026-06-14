@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface BarChartProps {
   data: { labels: string[]; datasets: Array<{ data: number[] }> };
@@ -13,10 +14,13 @@ const BAR_AREA_HEIGHT = 120;
 
 export const BarChart: React.FC<BarChartProps> = ({
   data,
-  color = COLORS.primary,
+  color: colorProp,
   suffix = '',
   maxValue,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  const color = colorProp ?? COLORS.primary;
   const values = data.datasets[0]?.data ?? [];
   const labels = data.labels;
   const max = maxValue ?? Math.max(...values, 1);
@@ -71,7 +75,7 @@ export const BarChart: React.FC<BarChartProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',

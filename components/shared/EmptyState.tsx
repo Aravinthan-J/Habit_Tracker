@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -15,7 +16,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   subtitle,
   action,
-}) => (
+}) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  return (
   <View style={styles.container} accessibilityLabel={`Empty state: ${title}`}>
     <View style={styles.iconContainer}>
       <Ionicons name={icon} size={56} color={COLORS.textMuted} />
@@ -24,9 +28,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     {action && <View style={styles.action}>{action}</View>}
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',

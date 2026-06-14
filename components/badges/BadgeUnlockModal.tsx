@@ -2,7 +2,8 @@ import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { BadgeWithStatus } from '@/types/badge.types';
 import { TIER_COLORS } from '@/constants/badges';
 import { ConfettiAnimation } from './ConfettiAnimation';
@@ -19,6 +20,8 @@ export const BadgeUnlockModal: React.FC<BadgeUnlockModalProps> = ({
   visible,
   onClose,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { success } = useHaptics();
 
   React.useEffect(() => {
@@ -71,7 +74,7 @@ export const BadgeUnlockModal: React.FC<BadgeUnlockModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: COLORS.overlay,

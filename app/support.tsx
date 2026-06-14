@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const CONTACT_EMAIL = 'support@habity.app';
 
@@ -45,12 +46,30 @@ const FAQS = [
     a: 'Yes, just tap "Reminder Time" in Settings at any time. The new time takes effect immediately and replaces the old reminder.',
   },
   {
+    q: 'What are Smart Reminders?',
+    a: 'When you turn on Smart Reminder for a habit, Habity learns the time of day you usually complete it and nudges you around then — but only if you haven\'t already done it that day. The more consistently you log it, the smarter the timing gets.',
+  },
+  {
+    q: 'How does Habit Stacking work?',
+    a: 'When editing a habit you can "Stack After" another habit. Once you complete the first habit, Habity reminds you to do the stacked one next — a proven way to build new routines on top of existing ones.',
+  },
+  {
+    q: 'Where is the Weekly Review?',
+    a: 'Open the Analytics tab and tap "Weekly Review", or tap the Sunday recap notification. It shows your completion rate, best and worst habits, and streaks gained or lost — with a shareable summary card.',
+  },
+  {
+    q: 'Can I switch between dark and light mode?',
+    a: 'Yes. Go to Settings → Appearance and choose Light, Dark, or System (which follows your phone\'s setting). The change applies instantly across the whole app.',
+  },
+  {
     q: 'How do I delete my account?',
     a: `Email us at ${CONTACT_EMAIL} with the subject "Delete My Account". We will permanently remove all your data within 7 days.`,
   },
 ];
 
 function FAQItem({ q, a }: { q: string; a: string }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const [open, setOpen] = useState(false);
   return (
     <TouchableOpacity
@@ -82,6 +101,8 @@ function ContactCard({
   subtitle: string;
   onPress: () => void;
 }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <TouchableOpacity style={styles.contactCard} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.contactIcon}>
@@ -97,6 +118,8 @@ function ContactCard({
 }
 
 export default function HelpSupport() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const router = useRouter();
 
   return (
@@ -165,7 +188,7 @@ export default function HelpSupport() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

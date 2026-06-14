@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors, darkColors } from '@/constants/theme';
 
 interface State { hasError: boolean; }
 
@@ -35,7 +35,9 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Stat
   }
 }
 
-const styles = StyleSheet.create({
+const styles = makeStyles(darkColors);
+
+function makeStyles(COLORS: ThemeColors) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -63,4 +65,4 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   btnText: { color: '#fff', fontWeight: TYPOGRAPHY.semibold, fontSize: TYPOGRAPHY.md },
-});
+}); }

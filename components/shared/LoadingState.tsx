@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { COLORS, SPACING, RADIUS } from '@/constants/theme';
+import { SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const SkeletonLine: React.FC<{ width?: number | string; height?: number; style?: any }> = ({
   width = '100%',
   height = 16,
   style,
 }) => {
+  const { colors: COLORS } = useTheme();
   const animValue = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -36,7 +38,10 @@ const SkeletonLine: React.FC<{ width?: number | string; height?: number; style?:
   );
 };
 
-export const LoadingState: React.FC<{ count?: number }> = ({ count = 3 }) => (
+export const LoadingState: React.FC<{ count?: number }> = ({ count = 3 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  return (
   <View style={styles.container}>
     {Array.from({ length: count }).map((_, i) => (
       <View key={i} style={styles.card}>
@@ -50,9 +55,10 @@ export const LoadingState: React.FC<{ count?: number }> = ({ count = 3 }) => (
       </View>
     ))}
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: { padding: SPACING.lg },
   card: {
     backgroundColor: COLORS.card,

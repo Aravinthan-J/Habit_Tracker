@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface OfflineBannerProps {
   isOnline: boolean;
@@ -9,6 +10,8 @@ interface OfflineBannerProps {
 }
 
 export function OfflineBanner({ isOnline, isSyncing }: OfflineBannerProps) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const translateY = useRef(new Animated.Value(-60)).current;
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export function OfflineBanner({ isOnline, isSyncing }: OfflineBannerProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   banner: {
     position: 'absolute',
     top: 0,

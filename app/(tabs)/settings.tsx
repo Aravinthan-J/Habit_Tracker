@@ -10,6 +10,7 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,7 +18,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useHabits } from '@/hooks/useHabits';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -27,6 +29,8 @@ import { HABIT_TEMPLATES, HabitTemplate } from '@/constants/templates';
 const SHEET_H = Dimensions.get('window').height * 0.6;
 
 export default function SettingsScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const router = useRouter();
   const { signOut } = useAuth();
   const { user } = useAuthStore();
@@ -34,6 +38,8 @@ export default function SettingsScreen() {
   const { requestAndScheduleDaily, cancelAll, scheduleWater, cancelWater } = useNotifications();
 
   const {
+    themeMode, setThemeMode,
+    petTone, setPetTone,
     stepTrackingEnabled, setStepTrackingEnabled,
     notificationsEnabled, setNotificationsEnabled,
     reminderTime, setReminderTime,
@@ -224,6 +230,43 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
+        {/* Appearance */}
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <Card style={styles.section}>
+          <View style={styles.appearanceRow}>
+            <View style={styles.rowLeft}>
+              <Ionicons name="color-palette-outline" size={20} color={COLORS.primary} style={styles.rowIcon} />
+              <Text style={styles.rowLabel}>Theme</Text>
+            </View>
+          </View>
+          <View style={styles.segment}>
+            {([
+              { key: 'light', label: 'Light', icon: 'sunny-outline' as const },
+              { key: 'dark', label: 'Dark', icon: 'moon-outline' as const },
+              { key: 'system', label: 'System', icon: 'phone-portrait-outline' as const },
+            ]).map((opt) => {
+              const active = themeMode === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                  onPress={() => setThemeMode(opt.key as any)}
+                  accessibilityLabel={`Theme ${opt.label}`}
+                >
+                  <Ionicons name={opt.icon} size={18} color={active ? '#fff' : COLORS.textSecondary} />
+                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{opt.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <SettingsRow
+            emojiIcon={petTone === 'gentle' ? '😇' : '🔥'}
+            label="Pet Personality"
+            value={petTone === 'gentle' ? 'Gentle' : 'Savage'}
+            onPress={() => setPetTone(petTone === 'gentle' ? 'savage' : 'gentle')}
+          />
+        </Card>
+
         {/* Habit Templates */}
         <Text style={styles.sectionTitle}>Habit Templates</Text>
         <Card style={styles.section}>
@@ -340,6 +383,16 @@ export default function SettingsScreen() {
             label="Help & Support"
             onPress={() => router.push('/support')}
           />
+          <SettingsRow
+            icon="reader-outline"
+            label="Terms of Service"
+            onPress={() => router.push('/terms')}
+          />
+          <SettingsRow
+            icon="share-social-outline"
+            label="Share Habity"
+            onPress={() => Share.share({ message: 'Build better habits with Habity — track streaks, earn badges and stay consistent! 🎯' })}
+          />
         </Card>
 
         {/* Sign Out */}
@@ -454,7 +507,7 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: { padding: SPACING.xl },
   title: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xxxl, fontWeight: TYPOGRAPHY.bold },
@@ -498,6 +551,28 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.cardBorder,
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: SPACING.sm },
+  appearanceRow: { flexDirection: 'row', alignItems: 'center', paddingTop: SPACING.sm },
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    padding: 4,
+    gap: 4,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.sm,
+  },
+  segmentBtnActive: { backgroundColor: COLORS.primary },
+  segmentText: { color: COLORS.textSecondary, fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold },
+  segmentTextActive: { color: '#fff' },
   rowIcon: { marginRight: SPACING.md },
   rowLabel: { fontSize: TYPOGRAPHY.md },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, flexShrink: 0 },

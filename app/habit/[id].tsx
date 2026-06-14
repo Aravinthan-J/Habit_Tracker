@@ -17,12 +17,15 @@ import { HabitForm } from '@/components/habits/HabitForm';
 import { HabitStats } from '@/components/habits/HabitStats';
 import { HabitMonthHeatmap } from '@/components/habits/HabitMonthHeatmap';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { calculateCurrentStreak, calculateLongestStreak, completionRate } from '@/utils/streakCalculator';
 import { today } from '@/utils/dateHelpers';
 import { resolveIcon } from '@/utils/iconHelpers';
 
 export default function HabitDetailScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { habits, updateHabit, deleteHabit } = useHabits();
@@ -142,7 +145,7 @@ export default function HabitDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

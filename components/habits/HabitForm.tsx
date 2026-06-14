@@ -11,7 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { validateHabitTitle, validateMonthlyGoal } from '@/utils/validators';
 import { Habit } from '@/types/habit.types';
 import { useHabits } from '@/hooks/useHabits';
@@ -42,6 +43,8 @@ export const HabitForm: React.FC<HabitFormProps> = ({
   isLoading = false,
   submitLabel = 'Create Habit',
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const [title, setTitle] = useState(initialValues?.title ?? '');
   const [monthlyGoal, setMonthlyGoal] = useState(String(initialValues?.monthly_goal ?? 20));
   const [color, setColor] = useState(initialValues?.color ?? COLORS.habitColors[0]);
@@ -274,7 +277,7 @@ export const HabitForm: React.FC<HabitFormProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: { flex: 1 },
   preview: {
     alignItems: 'center',

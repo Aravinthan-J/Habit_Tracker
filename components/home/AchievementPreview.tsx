@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Achievement } from '@/types/advanced.types';
 
 interface AchievementPreviewProps {
@@ -9,6 +10,8 @@ interface AchievementPreviewProps {
 }
 
 export default function AchievementPreview({ achievements }: AchievementPreviewProps) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     if (achievements.length === 0) return null;
 
     return (
@@ -35,7 +38,7 @@ export default function AchievementPreview({ achievements }: AchievementPreviewP
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     container: {
         marginBottom: SPACING.lg,
     },

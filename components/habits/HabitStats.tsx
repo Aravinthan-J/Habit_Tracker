@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface HabitStatsProps {
   currentStreak: number;
@@ -16,12 +17,16 @@ const StatBox: React.FC<{ label: string; value: string | number; color: string }
   label,
   value,
   color,
-}) => (
+}) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  return (
   <View style={[styles.statBox, { borderColor: color + '44' }]}>
     <Text style={[styles.statValue, { color }]}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
-);
+  );
+};
 
 export const HabitStats: React.FC<HabitStatsProps> = ({
   currentStreak,
@@ -31,7 +36,10 @@ export const HabitStats: React.FC<HabitStatsProps> = ({
   color,
   monthlyGoal,
   monthlyCount,
-}) => (
+}) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  return (
   <View style={styles.grid}>
     <StatBox label="Current Streak" value={`${currentStreak}🔥`} color={color} />
     <StatBox label="Longest Streak" value={`${longestStreak}d`} color={COLORS.gold} />
@@ -42,9 +50,10 @@ export const HabitStats: React.FC<HabitStatsProps> = ({
       color={monthlyGoal > 0 && monthlyCount >= monthlyGoal ? COLORS.success : COLORS.accent}
     />
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

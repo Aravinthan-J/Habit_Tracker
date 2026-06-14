@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { formatDate, today } from '@/utils/dateHelpers';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -14,6 +15,8 @@ interface Props {
 
 /** A current-month calendar heatmap: completed days filled with the habit color. */
 export const HabitMonthHeatmap: React.FC<Props> = ({ completionDates, color }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const done = useMemo(() => new Set(completionDates), [completionDates]);
     const todayStr = today();
 
@@ -80,7 +83,7 @@ export const HabitMonthHeatmap: React.FC<Props> = ({ completionDates, color }) =
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     card: {
         borderRadius: RADIUS.lg,
         borderWidth: 1,

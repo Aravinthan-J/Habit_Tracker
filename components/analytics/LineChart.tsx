@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart as RNLineChart } from 'react-native-chart-kit';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -14,8 +15,11 @@ interface LineChartProps {
 export const LineChart: React.FC<LineChartProps> = ({
   data,
   title,
-  color = COLORS.primary,
+  color: colorProp,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
+  const color = colorProp ?? COLORS.primary;
   return (
     <View style={[styles.container, { backgroundColor: COLORS.surface + '44', borderRadius: RADIUS.lg, padding: SPACING.md, borderWidth: 1, borderColor: COLORS.cardBorder }]}>
       {title && <Text style={[styles.title, { color: COLORS.textPrimary }]}>{title}</Text>}
@@ -51,7 +55,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: { marginBottom: SPACING.lg },
   title: {
     color: COLORS.textSecondary,

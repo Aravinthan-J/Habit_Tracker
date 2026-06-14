@@ -10,7 +10,8 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '@/components/ui/Button';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -21,7 +22,7 @@ const SLIDES = [
     icon: 'checkbox-outline' as const,
     title: 'Track Daily Habits',
     body: 'Build powerful routines by tracking your habits every day. Every check-in matters.',
-    gradient: [COLORS.primary, COLORS.primaryDark] as const,
+    gradient: ['#6C63FF', '#4D44DB'] as const,
   },
   {
     key: '2',
@@ -42,11 +43,13 @@ const SLIDES = [
     icon: 'footsteps-outline' as const,
     title: 'Track Your Steps',
     body: 'Your phone\'s pedometer tracks every step. Hit daily goals and earn step-based badges.',
-    gradient: [COLORS.accent, COLORS.primary] as const,
+    gradient: ['#43CFBA', '#6C63FF'] as const,
   },
 ];
 
 export default function OnboardingScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const [index, setIndex] = useState(0);
   const flatRef = useRef<FlatList>(null);
   const router = useRouter();
@@ -107,7 +110,7 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   slide: {
     width,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Metric } from '@/types/advanced.types';
 
 interface MetricHighlightsProps {
@@ -8,6 +9,8 @@ interface MetricHighlightsProps {
 }
 
 export default function MetricHighlights({ metrics }: MetricHighlightsProps) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     if (metrics.length === 0) return null;
 
     return (
@@ -30,7 +33,7 @@ export default function MetricHighlights({ metrics }: MetricHighlightsProps) {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     container: {
         marginBottom: SPACING.lg,
     },

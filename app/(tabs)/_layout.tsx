@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY } from '@/constants/theme';
+import { TYPOGRAPHY, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type TabBarIconProps = {
   name: keyof typeof Ionicons.glyphMap;
@@ -8,6 +9,7 @@ type TabBarIconProps = {
 };
 
 function TabIcon({ name, focused }: TabBarIconProps) {
+  const { colors: COLORS } = useTheme();
   return (
     <Ionicons
       name={focused ? name.replace('-outline', '') as any : name}
@@ -18,6 +20,7 @@ function TabIcon({ name, focused }: TabBarIconProps) {
 }
 
 export default function TabLayout() {
+  const { colors: COLORS } = useTheme();
   return (
     <Tabs
       screenOptions={{

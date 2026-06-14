@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export interface NotifPayload {
     title: string;
@@ -25,6 +26,8 @@ interface Props {
 const SLIDE_HEIGHT = 110;
 
 export function InAppNotification({ notif, onDismiss, durationMs = 4000 }: Props) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const insets = useSafeAreaInsets();
     const translateY = useRef(new Animated.Value(-SLIDE_HEIGHT)).current;
     const progress   = useRef(new Animated.Value(1)).current;
@@ -135,7 +138,7 @@ export function InAppNotification({ notif, onDismiss, durationMs = 4000 }: Props
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     container: {
         position: 'absolute',
         left: SPACING.lg,

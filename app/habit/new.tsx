@@ -12,9 +12,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { HabitForm } from '@/components/habits/HabitForm';
 import { useHabits } from '@/hooks/useHabits';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function NewHabitScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { createHabit } = useHabits();
   const router = useRouter();
 
@@ -49,7 +52,7 @@ export default function NewHabitScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

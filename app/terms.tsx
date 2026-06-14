@@ -3,26 +3,34 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const LAST_UPDATED = 'March 1, 2026';
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
+    const styles = makeStyles(useTheme().colors);
+    return (
     <View style={styles.section}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {children}
     </View>
-);
+    );
+};
 
-const Para = ({ children }: { children: string }) => (
-    <Text style={styles.para}>{children}</Text>
-);
+const Para = ({ children }: { children: string }) => {
+    const styles = makeStyles(useTheme().colors);
+    return <Text style={styles.para}>{children}</Text>;
+};
 
-const Bullet = ({ children }: { children: string }) => (
-    <Text style={styles.bullet}>• {children}</Text>
-);
+const Bullet = ({ children }: { children: string }) => {
+    const styles = makeStyles(useTheme().colors);
+    return <Text style={styles.bullet}>• {children}</Text>;
+};
 
 export default function TermsScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const router = useRouter();
     return (
         <SafeAreaView style={styles.safe}>
@@ -103,7 +111,7 @@ export default function TermsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     safe: { flex: 1, backgroundColor: COLORS.background },
     header: {
         flexDirection: 'row',

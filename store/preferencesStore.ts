@@ -2,7 +2,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 interface PreferencesState {
+    themeMode: ThemeMode;
+    setThemeMode: (value: ThemeMode) => void;
     stepTrackingEnabled: boolean;
     setStepTrackingEnabled: (value: boolean) => void;
     notificationsEnabled: boolean;
@@ -22,6 +26,8 @@ interface PreferencesState {
 export const usePreferencesStore = create<PreferencesState>()(
     persist(
         (set) => ({
+            themeMode: 'dark',
+            setThemeMode: (value) => set({ themeMode: value }),
             stepTrackingEnabled: true,
             setStepTrackingEnabled: (value) => set({ stepTrackingEnabled: value }),
             notificationsEnabled: false,

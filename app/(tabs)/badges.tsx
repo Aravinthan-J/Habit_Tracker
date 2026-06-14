@@ -11,12 +11,15 @@ import { useBadges } from '@/hooks/useBadges';
 import { BadgeCard } from '@/components/badges/BadgeCard';
 import { BadgeDetailModal } from '@/components/badges/BadgeDetailModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { BadgeWithStatus } from '@/types/badge.types';
 
 type Filter = 'all' | 'earned' | 'locked';
 
 export default function BadgesScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { badges, earnedBadges, unearnedBadges, isLoading } = useBadges();
   const [filter, setFilter] = useState<Filter>('all');
   const [selectedBadge, setSelectedBadge] = useState<BadgeWithStatus | null>(null);
@@ -69,7 +72,7 @@ export default function BadgesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

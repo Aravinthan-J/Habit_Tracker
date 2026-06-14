@@ -12,7 +12,8 @@ import { Accelerometer } from 'expo-sensors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { playTimerComplete } from '@/utils/beepSound';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 
@@ -25,6 +26,8 @@ const DURATIONS = [
 ];
 
 export default function FocusMode() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const router = useRouter();
     const { saveFocusSession } = useAdvancedFeatures();
     const [selectedDuration, setSelectedDuration] = useState(25 * 60);
@@ -237,7 +240,7 @@ export default function FocusMode() {
 
 const RING_SIZE = width * 0.72;
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     safe: { flex: 1, backgroundColor: COLORS.background },
     scroll: { flexGrow: 1, paddingBottom: 40 },
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function GoogleIcon() {
   return (
@@ -21,6 +22,8 @@ interface GoogleButtonProps {
 }
 
 export function GoogleButton({ onPress, loading = false, label = 'Continue with Google' }: GoogleButtonProps) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <TouchableOpacity
       style={styles.btn}
@@ -39,7 +42,7 @@ export function GoogleButton({ onPress, loading = false, label = 'Continue with 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   btn: {
     flexDirection: 'row',
     alignItems: 'center',

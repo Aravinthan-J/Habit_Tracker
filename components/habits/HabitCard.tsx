@@ -7,7 +7,8 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Habit } from '@/types/habit.types';
 import { HabitCheckbox } from './HabitCheckbox';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -42,6 +43,8 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   weekLabels,
   stackAfterTitle,
 }) => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { light } = useHaptics();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -141,7 +144,7 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   card: {
     borderRadius: RADIUS.lg,
     marginHorizontal: SPACING.lg,

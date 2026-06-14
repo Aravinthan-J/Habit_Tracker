@@ -1,19 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { usePet } from '@/hooks/usePet';
 import { useHaptics } from '@/hooks/useHaptics';
 import { PetTier } from '@/constants/petMessages';
 
 const TIER_COLOR: Record<PetTier, string> = {
-    thriving: COLORS.success,
-    happy: COLORS.success,
+    thriving: '#4CAF50',
+    happy: '#4CAF50',
     meh: '#E0A82E',
     sad: '#E8833A',
-    hangry: COLORS.error ?? '#E5484D',
+    hangry: '#E5484D',
 };
 
 export const HabitPet: React.FC = () => {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
     const { name, health, tier, tierLabel, face, message, tone, setTone } = usePet();
     const { light } = useHaptics();
     const scale = useRef(new Animated.Value(1)).current;
@@ -68,7 +71,7 @@ export const HabitPet: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     card: {
         marginHorizontal: SPACING.xl,
         marginTop: SPACING.md,

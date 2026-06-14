@@ -22,7 +22,8 @@ import FocusHighlights from '@/components/home/FocusHighlights';
 import MetricHighlights from '@/components/home/MetricHighlights';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
 import { useAuthStore } from '@/store/authStore';
@@ -30,6 +31,8 @@ import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { useStreakFreeze } from '@/hooks/useStreakFreeze';
 
 export default function HomeScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const { user } = useAuthStore();
   const { habits, isLoading: habitsLoading, refetch: refetchHabits } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
@@ -234,7 +237,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

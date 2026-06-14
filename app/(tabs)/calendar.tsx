@@ -18,7 +18,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useHabits } from '@/hooks/useHabits';
 import { useCompletions } from '@/hooks/useCompletions';
 import { MonthCalendar, DayData } from '@/components/calendar/MonthCalendar';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getMonthName, getMonthRange, getDaysInMonth, today, friendlyDate } from '@/utils/dateHelpers';
 import { resolveIcon } from '@/utils/iconHelpers';
 
@@ -27,6 +28,8 @@ const SHEET_HEIGHT = SCREEN_HEIGHT * 0.65;
 const STEP_GOAL = 10000;
 
 export default function CalendarScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -420,6 +423,8 @@ export default function CalendarScreen() {
 }
 
 function StatBox({ label, value, icon, color }: { label: string; value: string; icon: any; color: string }) {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   return (
     <View style={styles.statBox}>
       <Ionicons name={icon} size={16} color={color} />
@@ -429,7 +434,7 @@ function StatBox({ label, value, icon, color }: { label: string; value: string; 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 40 },
 

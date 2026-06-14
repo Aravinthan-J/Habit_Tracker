@@ -17,7 +17,8 @@ import { HabitCard } from '@/components/habits/HabitCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { Button } from '@/components/ui/Button';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { today, getLastNDays } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
 
@@ -25,6 +26,8 @@ type HabitFilter = 'all' | 'pending' | 'done';
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function HabitsScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = makeStyles(COLORS);
   const router = useRouter();
   const { habits, isLoading } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
@@ -237,7 +240,7 @@ export default function HabitsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   header: {
     paddingHorizontal: SPACING.xl,
