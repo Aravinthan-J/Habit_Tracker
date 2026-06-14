@@ -4,7 +4,17 @@ import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { getLast30Days, getLastNDays } from '@/utils/dateHelpers';
 import { calculateCurrentStreak } from '@/utils/streakCalculator';
+import { getWeekStart } from '@/utils/frequency';
 import { getLocalHabits, getAllLocalCompletions } from '@/services/storage/LocalStorageService';
+
+type AnalyticsHabit = {
+    id: string;
+    created_at?: string;
+    title?: string;
+    color?: string;
+    icon?: string | null;
+    frequency?: 'daily' | 'weekly';
+};
 
 export interface HabitBreakdown {
     id: string;
@@ -13,6 +23,7 @@ export interface HabitBreakdown {
     icon: string | null;
     rate: number;
     count: number;
+    weekly: boolean;
 }
 
 export interface AnalyticsSummary {
@@ -28,7 +39,7 @@ export interface AnalyticsSummary {
 }
 
 function buildSummary(
-    habits: { id: string; created_at?: string; title?: string; color?: string; icon?: string | null }[],
+    habits: AnalyticsHabit[],
     completions: { habit_id: string; date: string }[],
     last30: string[],
     stepsMap: Record<string, number> = {},
@@ -39,6 +50,24 @@ function buildSummary(
     // Only count completions for habits that still exist (ignore deleted habit completions)
     const activeCompletions = completions.filter((c) => activeHabitIds.has(c.habit_id));
 
+    const dailyHabits = habits.filter((h) => h.frequency !== 'weekly');
+    const weeklyHabits = habits.filter((h) => h.frequency === 'weekly');
+
+    // For each weekly habit, the set of week-starts it was completed in. A weekly
+    // habit counts as "satisfied" on every day of a week it was done — mirroring
+    // the home screen, where a weekly habit shows done for the whole week.
+    const weeklyDoneWeeks = new Map<string, Set<string>>();
+    for (const h of weeklyHabits) {
+        const weeks = new Set<string>();
+        for (const c of activeCompletions) {
+            if (c.habit_id === h.id) weeks.add(getWeekStart(c.date));
+        }
+        weeklyDoneWeeks.set(h.id, weeks);
+    }
+
+    const existedOn = (h: AnalyticsHabit, date: string) =>
+        !h.created_at || h.created_at.slice(0, 10) <= date;
+
     const completionsByDate: Record<string, number> = {};
     const ratesByDate: Record<string, number> = {};
 
@@ -47,15 +76,23 @@ function buildSummary(
     let rateDays = 0;
 
     for (const date of last30) {
-        // Only include habits that existed on this date
-        const habitsOnDay = habits.filter(
-            (h) => !h.created_at || h.created_at.slice(0, 10) <= date
+        const week = getWeekStart(date);
+        const dailyOnDay = dailyHabits.filter((h) => existedOn(h, date)).length;
+        const weeklyOnDay = weeklyHabits.filter((h) => existedOn(h, date)).length;
+        const habitsOnDay = dailyOnDay + weeklyOnDay;
+
+        const dailyDone = activeCompletions.filter(
+            (c) => c.date === date && !weeklyDoneWeeks.has(c.habit_id),
         ).length;
-        const count = activeCompletions.filter((c) => c.date === date).length;
-        completionsByDate[date] = count;
+        const weeklyDone = weeklyHabits.filter(
+            (h) => existedOn(h, date) && weeklyDoneWeeks.get(h.id)?.has(week),
+        ).length;
+
+        // Raw completions logged on this date (weekly habits only on their actual day)
+        completionsByDate[date] = activeCompletions.filter((c) => c.date === date).length;
 
         if (habitsOnDay > 0) {
-            const rate = Math.min(Math.round((count / habitsOnDay) * 100), 100);
+            const rate = Math.min(Math.round(((dailyDone + weeklyDone) / habitsOnDay) * 100), 100);
             ratesByDate[date] = rate;
             rateSum += rate;
             rateDays += 1;
@@ -64,8 +101,9 @@ function buildSummary(
         }
     }
 
+    // Best streak uses daily habits (measured in days) to keep the unit consistent.
     let bestStreak = 0;
-    for (const habit of habits) {
+    for (const habit of dailyHabits) {
         const dates = activeCompletions.filter((c) => c.habit_id === habit.id).map((c) => c.date);
         const streak = calculateCurrentStreak(dates);
         if (streak > bestStreak) bestStreak = streak;
@@ -82,11 +120,26 @@ function buildSummary(
     const trend = last30.map((date) => ({ date, rate: ratesByDate[date] ?? 0 }));
 
     const last30Set = new Set(last30);
+    // Distinct weeks covered by the window (for weekly-habit denominators).
+    const weeksInWindow = Array.from(new Set(last30.map(getWeekStart)));
     const habitBreakdown: HabitBreakdown[] = habits
         .map((h) => {
-            const possibleDays = last30.filter((d) => !h.created_at || h.created_at.slice(0, 10) <= d).length;
-            const count = activeCompletions.filter((c) => c.habit_id === h.id && last30Set.has(c.date)).length;
-            const rate = possibleDays > 0 ? Math.min(Math.round((count / possibleDays) * 100), 100) : 0;
+            const inRange = activeCompletions.filter((c) => c.habit_id === h.id && last30Set.has(c.date));
+            let rate: number;
+            let count: number;
+            if (h.frequency === 'weekly') {
+                // weeks completed / weeks the habit existed in the window
+                const doneWeeks = new Set(inRange.map((c) => getWeekStart(c.date)));
+                const possibleWeeks = weeksInWindow.filter(
+                    (w) => !h.created_at || h.created_at.slice(0, 10) <= w,
+                ).length;
+                count = doneWeeks.size;
+                rate = possibleWeeks > 0 ? Math.min(Math.round((count / possibleWeeks) * 100), 100) : 0;
+            } else {
+                const possibleDays = last30.filter((d) => !h.created_at || h.created_at.slice(0, 10) <= d).length;
+                count = inRange.length;
+                rate = possibleDays > 0 ? Math.min(Math.round((count / possibleDays) * 100), 100) : 0;
+            }
             return {
                 id: h.id,
                 title: h.title ?? 'Habit',
@@ -94,6 +147,7 @@ function buildSummary(
                 icon: h.icon ?? null,
                 rate,
                 count,
+                weekly: h.frequency === 'weekly',
             };
         })
         .sort((a, b) => b.rate - a.rate);

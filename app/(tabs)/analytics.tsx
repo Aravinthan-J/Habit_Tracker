@@ -143,7 +143,9 @@ export default function AnalyticsScreen() {
                 <View key={h.id} style={[styles.breakdownRow, i > 0 && styles.breakdownDivider]}>
                   <Text style={styles.breakdownEmoji}>{resolveIcon(h.icon)}</Text>
                   <View style={styles.breakdownMid}>
-                    <Text style={[styles.breakdownTitle, { color: COLORS.textPrimary }]} numberOfLines={1}>{h.title}</Text>
+                    <Text style={[styles.breakdownTitle, { color: COLORS.textPrimary }]} numberOfLines={1}>
+                      {h.title}{h.weekly ? '  ·  weekly' : ''}
+                    </Text>
                     <View style={[styles.breakdownTrack, { backgroundColor: COLORS.surface }]}>
                       <View style={[styles.breakdownFill, { width: `${h.rate}%`, backgroundColor: h.color }]} />
                     </View>
