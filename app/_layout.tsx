@@ -7,6 +7,7 @@ import { useRealtime } from '@/hooks/useRealtime';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useSmartReminders } from '@/hooks/useSmartReminders';
+import { useNotificationActions } from '@/hooks/useNotificationActions';
 import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
@@ -35,6 +36,7 @@ function AppContent() {
   usePreferences();
   useRealtime();
   useSmartReminders();
+  useNotificationActions(!!user);
   const { isOnline, isSyncing } = useOfflineSync();
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
   const [activeNotif, setActiveNotif] = useState<NotifPayload | null>(null);
@@ -63,15 +65,6 @@ function AppContent() {
     return () => sub.remove();
   }, [user]);
 
-  // Deep-link when a notification is tapped (e.g. weekly review, smart reminders)
-  useEffect(() => {
-    if (!Notifications || !user) return;
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const url = response.notification.request.content.data?.url;
-      if (typeof url === 'string') router.push(url as any);
-    });
-    return () => sub.remove();
-  }, [user]);
 
   if (isLoading) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 

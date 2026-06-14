@@ -46,6 +46,14 @@ const FAQS = [
     a: 'Yes, just tap "Reminder Time" in Settings at any time. The new time takes effect immediately and replaces the old reminder.',
   },
   {
+    q: 'Can I complete a habit from the reminder notification?',
+    a: 'Yes. On a habit reminder, expand the notification and tap "✓ Done" to mark it complete without opening the app, or "⏰ Snooze 1h" to be reminded again in an hour.',
+  },
+  {
+    q: 'What is a Streak Freeze?',
+    a: 'A Streak Freeze protects your streak when you miss a single day — it\'s spent automatically so your streak survives. You earn one freeze for every 7-day streak (up to 3). Tap the 🧊 on the Home screen for details.',
+  },
+  {
     q: 'What are Smart Reminders?',
     a: 'When you turn on Smart Reminder for a habit, Habity learns the time of day you usually complete it and nudges you around then — but only if you haven\'t already done it that day. The more consistently you log it, the smarter the timing gets.',
   },

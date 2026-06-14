@@ -15,6 +15,30 @@ try {
     // expo-notifications not available in Expo Go (SDK 53+)
 }
 
+// ─── Quick-action category ───────────────────────────────────────────────────
+// Per-habit reminders carry these action buttons so a habit can be completed or
+// snoozed straight from the notification, without opening the app.
+export const HABIT_ACTION_CATEGORY = 'habit-actions';
+export const ACTION_COMPLETE = 'COMPLETE_HABIT';
+export const ACTION_SNOOZE = 'SNOOZE_HABIT';
+export const SNOOZE_MINUTES = 60;
+
+export async function registerNotificationCategories(): Promise<void> {
+    if (!Notifications) return;
+    await Notifications.setNotificationCategoryAsync(HABIT_ACTION_CATEGORY, [
+        {
+            identifier: ACTION_COMPLETE,
+            buttonTitle: '✓ Done',
+            options: { opensAppToForeground: false },
+        },
+        {
+            identifier: ACTION_SNOOZE,
+            buttonTitle: '⏰ Snooze 1h',
+            options: { opensAppToForeground: false },
+        },
+    ]).catch(() => { });
+}
+
 export async function requestPermissions(): Promise<boolean> {
     if (!Notifications) return false;
     const { status: existing } = await Notifications.getPermissionsAsync();
@@ -67,6 +91,8 @@ export async function scheduleHabitReminder(
             title: `⏰ Habit reminder`,
             body: `Time to complete "${habitTitle}"`,
             sound: true,
+            categoryIdentifier: HABIT_ACTION_CATEGORY,
+            data: { url: `/habit/${habitId}`, habitId },
         },
         trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -172,13 +198,25 @@ export async function scheduleSmartReminderOccurrence(
             title: '⏰ Habit reminder',
             body,
             sound: true,
-            data: { url: `/habit/${habitId}` },
+            categoryIdentifier: HABIT_ACTION_CATEGORY,
+            data: { url: `/habit/${habitId}`, habitId, date: dateStr },
         },
         trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: fireAt,
         },
     }).catch(() => { });
+}
+
+/** Re-fire a habit reminder a short while later (the "Snooze" action). */
+export async function snoozeHabitReminder(
+    habitId: string,
+    dateStr: string,
+    body: string,
+    minutes = SNOOZE_MINUTES,
+): Promise<void> {
+    const fireAt = new Date(Date.now() + minutes * 60_000);
+    await scheduleSmartReminderOccurrence(habitId, dateStr, fireAt, body);
 }
 
 export async function cancelSmartReminderOccurrence(habitId: string, dateStr: string): Promise<void> {

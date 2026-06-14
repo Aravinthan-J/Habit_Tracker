@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,8 @@ import { calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
 import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { useStreakFreeze } from '@/hooks/useStreakFreeze';
+import { StreakFreezeModal } from '@/components/streaks/StreakFreezeModal';
+import { TouchableOpacity } from 'react-native';
 
 export default function HomeScreen() {
   const { colors: COLORS } = useTheme();
@@ -40,6 +42,7 @@ export default function HomeScreen() {
   const { checkForNewBadges } = useBadges();
   const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
   const { balance: freezeBalance, maxFreezes, freezeDates } = useStreakFreeze();
+  const [freezeModalVisible, setFreezeModalVisible] = useState(false);
 
   const todayStr = today();
   const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
@@ -115,13 +118,15 @@ export default function HomeScreen() {
                 <Text style={[styles.greeting, { color: COLORS.textMuted }]}>{greeting},</Text>
                 <Text style={[styles.name, { color: COLORS.textPrimary }]}>{user?.displayName ?? 'there'} 👋</Text>
               </View>
-              <View
+              <TouchableOpacity
                 style={[styles.freezePill, { backgroundColor: COLORS.surface, borderColor: COLORS.cardBorder }]}
-                accessibilityLabel={`${freezeBalance} of ${maxFreezes} streak freezes available`}
+                accessibilityLabel={`${freezeBalance} of ${maxFreezes} streak freezes available. Tap for details.`}
+                onPress={() => setFreezeModalVisible(true)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.freezeIcon}>🧊</Text>
                 <Text style={[styles.freezeCount, { color: COLORS.textPrimary }]}>{freezeBalance}</Text>
-              </View>
+              </TouchableOpacity>
             </LinearGradient>
 
             {/* Habit Pet */}
@@ -232,6 +237,14 @@ export default function HomeScreen() {
           ) : null
         }
         contentContainerStyle={styles.list}
+      />
+
+      <StreakFreezeModal
+        visible={freezeModalVisible}
+        onClose={() => setFreezeModalVisible(false)}
+        balance={freezeBalance}
+        maxFreezes={maxFreezes}
+        freezeDates={freezeDates}
       />
     </SafeAreaView>
   );
