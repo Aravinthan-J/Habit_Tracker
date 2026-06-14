@@ -11,6 +11,7 @@ import {
   Animated,
   Dimensions,
   Share,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -32,7 +33,7 @@ export default function SettingsScreen() {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, updateDisplayName } = useAuth();
   const { user } = useAuthStore();
   const { habits, createHabit } = useHabits();
   const { requestAndScheduleDaily, cancelAll, scheduleWater, cancelWater } = useNotifications();
@@ -45,12 +46,35 @@ export default function SettingsScreen() {
     reminderTime, setReminderTime,
     waterReminderEnabled, setWaterReminderEnabled,
     waterIntervalHours, setWaterIntervalHours,
+    smartRemindersEnabled, setSmartRemindersEnabled,
+    weeklyReviewEnabled, setWeeklyReviewEnabled,
   } = usePreferences();
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [tempHour12, setTempHour12] = useState(8);   // 1–12
   const [tempMinute, setTempMinute]   = useState(0);
   const [tempAmPm, setTempAmPm]       = useState<'AM' | 'PM'>('PM');
   const sheetAnim = useRef(new Animated.Value(SHEET_H)).current;
+
+  // ── Edit profile name ───────────────────────────────────────────────────────
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  const openNameEditor = () => {
+    setNameDraft(user?.displayName ?? '');
+    setNameModalVisible(true);
+  };
+  const saveName = async () => {
+    if (!nameDraft.trim()) return;
+    setSavingName(true);
+    const { error } = await updateDisplayName(nameDraft);
+    setSavingName(false);
+    if (error) { Alert.alert('Could not save', error.message); return; }
+    setNameModalVisible(false);
+  };
+
+  // ── What's New ────────────────────────────────────────────────────────────
+  const [whatsNewVisible, setWhatsNewVisible] = useState(false);
 
   // ── Sign out ──────────────────────────────────────────────────────────────
   const handleSignOut = () => {
@@ -210,7 +234,7 @@ export default function SettingsScreen() {
 
         {/* Profile */}
         <Card style={styles.section}>
-          <View style={styles.profileRow}>
+          <TouchableOpacity style={styles.profileRow} onPress={openNameEditor} activeOpacity={0.8} accessibilityLabel="Edit profile name">
             <LinearGradient
               colors={['#FF6B6B', '#A855F7', '#6C63FF', '#3B82F6']}
               start={{ x: 0, y: 0 }}
@@ -223,11 +247,15 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </LinearGradient>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.profileName}>{user?.displayName ?? 'Habity User'}</Text>
               <Text style={styles.profileEmail}>{user?.email}</Text>
             </View>
-          </View>
+            <View style={styles.editPill}>
+              <Ionicons name="pencil" size={14} color={COLORS.primary} />
+              <Text style={styles.editPillText}>Edit</Text>
+            </View>
+          </TouchableOpacity>
         </Card>
 
         {/* Appearance */}
@@ -367,12 +395,44 @@ export default function SettingsScreen() {
               onPress={cycleWaterInterval}
             />
           )}
+          <SettingsRow
+            icon="bulb-outline"
+            label="Smart Reminders"
+            right={
+              <Switch
+                value={smartRemindersEnabled}
+                onValueChange={setSmartRemindersEnabled}
+                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
+                thumbColor={smartRemindersEnabled ? COLORS.primary : COLORS.textMuted}
+                accessibilityLabel="Toggle smart reminders"
+              />
+            }
+          />
+          <SettingsRow
+            icon="stats-chart-outline"
+            label="Weekly Review"
+            right={
+              <Switch
+                value={weeklyReviewEnabled}
+                onValueChange={setWeeklyReviewEnabled}
+                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
+                thumbColor={weeklyReviewEnabled ? COLORS.primary : COLORS.textMuted}
+                accessibilityLabel="Toggle weekly review reminder"
+              />
+            }
+          />
         </Card>
 
         {/* About */}
         <Text style={styles.sectionTitle}>About</Text>
         <Card style={styles.section}>
-          <SettingsRow icon="information-circle-outline" label="Version" value="1.0.0" />
+          <SettingsRow
+            icon="sparkles-outline"
+            label="What's New"
+            color={COLORS.primary}
+            onPress={() => setWhatsNewVisible(true)}
+          />
+          <SettingsRow icon="information-circle-outline" label="Version" value="1.1.0" />
           <SettingsRow
             icon="document-text-outline"
             label="Privacy Policy"
@@ -407,6 +467,67 @@ export default function SettingsScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Edit name modal */}
+      <Modal visible={nameModalVisible} transparent animationType="fade" onRequestClose={() => setNameModalVisible(false)}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setNameModalVisible(false)} />
+        <View style={styles.centerModalWrap} pointerEvents="box-none">
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>Edit your name</Text>
+            <TextInput
+              style={styles.nameInput}
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              placeholder="Your name"
+              placeholderTextColor={COLORS.textMuted}
+              maxLength={40}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={saveName}
+            />
+            <View style={styles.sheetActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setNameModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={saveName} disabled={savingName || !nameDraft.trim()}>
+                <Text style={styles.confirmBtnText}>{savingName ? 'Saving…' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* What's New modal */}
+      <Modal visible={whatsNewVisible} transparent animationType="fade" onRequestClose={() => setWhatsNewVisible(false)}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setWhatsNewVisible(false)} />
+        <View style={styles.centerModalWrap} pointerEvents="box-none">
+          <View style={styles.dialog}>
+            <Text style={styles.whatsNewEmoji}>✨</Text>
+            <Text style={styles.dialogTitle}>What's New</Text>
+            <Text style={styles.whatsNewVersion}>Version 1.1.0</Text>
+            <ScrollView style={styles.whatsNewList} showsVerticalScrollIndicator={false}>
+              {[
+                { icon: '🌗', title: 'Dark & Light themes', body: 'Pick Light, Dark or System in Appearance.' },
+                { icon: '🗓️', title: 'Weekly habits', body: 'Track habits you do once a week, with weekly streaks.' },
+                { icon: '🔔', title: 'Notification quick-actions', body: 'Mark a habit done or snooze it right from the reminder.' },
+                { icon: '🧊', title: 'Streak Freeze', body: 'A missed day is auto-protected so your streak survives.' },
+                { icon: '📊', title: 'Smarter analytics & review', body: 'Weekly habits now counted fairly everywhere.' },
+              ].map((item, i) => (
+                <View key={i} style={styles.whatsNewRow}>
+                  <Text style={styles.whatsNewRowEmoji}>{item.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.whatsNewRowTitle}>{item.title}</Text>
+                    <Text style={styles.whatsNewRowBody}>{item.body}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={[styles.confirmBtn, { alignSelf: 'stretch', marginTop: SPACING.md }]} onPress={() => setWhatsNewVisible(false)}>
+              <Text style={styles.confirmBtnText}>Awesome</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Time Picker Sheet */}
       <Modal visible={timePickerVisible} transparent animationType="none" onRequestClose={closeTimePicker}>
@@ -542,6 +663,51 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   avatarText: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.xl, fontWeight: TYPOGRAPHY.bold },
   profileName: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.semibold },
   profileEmail: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
+  editPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primary + '18',
+    borderColor: COLORS.primary + '40',
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+  },
+  editPillText: { color: COLORS.primary, fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.semibold },
+
+  // Centered dialogs (edit name, what's new)
+  centerModalWrap: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
+  dialog: {
+    width: '100%',
+    maxHeight: '80%',
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: SPACING.xl,
+    alignItems: 'center',
+  },
+  dialogTitle: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.lg, fontWeight: TYPOGRAPHY.bold, marginBottom: SPACING.md },
+  nameInput: {
+    alignSelf: 'stretch',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    color: COLORS.textPrimary,
+    fontSize: TYPOGRAPHY.md,
+    marginBottom: SPACING.lg,
+  },
+  whatsNewEmoji: { fontSize: 36 },
+  whatsNewVersion: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.sm, marginBottom: SPACING.lg },
+  whatsNewList: { alignSelf: 'stretch' },
+  whatsNewRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg, alignItems: 'flex-start' },
+  whatsNewRowEmoji: { fontSize: 22, width: 28, textAlign: 'center' },
+  whatsNewRowTitle: { color: COLORS.textPrimary, fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.semibold },
+  whatsNewRowBody: { color: COLORS.textSecondary, fontSize: TYPOGRAPHY.sm, lineHeight: 19, marginTop: 2 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

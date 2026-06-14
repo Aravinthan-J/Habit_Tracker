@@ -5,9 +5,12 @@ import { syncSmartReminders } from '@/services/notifications/SmartReminderServic
 import {
     requestPermissions,
     scheduleWeeklyReviewReminder,
+    cancelWeeklyReviewReminder,
+    cancelAllSmartReminders,
 } from '@/services/notifications/NotificationService';
 import { today } from '@/utils/dateHelpers';
 import { inWeekCompletion } from '@/utils/frequency';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 /**
  * Keeps smart reminders in sync with habits and today's completions.
@@ -16,6 +19,8 @@ import { inWeekCompletion } from '@/utils/frequency';
 export function useSmartReminders() {
     const { habits } = useHabits();
     const { completions } = useCompletions();
+    const smartRemindersEnabled = usePreferencesStore((s) => s.smartRemindersEnabled);
+    const weeklyReviewEnabled = usePreferencesStore((s) => s.weeklyReviewEnabled);
     const permissionAsked = useRef(false);
 
     const todayStr = today();
@@ -37,27 +42,37 @@ export function useSmartReminders() {
 
         // Debounce: completion toggles can fire in quick succession
         const timer = setTimeout(async () => {
-            if (smartKey && !permissionAsked.current) {
+            if ((smartRemindersEnabled || weeklyReviewEnabled) && !permissionAsked.current) {
                 permissionAsked.current = true;
                 const granted = await requestPermissions();
                 if (!granted) return;
             }
-            const completedToday = new Set(completedTodayKey ? completedTodayKey.split(',') : []);
-            // Weekly habits already done this week shouldn't be reminded again until next week.
-            const weeklyDone = new Set(
-                habits
-                    .filter((h) => h.frequency === 'weekly')
-                    .filter((h) => inWeekCompletion(
-                        completions.filter((c) => c.habit_id === h.id).map((c) => c.date),
-                    ) !== null)
-                    .map((h) => h.id),
-            );
-            await syncSmartReminders(habits, completedToday, weeklyDone).catch(() => { });
-            await scheduleWeeklyReviewReminder().catch(() => { });
+
+            if (smartRemindersEnabled) {
+                const completedToday = new Set(completedTodayKey ? completedTodayKey.split(',') : []);
+                // Weekly habits already done this week shouldn't be reminded again until next week.
+                const weeklyDone = new Set(
+                    habits
+                        .filter((h) => h.frequency === 'weekly')
+                        .filter((h) => inWeekCompletion(
+                            completions.filter((c) => c.habit_id === h.id).map((c) => c.date),
+                        ) !== null)
+                        .map((h) => h.id),
+                );
+                await syncSmartReminders(habits, completedToday, weeklyDone).catch(() => { });
+            } else {
+                await cancelAllSmartReminders().catch(() => { });
+            }
+
+            if (weeklyReviewEnabled) {
+                await scheduleWeeklyReviewReminder().catch(() => { });
+            } else {
+                await cancelWeeklyReviewReminder().catch(() => { });
+            }
         }, 1500);
 
         return () => clearTimeout(timer);
         // habits identity changes with every fetch; key on the relevant fields instead
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [smartKey, completedTodayKey, habits.length]);
+    }, [smartKey, completedTodayKey, habits.length, smartRemindersEnabled, weeklyReviewEnabled]);
 }

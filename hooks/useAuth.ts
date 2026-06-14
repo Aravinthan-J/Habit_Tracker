@@ -64,6 +64,23 @@ export function useAuth() {
         clear();
     };
 
+    const updateDisplayName = async (name: string) => {
+        const trimmed = name.trim();
+        if (!auth.currentUser) return { error: { message: 'Not signed in' } };
+        if (trimmed.length < 1) return { error: { message: 'Name cannot be empty' } };
+        try {
+            await updateProfile(auth.currentUser, { displayName: trimmed });
+            await setDoc(doc(db, 'users', auth.currentUser.uid),
+                { name: trimmed, updated_at: new Date().toISOString() },
+                { merge: true });
+            // Push the refreshed user object into the store so the UI updates.
+            setUser(auth.currentUser);
+            return { error: null };
+        } catch (err: any) {
+            return { error: { message: err.message } };
+        }
+    };
+
     const resetPassword = async (email: string) => {
         try {
             await sendPasswordResetEmail(auth, email);
@@ -93,5 +110,5 @@ export function useAuth() {
         }
     };
 
-    return { user, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle };
+    return { user, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle, updateDisplayName };
 }

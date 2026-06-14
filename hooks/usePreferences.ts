@@ -22,8 +22,22 @@ export function usePreferences() {
             if (data.water_goal_glasses != null) store.setWaterGoalGlasses(data.water_goal_glasses);
             if (data.pet_tone === 'gentle' || data.pet_tone === 'savage') store.setPetTone(data.pet_tone);
             if (data.theme_mode === 'light' || data.theme_mode === 'dark' || data.theme_mode === 'system') store.setThemeMode(data.theme_mode);
+            if (data.smart_reminders_enabled != null) store.setSmartRemindersEnabled(data.smart_reminders_enabled);
+            if (data.weekly_review_enabled != null) store.setWeeklyReviewEnabled(data.weekly_review_enabled);
         });
     }, [user?.uid]);
+
+    const setSmartRemindersEnabled = async (value: boolean) => {
+        store.setSmartRemindersEnabled(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { smart_reminders_enabled: value }, { merge: true });
+    };
+
+    const setWeeklyReviewEnabled = async (value: boolean) => {
+        store.setWeeklyReviewEnabled(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { weekly_review_enabled: value }, { merge: true });
+    };
 
     const setThemeMode = async (value: ThemeMode) => {
         store.setThemeMode(value);
@@ -76,6 +90,10 @@ export function usePreferences() {
     return {
         themeMode: store.themeMode,
         setThemeMode,
+        smartRemindersEnabled: store.smartRemindersEnabled,
+        setSmartRemindersEnabled,
+        weeklyReviewEnabled: store.weeklyReviewEnabled,
+        setWeeklyReviewEnabled,
         notificationsEnabled: store.notificationsEnabled,
         reminderTime: store.reminderTime,
         stepTrackingEnabled: store.stepTrackingEnabled,

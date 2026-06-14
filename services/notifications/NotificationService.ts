@@ -254,6 +254,11 @@ export async function scheduleWeeklyReviewReminder(hour = 18): Promise<void> {
     }).catch(() => { });
 }
 
+export async function cancelWeeklyReviewReminder(): Promise<void> {
+    if (!Notifications) return;
+    await Notifications.cancelScheduledNotificationAsync('weekly-review').catch(() => { });
+}
+
 export async function sendImmediateNotification(title: string, body: string): Promise<void> {
     if (!Notifications) return;
     await Notifications.scheduleNotificationAsync({

@@ -19,6 +19,10 @@ interface PreferencesState {
     setWaterIntervalHours: (value: number) => void;
     waterGoalGlasses: number;
     setWaterGoalGlasses: (value: number) => void;
+    smartRemindersEnabled: boolean;
+    setSmartRemindersEnabled: (value: boolean) => void;
+    weeklyReviewEnabled: boolean;
+    setWeeklyReviewEnabled: (value: boolean) => void;
     petTone: 'gentle' | 'savage';
     setPetTone: (value: 'gentle' | 'savage') => void;
 }
@@ -40,6 +44,10 @@ export const usePreferencesStore = create<PreferencesState>()(
             setWaterIntervalHours: (value) => set({ waterIntervalHours: value }),
             waterGoalGlasses: 8,
             setWaterGoalGlasses: (value) => set({ waterGoalGlasses: value }),
+            smartRemindersEnabled: true,
+            setSmartRemindersEnabled: (value) => set({ smartRemindersEnabled: value }),
+            weeklyReviewEnabled: true,
+            setWeeklyReviewEnabled: (value) => set({ weeklyReviewEnabled: value }),
             petTone: 'gentle',
             setPetTone: (value) => set({ petTone: value }),
         }),
