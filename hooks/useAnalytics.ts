@@ -26,6 +26,12 @@ export interface HabitBreakdown {
     weekly: boolean;
 }
 
+export interface MoodSummary {
+    daysLogged: number;
+    avgMood: number; // 0 if none
+    bestHabit: { id: string; title: string; color: string; icon: string | null; lift: number } | null;
+}
+
 export interface AnalyticsSummary {
     totalCompletions: number;
     avgCompletionRate: number;
@@ -36,6 +42,7 @@ export interface AnalyticsSummary {
     weeklyData: Array<{ date: string; rate: number; steps: number }>;
     trend: Array<{ date: string; rate: number }>;
     habitBreakdown: HabitBreakdown[];
+    mood: MoodSummary;
 }
 
 function buildSummary(
@@ -43,6 +50,7 @@ function buildSummary(
     completions: { habit_id: string; date: string }[],
     last30: string[],
     stepsMap: Record<string, number> = {},
+    moodMap: Record<string, number> = {},
 ): AnalyticsSummary {
     const activeHabits = habits.length;
     const activeHabitIds = new Set(habits.map((h) => h.id));
@@ -152,6 +160,44 @@ function buildSummary(
         })
         .sort((a, b) => b.rate - a.rate);
 
+    // ── Mood ↔ habit correlation ──────────────────────────────────────────────
+    const moodDates = last30.filter((d) => (moodMap[d] ?? 0) > 0);
+    const avgMood = moodDates.length > 0
+        ? moodDates.reduce((s, d) => s + moodMap[d], 0) / moodDates.length
+        : 0;
+
+    let bestMoodHabit: MoodSummary['bestHabit'] = null;
+    if (moodDates.length >= 4) {
+        const doneDates = (h: AnalyticsHabit) => {
+            if (h.frequency === 'weekly') {
+                const weeks = weeklyDoneWeeks.get(h.id) ?? new Set<string>();
+                return new Set(moodDates.filter((d) => weeks.has(getWeekStart(d))));
+            }
+            const set = new Set(activeCompletions.filter((c) => c.habit_id === h.id).map((c) => c.date));
+            return new Set(moodDates.filter((d) => set.has(d)));
+        };
+        let bestLift = 0.2; // require a meaningful difference
+        for (const h of habits) {
+            const done = doneDates(h);
+            const onDays = moodDates.filter((d) => done.has(d));
+            const offDays = moodDates.filter((d) => !done.has(d));
+            if (onDays.length < 2 || offDays.length < 2) continue;
+            const avgOn = onDays.reduce((s, d) => s + moodMap[d], 0) / onDays.length;
+            const avgOff = offDays.reduce((s, d) => s + moodMap[d], 0) / offDays.length;
+            const lift = avgOn - avgOff;
+            if (lift > bestLift) {
+                bestLift = lift;
+                bestMoodHabit = {
+                    id: h.id,
+                    title: h.title ?? 'Habit',
+                    color: h.color ?? '#6C63FF',
+                    icon: h.icon ?? null,
+                    lift: Math.round(lift * 10) / 10,
+                };
+            }
+        }
+    }
+
     return {
         totalCompletions: activeCompletions.length,
         avgCompletionRate,
@@ -162,6 +208,11 @@ function buildSummary(
         weeklyData,
         trend,
         habitBreakdown,
+        mood: {
+            daysLogged: moodDates.length,
+            avgMood: Math.round(avgMood * 10) / 10,
+            bestHabit: bestMoodHabit,
+        },
     };
 }
 
@@ -189,6 +240,7 @@ export function useAnalytics() {
 
                 const completions: { habit_id: string; date: string }[] = [];
                 const stepsMap: Record<string, number> = {};
+                const moodMap: Record<string, number> = {};
                 for (const d of dailySnap.docs) {
                     const date = d.id;
                     const data = d.data();
@@ -197,12 +249,13 @@ export function useAnalytics() {
                         completions.push({ habit_id, date });
                     }
                     if (data.steps != null) stepsMap[date] = data.steps as number;
+                    if (typeof data.mood === 'number' && data.mood > 0) moodMap[date] = data.mood;
                 }
                 const habits = habitsSnap.docs
                     .map((d) => ({ id: d.id, ...d.data() } as { id: string; archived_at: string | null; created_at?: string }))
                     .filter((h) => h.archived_at === null);
 
-                return buildSummary(habits, completions, last30, stepsMap);
+                return buildSummary(habits, completions, last30, stepsMap, moodMap);
             } catch {
                 const habits = await getLocalHabits(user.uid);
                 const allCompletions = await getAllLocalCompletions(user.uid);

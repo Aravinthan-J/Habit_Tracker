@@ -8,6 +8,8 @@ import { useCompletions } from './useCompletions';
 import { getHabitCompletionDates } from '@/utils/streakCalculator';
 import { runFreezeMaintenance } from '@/utils/streakFreezeLogic';
 import { today } from '@/utils/dateHelpers';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import { isVacationActive } from '@/utils/vacation';
 
 /**
  * Drives the global Streak-Freeze pool: loads remote state, runs once-per-day
@@ -36,11 +38,16 @@ export function useStreakFreeze() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.uid]);
 
+    const vacationStart = usePreferencesStore((s) => s.vacationStart);
+    const vacationEnd = usePreferencesStore((s) => s.vacationEnd);
+
     // Run daily maintenance once per calendar day, after data has loaded.
     useEffect(() => {
         if (!user || habitsLoading || completionsLoading) return;
         const date = today();
         if (store.lastMaintenanceDate === date) return;
+        // While on vacation, don't spend or earn freezes — streaks are protected anyway.
+        if (isVacationActive(vacationStart, vacationEnd, date)) return;
 
         // Streak Freeze is a daily-streak concept; weekly habits have expected
         // off-days that must not be treated as "missed" or burn freezes.

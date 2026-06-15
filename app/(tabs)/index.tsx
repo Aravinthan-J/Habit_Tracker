@@ -27,10 +27,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { today } from '@/utils/dateHelpers';
 import { calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
 import { inWeekCompletion, calculateWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import { getVacationDates, isVacationActive } from '@/utils/vacation';
 import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { useStreakFreeze } from '@/hooks/useStreakFreeze';
 import { StreakFreezeModal } from '@/components/streaks/StreakFreezeModal';
+import { MoodSelector } from '@/components/mood/MoodSelector';
 import { TouchableOpacity } from 'react-native';
 
 export default function HomeScreen() {
@@ -44,6 +47,15 @@ export default function HomeScreen() {
   const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
   const { balance: freezeBalance, maxFreezes, freezeDates } = useStreakFreeze();
   const [freezeModalVisible, setFreezeModalVisible] = useState(false);
+
+  const vacationStart = usePreferencesStore((s) => s.vacationStart);
+  const vacationEnd = usePreferencesStore((s) => s.vacationEnd);
+  const vacationOn = isVacationActive(vacationStart, vacationEnd);
+  // Vacation days bridge streaks alongside freeze days.
+  const bridgeDates = useMemo(
+    () => [...freezeDates, ...getVacationDates(vacationStart, vacationEnd)],
+    [freezeDates, vacationStart, vacationEnd],
+  );
 
   const todayStr = today();
   const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
@@ -154,8 +166,20 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </LinearGradient>
 
+            {vacationOn && (
+              <View style={[styles.vacationBanner, { backgroundColor: COLORS.accent + '1A', borderColor: COLORS.accent + '55' }]}>
+                <Text style={styles.vacationEmoji}>🏖️</Text>
+                <Text style={[styles.vacationText, { color: COLORS.textSecondary }]}>
+                  Vacation mode is on — your streaks are protected.
+                </Text>
+              </View>
+            )}
+
             {/* Habit Pet */}
             <HabitPet />
+
+            {/* Mood check-in */}
+            <MoodSelector />
 
             {/* Progress banner */}
             {totalCount > 0 && (
@@ -249,7 +273,7 @@ export default function HomeScreen() {
               isCompleted={doneHabitIds.has(item.id)}
               streak={weekly
                 ? calculateWeeklyStreak(completionDates)
-                : calculateCurrentStreakWithFreezes(completionDates, freezeDates)}
+                : calculateCurrentStreakWithFreezes(completionDates, bridgeDates)}
               onToggle={() => handleToggle(item.id)}
               onPress={() => { }}
               monthlyCount={monthlyCount}
@@ -301,6 +325,19 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   },
   freezeIcon: { fontSize: 16, marginRight: 4 },
   freezeCount: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.bold },
+  vacationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  vacationEmoji: { fontSize: 18 },
+  vacationText: { flex: 1, fontSize: TYPOGRAPHY.sm },
   progressBanner: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.lg,

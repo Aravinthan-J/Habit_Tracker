@@ -9,6 +9,7 @@ import { BarChart } from '@/components/analytics/BarChart';
 import { LineChart } from '@/components/analytics/LineChart';
 import { InsightCard } from '@/components/analytics/InsightCard';
 import { resolveIcon } from '@/utils/iconHelpers';
+import { MOODS } from '@/hooks/useMood';
 import MetricLogger from '@/components/MetricLogger';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -153,6 +154,41 @@ export default function AnalyticsScreen() {
                   <Text style={[styles.breakdownRate, { color: h.color }]}>{h.rate}%</Text>
                 </View>
               ))}
+            </View>
+          </View>
+        )}
+
+        {/* Mood & Habits */}
+        {data.mood.daysLogged > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Mood & Habits</Text>
+            <View style={[styles.breakdownCard, { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder, padding: SPACING.lg }]}>
+              <View style={styles.moodHeaderRow}>
+                <Text style={styles.moodBigEmoji}>
+                  {MOODS[Math.min(4, Math.max(0, Math.round(data.mood.avgMood) - 1))]?.emoji ?? '😐'}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.moodAvg, { color: COLORS.textPrimary }]}>
+                    {data.mood.avgMood.toFixed(1)} <Text style={styles.moodAvgMax}>/ 5</Text>
+                  </Text>
+                  <Text style={[styles.moodSub, { color: COLORS.textMuted }]}>
+                    avg mood · {data.mood.daysLogged} {data.mood.daysLogged === 1 ? 'day' : 'days'} logged
+                  </Text>
+                </View>
+              </View>
+              {data.mood.bestHabit ? (
+                <View style={[styles.moodInsight, { backgroundColor: data.mood.bestHabit.color + '14', borderColor: data.mood.bestHabit.color + '40' }]}>
+                  <Text style={styles.moodInsightEmoji}>{resolveIcon(data.mood.bestHabit.icon)}</Text>
+                  <Text style={[styles.moodInsightText, { color: COLORS.textSecondary }]}>
+                    Your mood is <Text style={{ color: data.mood.bestHabit.color, fontWeight: TYPOGRAPHY.bold }}>+{data.mood.bestHabit.lift.toFixed(1)}</Text> higher on days you do{' '}
+                    <Text style={{ color: COLORS.textPrimary, fontWeight: TYPOGRAPHY.semibold }}>{data.mood.bestHabit.title}</Text> 💪
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.moodSub, { color: COLORS.textMuted, marginTop: SPACING.sm }]}>
+                  Keep logging your mood to discover which habits lift it most.
+                </Text>
+              )}
             </View>
           </View>
         )}
@@ -315,4 +351,21 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   breakdownTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   breakdownFill: { height: '100%', borderRadius: 3 },
   breakdownRate: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.bold, marginLeft: SPACING.md, width: 44, textAlign: 'right' },
+
+  moodHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  moodBigEmoji: { fontSize: 40 },
+  moodAvg: { fontSize: TYPOGRAPHY.xxl, fontWeight: TYPOGRAPHY.bold },
+  moodAvgMax: { fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.medium, color: COLORS.textMuted },
+  moodSub: { fontSize: TYPOGRAPHY.xs },
+  moodInsight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  moodInsightEmoji: { fontSize: 22 },
+  moodInsightText: { flex: 1, fontSize: TYPOGRAPHY.sm, lineHeight: 19 },
 });

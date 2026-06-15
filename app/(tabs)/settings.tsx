@@ -29,6 +29,8 @@ import { useAuthStore } from '@/store/authStore';
 import { usePreferences } from '@/hooks/usePreferences';
 import { Card } from '@/components/ui/Card';
 import { HABIT_TEMPLATES, HabitTemplate } from '@/constants/templates';
+import { today, formatDate, friendlyDate } from '@/utils/dateHelpers';
+import { isVacationActive } from '@/utils/vacation';
 
 const SHEET_H = Dimensions.get('window').height * 0.6;
 
@@ -52,7 +54,19 @@ export default function SettingsScreen() {
     waterIntervalHours, setWaterIntervalHours,
     smartRemindersEnabled, setSmartRemindersEnabled,
     weeklyReviewEnabled, setWeeklyReviewEnabled,
+    vacationStart, vacationEnd, setVacation,
   } = usePreferences();
+
+  const onVacation = isVacationActive(vacationStart, vacationEnd);
+  const toggleVacation = (value: boolean) => {
+    if (value) {
+      setVacation(today(), null);
+    } else {
+      // End vacation yesterday so today resumes as a normal tracked day.
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      setVacation(vacationStart ?? today(), formatDate(y));
+    }
+  };
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [tempHour12, setTempHour12] = useState(8);   // 1–12
   const [tempMinute, setTempMinute]   = useState(0);
@@ -356,6 +370,29 @@ export default function SettingsScreen() {
             value={petTone === 'gentle' ? 'Gentle' : 'Savage'}
             onPress={() => setPetTone(petTone === 'gentle' ? 'savage' : 'gentle')}
           />
+        </Card>
+
+        {/* Vacation Mode */}
+        <Text style={styles.sectionTitle}>Vacation Mode</Text>
+        <Card style={styles.section}>
+          <SettingsRow
+            emojiIcon="🏖️"
+            label="Vacation Mode"
+            right={
+              <Switch
+                value={onVacation}
+                onValueChange={toggleVacation}
+                trackColor={{ false: COLORS.surface, true: COLORS.primary + '88' }}
+                thumbColor={onVacation ? COLORS.primary : COLORS.textMuted}
+                accessibilityLabel="Toggle vacation mode"
+              />
+            }
+          />
+          <Text style={styles.vacationHint}>
+            {onVacation
+              ? `On since ${friendlyDate(vacationStart!)} — missed days won't break your streaks, freezes are paused, and reminders are silenced.`
+              : 'Going away or feeling unwell? Pause your habits so missed days don\'t break your streaks.'}
+          </Text>
         </Card>
 
         {/* Habit Templates */}
@@ -823,6 +860,7 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   segmentBtnActive: { backgroundColor: COLORS.primary },
   segmentText: { color: COLORS.textSecondary, fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold },
   segmentTextActive: { color: '#fff' },
+  vacationHint: { color: COLORS.textMuted, fontSize: TYPOGRAPHY.xs, lineHeight: 17, paddingTop: SPACING.sm },
   accentRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

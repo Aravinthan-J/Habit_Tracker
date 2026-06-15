@@ -11,6 +11,7 @@ import {
 import { today } from '@/utils/dateHelpers';
 import { inWeekCompletion } from '@/utils/frequency';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { isVacationActive } from '@/utils/vacation';
 
 /**
  * Keeps smart reminders in sync with habits and today's completions.
@@ -21,6 +22,9 @@ export function useSmartReminders() {
     const { completions } = useCompletions();
     const smartRemindersEnabled = usePreferencesStore((s) => s.smartRemindersEnabled);
     const weeklyReviewEnabled = usePreferencesStore((s) => s.weeklyReviewEnabled);
+    const vacationStart = usePreferencesStore((s) => s.vacationStart);
+    const vacationEnd = usePreferencesStore((s) => s.vacationEnd);
+    const onVacation = isVacationActive(vacationStart, vacationEnd);
     const permissionAsked = useRef(false);
 
     const todayStr = today();
@@ -42,6 +46,12 @@ export function useSmartReminders() {
 
         // Debounce: completion toggles can fire in quick succession
         const timer = setTimeout(async () => {
+            // On vacation: clear all habit reminders and skip scheduling.
+            if (onVacation) {
+                await cancelAllSmartReminders().catch(() => { });
+                await cancelWeeklyReviewReminder().catch(() => { });
+                return;
+            }
             if ((smartRemindersEnabled || weeklyReviewEnabled) && !permissionAsked.current) {
                 permissionAsked.current = true;
                 const granted = await requestPermissions();
@@ -74,5 +84,5 @@ export function useSmartReminders() {
         return () => clearTimeout(timer);
         // habits identity changes with every fetch; key on the relevant fields instead
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [smartKey, completedTodayKey, habits.length, smartRemindersEnabled, weeklyReviewEnabled]);
+    }, [smartKey, completedTodayKey, habits.length, smartRemindersEnabled, weeklyReviewEnabled, onVacation]);
 }

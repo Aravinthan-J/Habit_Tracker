@@ -20,8 +20,10 @@ import { Button } from '@/components/ui/Button';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { today, getLastNDays } from '@/utils/dateHelpers';
-import { calculateCurrentStreak } from '@/utils/streakCalculator';
+import { calculateCurrentStreak, calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
 import { inWeekCompletion, calculateWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import { getVacationDates } from '@/utils/vacation';
 
 type HabitFilter = 'all' | 'pending' | 'done';
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -74,6 +76,13 @@ export default function HabitsScreen() {
         .map((c) => c.habit_id)
     ),
     [completions, todayStr, activeHabitIds]
+  );
+
+  const vacationStart = usePreferencesStore((s) => s.vacationStart);
+  const vacationEnd = usePreferencesStore((s) => s.vacationEnd);
+  const vacationDates = useMemo(
+    () => getVacationDates(vacationStart, vacationEnd),
+    [vacationStart, vacationEnd],
   );
 
   // Frequency-aware "done": weekly habits count if done anytime this week.
@@ -236,7 +245,11 @@ export default function HabitsScreen() {
               <HabitCard
                 habit={item}
                 isCompleted={doneHabitIds.has(item.id)}
-                streak={weekly ? calculateWeeklyStreak(completionDates) : calculateCurrentStreak(completionDates)}
+                streak={weekly
+                  ? calculateWeeklyStreak(completionDates)
+                  : (vacationDates.length
+                    ? calculateCurrentStreakWithFreezes(completionDates, vacationDates)
+                    : calculateCurrentStreak(completionDates))}
                 onToggle={() => handleToggle(item.id)}
                 onPress={() => router.push(`/habit/${item.id}`)}
                 monthlyCount={monthlyCount}

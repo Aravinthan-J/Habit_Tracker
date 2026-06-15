@@ -27,6 +27,10 @@ interface PreferencesState {
     setWeeklyReviewEnabled: (value: boolean) => void;
     petTone: 'gentle' | 'savage';
     setPetTone: (value: 'gentle' | 'savage') => void;
+    /** Vacation mode: while active, missed days bridge streaks instead of breaking them. */
+    vacationStart: string | null;
+    vacationEnd: string | null;
+    setVacation: (start: string | null, end: string | null) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -54,6 +58,9 @@ export const usePreferencesStore = create<PreferencesState>()(
             setWeeklyReviewEnabled: (value) => set({ weeklyReviewEnabled: value }),
             petTone: 'gentle',
             setPetTone: (value) => set({ petTone: value }),
+            vacationStart: null,
+            vacationEnd: null,
+            setVacation: (vacationStart, vacationEnd) => set({ vacationStart, vacationEnd }),
         }),
         {
             name: 'user-preferences',

@@ -25,8 +25,17 @@ export function usePreferences() {
             if (typeof data.accent_color === 'string') store.setAccentColor(data.accent_color);
             if (data.smart_reminders_enabled != null) store.setSmartRemindersEnabled(data.smart_reminders_enabled);
             if (data.weekly_review_enabled != null) store.setWeeklyReviewEnabled(data.weekly_review_enabled);
+            if (data.vacation_start !== undefined || data.vacation_end !== undefined) {
+                store.setVacation(data.vacation_start ?? null, data.vacation_end ?? null);
+            }
         });
     }, [user?.uid]);
+
+    const setVacation = async (start: string | null, end: string | null) => {
+        store.setVacation(start, end);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { vacation_start: start, vacation_end: end }, { merge: true });
+    };
 
     const setSmartRemindersEnabled = async (value: boolean) => {
         store.setSmartRemindersEnabled(value);
@@ -99,6 +108,9 @@ export function usePreferences() {
         setThemeMode,
         accentColor: store.accentColor,
         setAccentColor,
+        vacationStart: store.vacationStart,
+        vacationEnd: store.vacationEnd,
+        setVacation,
         smartRemindersEnabled: store.smartRemindersEnabled,
         setSmartRemindersEnabled,
         weeklyReviewEnabled: store.weeklyReviewEnabled,
