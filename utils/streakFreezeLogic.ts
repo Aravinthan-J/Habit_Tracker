@@ -12,6 +12,12 @@ export interface FreezeMaintenanceInput {
     balance: number;
     freezeDates: string[];
     milestonesRewarded: number;
+    /**
+     * Days that are already protected for other reasons (e.g. Vacation mode).
+     * These bridge streaks but are never auto-protected (no freeze spent) and
+     * are NOT persisted into freezeDates.
+     */
+    protectedDates?: string[];
 }
 
 export interface FreezeMaintenanceResult {
@@ -49,6 +55,9 @@ export function runFreezeMaintenance(input: FreezeMaintenanceInput): FreezeMaint
 
     let balance = input.balance;
     const frozen = new Set(input.freezeDates);
+    // Externally protected days (e.g. Vacation) — bridge streaks but never burn
+    // a freeze and never get persisted.
+    const protectedExtra = new Set(input.protectedDates ?? []);
     let freezesUsed = 0;
 
     // 1. Auto-protect isolated missed days (oldest -> newest, within lookback).
@@ -56,7 +65,7 @@ export function runFreezeMaintenance(input: FreezeMaintenanceInput): FreezeMaint
         if (balance <= 0) break;
         const day = shiftDate(today, -i);
         const prevDay = shiftDate(day, -1);
-        const missed = !activeDays.has(day) && !frozen.has(day);
+        const missed = !activeDays.has(day) && !frozen.has(day) && !protectedExtra.has(day);
         const followedActiveDay = activeDays.has(prevDay);
         if (missed && followedActiveDay) {
             frozen.add(day);
@@ -67,10 +76,11 @@ export function runFreezeMaintenance(input: FreezeMaintenanceInput): FreezeMaint
 
     const freezeDates = Array.from(frozen).sort();
 
-    // 2. Auto-earn from the best current streak (freeze-aware).
+    // 2. Auto-earn from the best current streak (freeze-aware; vacation bridges too).
+    const bridgeDates = [...freezeDates, ...protectedExtra];
     let maxStreak = 0;
     for (const dates of completionDatesByHabit) {
-        const s = calculateCurrentStreakWithFreezes(dates, freezeDates);
+        const s = calculateCurrentStreakWithFreezes(dates, bridgeDates);
         if (s > maxStreak) maxStreak = s;
     }
     const milestones = Math.floor(maxStreak / FREEZE_EARN_EVERY);

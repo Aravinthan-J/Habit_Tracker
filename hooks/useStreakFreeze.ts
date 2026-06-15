@@ -9,7 +9,7 @@ import { getHabitCompletionDates } from '@/utils/streakCalculator';
 import { runFreezeMaintenance } from '@/utils/streakFreezeLogic';
 import { today } from '@/utils/dateHelpers';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { isVacationActive } from '@/utils/vacation';
+import { getVacationDates } from '@/utils/vacation';
 
 /**
  * Drives the global Streak-Freeze pool: loads remote state, runs once-per-day
@@ -46,20 +46,21 @@ export function useStreakFreeze() {
         if (!user || habitsLoading || completionsLoading) return;
         const date = today();
         if (store.lastMaintenanceDate === date) return;
-        // While on vacation, don't spend or earn freezes — streaks are protected anyway.
-        if (isVacationActive(vacationStart, vacationEnd, date)) return;
 
         // Streak Freeze is a daily-streak concept; weekly habits have expected
         // off-days that must not be treated as "missed" or burn freezes.
         const completionDatesByHabit = habits
             .filter((h) => h.frequency !== 'weekly')
             .map((h) => getHabitCompletionDates(completions, h.id));
+        // Vacation days bridge streaks but must never burn a freeze.
+        const protectedDates = getVacationDates(vacationStart, vacationEnd, date);
         const result = runFreezeMaintenance({
             today: date,
             completionDatesByHabit,
             balance: store.balance,
             freezeDates: store.freezeDates,
             milestonesRewarded: store.milestonesRewarded,
+            protectedDates,
         });
 
         store.commitMaintenance({

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import { requestWidgetUpdate } from 'react-native-android-widget';
 import { useHabits } from './useHabits';
 import { useCompletions } from './useCompletions';
@@ -26,7 +26,7 @@ export function useWidgetSync() {
     const { habits } = useHabits();
     const { completions, toggleCompletion } = useCompletions();
     const accent = usePreferencesStore((s) => s.accentColor);
-    const appliedRef = useRef(false);
+    const runningRef = useRef(false);
 
     const todayStr = today();
 
@@ -56,12 +56,13 @@ export function useWidgetSync() {
         };
     }, [habits, datesByHabit, accent, todayStr]);
 
-    // Commit taps made on the widget (once per app session, after data loads).
-    useEffect(() => {
-        if (!isAndroid || appliedRef.current) return;
-        if (habits.length === 0 && completions.length === 0) return;
-        appliedRef.current = true;
-        (async () => {
+    // Commit taps made on the widget. Kept in a ref so the AppState listener
+    // always runs against the latest habits/completions.
+    const applyRef = useRef<() => Promise<void>>(async () => { });
+    applyRef.current = async () => {
+        if (!isAndroid || runningRef.current) return;
+        runningRef.current = true;
+        try {
             const pending = await readPendingToggles();
             if (pending.length === 0) return;
             for (const p of pending) {
@@ -81,9 +82,21 @@ export function useWidgetSync() {
                 } catch { /* keep going */ }
             }
             await clearPendingToggles();
-        })();
+        } finally {
+            runningRef.current = false;
+        }
+    };
+
+    // Commit on mount and whenever the app returns to the foreground.
+    useEffect(() => {
+        if (!isAndroid) return;
+        applyRef.current();
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state === 'active') applyRef.current();
+        });
+        return () => sub.remove();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [habits.length, completions.length]);
+    }, [isAndroid]);
 
     // Push snapshot to the widget whenever it changes.
     useEffect(() => {
