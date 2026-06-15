@@ -22,7 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useHabits } from '@/hooks/useHabits';
-import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors, ACCENT_PRESETS } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
@@ -43,6 +43,7 @@ export default function SettingsScreen() {
 
   const {
     themeMode, setThemeMode,
+    accentColor, setAccentColor,
     petTone, setPetTone,
     stepTrackingEnabled, setStepTrackingEnabled,
     notificationsEnabled, setNotificationsEnabled,
@@ -325,6 +326,30 @@ export default function SettingsScreen() {
               );
             })}
           </View>
+
+          {/* Accent color */}
+          <View style={[styles.appearanceRow, { marginTop: SPACING.md }]}>
+            <View style={styles.rowLeft}>
+              <Ionicons name="brush-outline" size={20} color={COLORS.primary} style={styles.rowIcon} />
+              <Text style={styles.rowLabel}>Accent Color</Text>
+            </View>
+          </View>
+          <View style={styles.accentRow}>
+            {ACCENT_PRESETS.map((c) => {
+              const active = accentColor.toUpperCase() === c.toUpperCase();
+              return (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setAccentColor(c)}
+                  style={[styles.accentDot, { backgroundColor: c }, active && { borderColor: COLORS.textPrimary, borderWidth: 3 }]}
+                  accessibilityLabel={`Accent color ${c}${active ? ', selected' : ''}`}
+                >
+                  {active && <Ionicons name="checkmark" size={16} color="#fff" />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <SettingsRow
             emojiIcon={petTone === 'gentle' ? '😇' : '🔥'}
             label="Pet Personality"
@@ -798,6 +823,21 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   segmentBtnActive: { backgroundColor: COLORS.primary },
   segmentText: { color: COLORS.textSecondary, fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.semibold },
   segmentTextActive: { color: '#fff' },
+  accentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.md,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  accentDot: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: 'transparent',
+  },
   rowIcon: { marginRight: SPACING.md },
   rowLabel: { fontSize: TYPOGRAPHY.md },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, flexShrink: 0 },

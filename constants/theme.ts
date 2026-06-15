@@ -96,6 +96,40 @@ export type ColorScheme = 'light' | 'dark';
 export const getColors = (scheme: ColorScheme): ThemeColors =>
     scheme === 'light' ? lightColors : darkColors;
 
+/** Lighten (amount > 0) or darken (amount < 0) a hex color by a 0..1 ratio. */
+export function shadeColor(hex: string, amount: number): string {
+    const m = hex.replace('#', '');
+    const full = m.length === 3 ? m.split('').map((c) => c + c).join('') : m;
+    const num = parseInt(full, 16);
+    let r = (num >> 16) & 0xff;
+    let g = (num >> 8) & 0xff;
+    let b = num & 0xff;
+    const adj = (c: number) =>
+        Math.max(0, Math.min(255, Math.round(amount >= 0 ? c + (255 - c) * amount : c * (1 + amount))));
+    r = adj(r); g = adj(g); b = adj(b);
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+}
+
+/** Selectable accent presets shown in Settings (first = app default). */
+export const ACCENT_PRESETS = [
+    '#6C63FF', '#FF6584', '#43CFBA', '#FF9A3C',
+    '#A855F7', '#06B6D4', '#F59E0B', '#10B981',
+    '#EF4444', '#3B82F6', '#EC4899', '#14B8A6',
+];
+
+export const DEFAULT_ACCENT = ACCENT_PRESETS[0];
+
+/** Apply a user-chosen accent over a base palette (primary + its shades). */
+export function applyAccent(base: ThemeColors, accent?: string | null): ThemeColors {
+    if (!accent || accent === base.primary) return base;
+    return {
+        ...base,
+        primary: accent,
+        primaryLight: shadeColor(accent, 0.2),
+        primaryDark: shadeColor(accent, -0.2),
+    };
+}
+
 // Backward-compatible default export used by not-yet-themed modules.
 export const COLORS = darkColors;
 

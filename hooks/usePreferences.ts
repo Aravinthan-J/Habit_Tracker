@@ -22,6 +22,7 @@ export function usePreferences() {
             if (data.water_goal_glasses != null) store.setWaterGoalGlasses(data.water_goal_glasses);
             if (data.pet_tone === 'gentle' || data.pet_tone === 'savage') store.setPetTone(data.pet_tone);
             if (data.theme_mode === 'light' || data.theme_mode === 'dark' || data.theme_mode === 'system') store.setThemeMode(data.theme_mode);
+            if (typeof data.accent_color === 'string') store.setAccentColor(data.accent_color);
             if (data.smart_reminders_enabled != null) store.setSmartRemindersEnabled(data.smart_reminders_enabled);
             if (data.weekly_review_enabled != null) store.setWeeklyReviewEnabled(data.weekly_review_enabled);
         });
@@ -43,6 +44,12 @@ export function usePreferences() {
         store.setThemeMode(value);
         if (!user) return;
         await setDoc(doc(db, 'users', user.uid), { theme_mode: value }, { merge: true });
+    };
+
+    const setAccentColor = async (value: string) => {
+        store.setAccentColor(value);
+        if (!user) return;
+        await setDoc(doc(db, 'users', user.uid), { accent_color: value }, { merge: true });
     };
 
     const setNotificationsEnabled = async (value: boolean) => {
@@ -90,6 +97,8 @@ export function usePreferences() {
     return {
         themeMode: store.themeMode,
         setThemeMode,
+        accentColor: store.accentColor,
+        setAccentColor,
         smartRemindersEnabled: store.smartRemindersEnabled,
         setSmartRemindersEnabled,
         weeklyReviewEnabled: store.weeklyReviewEnabled,

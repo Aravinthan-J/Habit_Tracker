@@ -7,6 +7,8 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 interface PreferencesState {
     themeMode: ThemeMode;
     setThemeMode: (value: ThemeMode) => void;
+    accentColor: string;
+    setAccentColor: (value: string) => void;
     stepTrackingEnabled: boolean;
     setStepTrackingEnabled: (value: boolean) => void;
     notificationsEnabled: boolean;
@@ -32,6 +34,8 @@ export const usePreferencesStore = create<PreferencesState>()(
         (set) => ({
             themeMode: 'dark',
             setThemeMode: (value) => set({ themeMode: value }),
+            accentColor: '#6C63FF',
+            setAccentColor: (value) => set({ accentColor: value }),
             stepTrackingEnabled: true,
             setStepTrackingEnabled: (value) => set({ stepTrackingEnabled: value }),
             notificationsEnabled: false,
