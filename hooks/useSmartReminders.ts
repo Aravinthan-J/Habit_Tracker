@@ -7,6 +7,8 @@ import {
     scheduleWeeklyReviewReminder,
     cancelWeeklyReviewReminder,
     cancelAllSmartReminders,
+    scheduleDailyReminder,
+    cancelDailyReminder,
 } from '@/services/notifications/NotificationService';
 import { today } from '@/utils/dateHelpers';
 import { inWeekCompletion } from '@/utils/frequency';
@@ -22,6 +24,8 @@ export function useSmartReminders() {
     const { completions } = useCompletions();
     const smartRemindersEnabled = usePreferencesStore((s) => s.smartRemindersEnabled);
     const weeklyReviewEnabled = usePreferencesStore((s) => s.weeklyReviewEnabled);
+    const notificationsEnabled = usePreferencesStore((s) => s.notificationsEnabled);
+    const reminderTime = usePreferencesStore((s) => s.reminderTime);
     const vacationStart = usePreferencesStore((s) => s.vacationStart);
     const vacationEnd = usePreferencesStore((s) => s.vacationEnd);
     const onVacation = isVacationActive(vacationStart, vacationEnd);
@@ -46,12 +50,23 @@ export function useSmartReminders() {
 
         // Debounce: completion toggles can fire in quick succession
         const timer = setTimeout(async () => {
-            // On vacation: clear all habit reminders and skip scheduling.
+            // On vacation: silence every reminder (smart, weekly review, daily).
             if (onVacation) {
                 await cancelAllSmartReminders().catch(() => { });
                 await cancelWeeklyReviewReminder().catch(() => { });
+                await cancelDailyReminder().catch(() => { });
                 return;
             }
+
+            // Not on vacation: keep the daily reminder in sync (also restores it
+            // after a vacation ends).
+            if (notificationsEnabled) {
+                const [h, m] = reminderTime.split(':').map(Number);
+                if (Number.isFinite(h) && Number.isFinite(m)) await scheduleDailyReminder(h, m).catch(() => { });
+            } else {
+                await cancelDailyReminder().catch(() => { });
+            }
+
             if ((smartRemindersEnabled || weeklyReviewEnabled) && !permissionAsked.current) {
                 permissionAsked.current = true;
                 const granted = await requestPermissions();
@@ -84,5 +99,5 @@ export function useSmartReminders() {
         return () => clearTimeout(timer);
         // habits identity changes with every fetch; key on the relevant fields instead
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [smartKey, completedTodayKey, habits.length, smartRemindersEnabled, weeklyReviewEnabled, onVacation]);
+    }, [smartKey, completedTodayKey, habits.length, smartRemindersEnabled, weeklyReviewEnabled, onVacation, notificationsEnabled, reminderTime]);
 }

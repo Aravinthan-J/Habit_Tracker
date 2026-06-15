@@ -39,22 +39,42 @@ export function useWidgetSync() {
         return map;
     }, [completions]);
 
-    const snapshot = useMemo<WidgetSnapshot>(() => {
+    const buildSnapshot = (dateStr: string): WidgetSnapshot => {
         const widgetHabits = habits.map((h) => {
             const dates = datesByHabit.get(h.id) ?? [];
             const done = h.frequency === 'weekly'
                 ? inWeekCompletion(dates) !== null
-                : dates.includes(todayStr);
+                : dates.includes(dateStr);
             return { id: h.id, title: h.title, icon: resolveIcon(h.icon), done };
         });
         return {
-            date: todayStr,
+            date: dateStr,
             total: widgetHabits.length,
             done: widgetHabits.filter((h) => h.done).length,
             accent,
             habits: widgetHabits,
         };
-    }, [habits, datesByHabit, accent, todayStr]);
+    };
+
+    const snapshot = useMemo<WidgetSnapshot>(
+        () => buildSnapshot(todayStr),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [habits, datesByHabit, accent, todayStr],
+    );
+
+    // Push a freshly-dated snapshot — used on foreground so the widget rolls
+    // over at midnight even if no data changed.
+    const pushRef = useRef<() => Promise<void>>(async () => { });
+    pushRef.current = async () => {
+        if (!isAndroid) return;
+        const snap = buildSnapshot(today());
+        await saveWidgetSnapshot(snap);
+        await requestWidgetUpdate({
+            widgetName: 'TodayHabits',
+            renderWidget: () => <TodayWidget data={snap} />,
+            widgetNotFound: () => { },
+        }).catch(() => { });
+    };
 
     // Commit taps made on the widget. Kept in a ref so the AppState listener
     // always runs against the latest habits/completions.
@@ -92,7 +112,10 @@ export function useWidgetSync() {
         if (!isAndroid) return;
         applyRef.current();
         const sub = AppState.addEventListener('change', (state) => {
-            if (state === 'active') applyRef.current();
+            if (state === 'active') {
+                applyRef.current();
+                pushRef.current(); // refresh date/contents on resume
+            }
         });
         return () => sub.remove();
         // eslint-disable-next-line react-hooks/exhaustive-deps
