@@ -8,6 +8,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useSmartReminders } from '@/hooks/useSmartReminders';
 import { useNotificationActions } from '@/hooks/useNotificationActions';
+import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useUIStore } from '@/store/uiStore';
 import { BadgeUnlockModal } from '@/components/badges/BadgeUnlockModal';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
@@ -37,6 +38,7 @@ function AppContent() {
   useRealtime();
   useSmartReminders();
   useNotificationActions(!!user);
+  useWidgetSync();
   const { isOnline, isSyncing } = useOfflineSync();
   const { celebrationVisible, unlockedBadge, hideCelebration } = useUIStore();
   const [activeNotif, setActiveNotif] = useState<NotifPayload | null>(null);
