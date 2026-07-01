@@ -81,12 +81,14 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
     );
   `);
 
-    // Additive migrations for tables created before these columns existed.
-    // SQLite has no ADD COLUMN IF NOT EXISTS, so ignore "duplicate column" errors.
+    // Additive migrations — ignore "duplicate column" errors (no IF NOT EXISTS in SQLite).
     for (const stmt of [
         `ALTER TABLE local_habits ADD COLUMN smart_reminder INTEGER DEFAULT 0`,
         `ALTER TABLE local_habits ADD COLUMN stack_after TEXT`,
         `ALTER TABLE local_habits ADD COLUMN frequency TEXT DEFAULT 'daily'`,
+        `ALTER TABLE local_habits ADD COLUMN schedule_days TEXT DEFAULT NULL`,
+        `ALTER TABLE local_habits ADD COLUMN "order" INTEGER DEFAULT 0`,
+        `ALTER TABLE local_completions ADD COLUMN note TEXT DEFAULT NULL`,
     ]) {
         await db.execAsync(stmt).catch(() => { });
     }

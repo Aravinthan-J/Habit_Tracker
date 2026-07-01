@@ -15,6 +15,10 @@ export interface Habit {
     smart_reminder?: boolean;
     /** Habit stacking: id of the habit this one should follow. */
     stack_after?: string | null;
+    /** Days of week to show this habit (0=Sun…6=Sat). null/undefined = every day. */
+    schedule_days?: number[] | null;
+    /** Display sort order (lower = higher in list). */
+    order?: number;
     created_at: string;
     updated_at: string;
     archived_at: string | null;
@@ -32,6 +36,8 @@ export interface HabitInsert {
     frequency?: HabitFrequency;
     smart_reminder?: boolean;
     stack_after?: string | null;
+    schedule_days?: number[] | null;
+    order?: number;
     created_at?: string;
     updated_at?: string;
     archived_at?: string | null;
@@ -49,6 +55,8 @@ export interface HabitUpdate {
     frequency?: HabitFrequency;
     smart_reminder?: boolean;
     stack_after?: string | null;
+    schedule_days?: number[] | null;
+    order?: number;
     updated_at?: string;
     archived_at?: string | null;
 }
@@ -59,6 +67,7 @@ export interface Completion {
     user_id: string;
     date: string;
     completed_at: string;
+    note?: string | null;
 }
 
 export interface CompletionInsert {
@@ -67,6 +76,7 @@ export interface CompletionInsert {
     user_id: string;
     date: string;
     completed_at?: string;
+    note?: string | null;
 }
 
 export interface HabitWithCompletions extends Habit {

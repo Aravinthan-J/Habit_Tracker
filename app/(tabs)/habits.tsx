@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useHabits } from '@/hooks/useHabits';
 import { useCompletions } from '@/hooks/useCompletions';
 import { HabitCard } from '@/components/habits/HabitCard';
@@ -24,6 +26,8 @@ import { calculateCurrentStreak, calculateCurrentStreakWithFreezes } from '@/uti
 import { inWeekCompletion, calculateWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { getVacationDates } from '@/utils/vacation';
+import { Habit } from '@/types/habit.types';
+import { getUnscheduledDates } from '@/utils/scheduleHelpers';
 
 type HabitFilter = 'all' | 'pending' | 'done';
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -32,12 +36,13 @@ export default function HabitsScreen() {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const router = useRouter();
-  const { habits, isLoading } = useHabits();
+  const { habits, archivedHabits, isLoading, archiveHabit, unarchiveHabit, reorderHabits } = useHabits();
   const { completions, toggleCompletion } = useCompletions();
   const todayStr = today();
   const currentMonth = useMemo(() => todayStr.slice(0, 7), [todayStr]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<HabitFilter>('all');
+  const [showArchived, setShowArchived] = useState(false);
 
   const weekDates = useMemo(() => getLastNDays(7).reverse(), []); // oldest → today
   const weekLabels = useMemo(
@@ -125,6 +130,24 @@ export default function HabitsScreen() {
     toggleCompletion.mutate({ habitId, date: todayStr, isCompleted });
   };
 
+  const handleLongPress = (habit: Habit) => {
+    Alert.alert(habit.title, 'What would you like to do?', [
+      {
+        text: 'Archive',
+        onPress: () => Alert.alert('Archive habit?', `"${habit.title}" will be hidden from your lists. You can restore it anytime.`, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Archive', style: 'destructive', onPress: () => archiveHabit.mutate(habit.id) },
+        ]),
+      },
+      { text: 'Edit', onPress: () => router.push(`/habit/${habit.id}`) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleDragEnd = useCallback(({ data }: { data: Habit[] }) => {
+    reorderHabits.mutate(data.map((h) => h.id));
+  }, [reorderHabits]);
+
   return (
     <SafeAreaView style={styles.safe}>
       <LinearGradient
@@ -135,7 +158,7 @@ export default function HabitsScreen() {
           <View>
             <Text style={[styles.title, { color: COLORS.textPrimary }]}>My Habits</Text>
             <Text style={[styles.count, { color: COLORS.textSecondary }]}>
-              {habits.length} routines active
+              {habits.length} active{archivedHabits.length > 0 ? ` · ${archivedHabits.length} archived` : ''}
             </Text>
           </View>
           <TouchableOpacity
@@ -224,13 +247,11 @@ export default function HabitsScreen() {
           }
         />
       ) : (
-        <FlatList
+        <DraggableFlatList
           data={visibleHabits}
           keyExtractor={(item) => item.id}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          renderItem={({ item }) => {
+          onDragEnd={handleDragEnd}
+          renderItem={({ item, drag, isActive }: RenderItemParams<Habit>) => {
             const completionDates = completionDatesByHabitId.get(item.id) ?? [];
             const weekly = item.frequency === 'weekly';
             const monthlyCount = weekly
@@ -241,23 +262,29 @@ export default function HabitsScreen() {
             const stackAfterTitle = item.stack_after
               ? habits.find((h) => h.id === item.stack_after)?.title
               : undefined;
+            const itemBridge = weekly ? vacationDates : [...vacationDates, ...getUnscheduledDates(item.schedule_days, todayStr)];
             return (
-              <HabitCard
-                habit={item}
-                isCompleted={doneHabitIds.has(item.id)}
-                streak={weekly
-                  ? calculateWeeklyStreak(completionDates)
-                  : (vacationDates.length
-                    ? calculateCurrentStreakWithFreezes(completionDates, vacationDates)
-                    : calculateCurrentStreak(completionDates))}
-                onToggle={() => handleToggle(item.id)}
-                onPress={() => router.push(`/habit/${item.id}`)}
-                monthlyCount={monthlyCount}
-                monthlyGoal={item.monthly_goal}
-                weekStatus={weekStatus}
-                weekLabels={weekLabels}
-                stackAfterTitle={stackAfterTitle}
-              />
+              <ScaleDecorator activeScale={0.97}>
+                <HabitCard
+                  habit={item}
+                  isCompleted={doneHabitIds.has(item.id)}
+                  streak={weekly
+                    ? calculateWeeklyStreak(completionDates)
+                    : (itemBridge.length
+                      ? calculateCurrentStreakWithFreezes(completionDates, itemBridge)
+                      : calculateCurrentStreak(completionDates))}
+                  onToggle={() => handleToggle(item.id)}
+                  onPress={() => router.push(`/habit/${item.id}`)}
+                  onLongPress={() => handleLongPress(item)}
+                  drag={drag}
+                  isActive={isActive}
+                  monthlyCount={monthlyCount}
+                  monthlyGoal={item.monthly_goal}
+                  weekStatus={weekStatus}
+                  weekLabels={weekLabels}
+                  stackAfterTitle={stackAfterTitle}
+                />
+              </ScaleDecorator>
             );
           }}
           ListEmptyComponent={
@@ -270,6 +297,35 @@ export default function HabitsScreen() {
                   : 'No habits match this filter right now.'
               }
             />
+          }
+          ListFooterComponent={
+            <View style={{ paddingBottom: 20 }}>
+              {archivedHabits.length > 0 && (
+                <>
+                  <TouchableOpacity
+                    style={styles.archivedToggle}
+                    onPress={() => setShowArchived((v) => !v)}
+                  >
+                    <Ionicons name={showArchived ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.textMuted} />
+                    <Text style={styles.archivedToggleText}>
+                      {showArchived ? 'Hide' : 'Show'} archived ({archivedHabits.length})
+                    </Text>
+                  </TouchableOpacity>
+                  {showArchived && archivedHabits.map((item) => (
+                    <View key={item.id} style={[styles.archivedRow, { backgroundColor: COLORS.surface, borderColor: COLORS.cardBorder }]}>
+                      <Text style={styles.archivedEmoji}>{item.icon ?? '📦'}</Text>
+                      <Text style={[styles.archivedTitle, { color: COLORS.textSecondary }]} numberOfLines={1}>{item.title}</Text>
+                      <TouchableOpacity
+                        style={[styles.restoreBtn, { borderColor: COLORS.primary }]}
+                        onPress={() => unarchiveHabit.mutate(item.id)}
+                      >
+                        <Text style={[styles.restoreText, { color: COLORS.primary }]}>Restore</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </>
+              )}
+            </View>
           }
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
@@ -334,4 +390,32 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
   },
   chipText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.semibold },
+  archivedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+  },
+  archivedToggleText: { color: '#888', fontSize: TYPOGRAPHY.sm },
+  archivedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    opacity: 0.7,
+  },
+  archivedEmoji: { fontSize: 20 },
+  archivedTitle: { flex: 1, fontSize: TYPOGRAPHY.md },
+  restoreBtn: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 6,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  restoreText: { fontSize: TYPOGRAPHY.xs, fontWeight: TYPOGRAPHY.semibold },
 });

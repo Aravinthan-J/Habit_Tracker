@@ -9,21 +9,42 @@ import {
     GoogleAuthProvider,
     signInWithCredential,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { isValidEmail, isValidPassword } from '@/utils/validators';
 
+/** Local cache key for instant avatar display before Firestore responds. */
+const PHOTO_CACHE_KEY = 'profile_photo_uri';
+
 export function useAuth() {
-    const { user, isLoading, setUser, setLoading, clear } = useAuthStore();
+    const { user, photoUri, isLoading, setUser, setPhotoUri, setLoading, clear } = useAuthStore();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
             setLoading(false);
+            if (!firebaseUser) {
+                setPhotoUri(null);
+                AsyncStorage.removeItem(PHOTO_CACHE_KEY).catch(() => { });
+                return;
+            }
+            // Show the locally-cached avatar immediately, then refresh from Firestore.
+            AsyncStorage.getItem(PHOTO_CACHE_KEY).then((cached) => {
+                if (cached) setPhotoUri(cached);
+            }).catch(() => { });
+            getDoc(doc(db, 'users', firebaseUser.uid)).then((snap) => {
+                const remote = snap.exists() ? (snap.data().photo_url as string | undefined) : undefined;
+                if (remote) {
+                    setPhotoUri(remote);
+                    AsyncStorage.setItem(PHOTO_CACHE_KEY, remote).catch(() => { });
+                }
+            }).catch(() => { });
         });
         return unsubscribe;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const signIn = async (email: string, password: string) => {
@@ -68,19 +89,25 @@ export function useAuth() {
     const updateProfilePhoto = async (localUri: string) => {
         if (!auth.currentUser) return { error: { message: 'Not signed in' } };
         try {
-            // Upload the picked image to Firebase Storage, then save its URL.
-            const res = await fetch(localUri);
-            const blob = await res.blob();
-            const path = `avatars/${auth.currentUser.uid}.jpg`;
-            const fileRef = storageRef(storage, path);
-            await uploadBytes(fileRef, blob);
-            const url = await getDownloadURL(fileRef);
+            // Firebase Storage needs the paid Blaze plan, so we keep avatars free:
+            // shrink to 256px + compress, then store as a base64 data-URI in the
+            // user's Firestore doc (well under Firestore's 1 MB document limit).
+            // Resize by width only (height auto-scales) so a non-square source —
+            // some Android croppers ignore the 1:1 aspect lock — is never distorted;
+            // the avatar frame displays it with `cover`.
+            const manipulated = await manipulateAsync(
+                localUri,
+                [{ resize: { width: 256 } }],
+                { compress: 0.6, format: SaveFormat.JPEG, base64: true },
+            );
+            if (!manipulated.base64) return { error: { message: 'Could not process image' } };
+            const dataUri = `data:image/jpeg;base64,${manipulated.base64}`;
 
-            await updateProfile(auth.currentUser, { photoURL: url });
             await setDoc(doc(db, 'users', auth.currentUser.uid),
-                { photo_url: url, updated_at: new Date().toISOString() },
+                { photo_url: dataUri, updated_at: new Date().toISOString() },
                 { merge: true });
-            setUser(auth.currentUser);
+            setPhotoUri(dataUri);
+            AsyncStorage.setItem(PHOTO_CACHE_KEY, dataUri).catch(() => { });
             return { error: null };
         } catch (err: any) {
             return { error: { message: err.message ?? 'Upload failed' } };
@@ -133,5 +160,5 @@ export function useAuth() {
         }
     };
 
-    return { user, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle, updateDisplayName, updateProfilePhoto };
+    return { user, photoUri, isLoading, signIn, signUp, signOut, resetPassword, signInWithGoogle, updateDisplayName, updateProfilePhoto };
 }

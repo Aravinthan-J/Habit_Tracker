@@ -38,7 +38,7 @@ export default function SettingsScreen() {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const router = useRouter();
-  const { signOut, updateDisplayName, updateProfilePhoto } = useAuth();
+  const { photoUri, signOut, updateDisplayName, updateProfilePhoto } = useAuth();
   const { user } = useAuthStore();
   const { habits, createHabit } = useHabits();
   const { requestAndScheduleDaily, cancelAll, scheduleWater, cancelWater } = useNotifications();
@@ -285,8 +285,8 @@ export default function SettingsScreen() {
                 <View style={styles.avatar}>
                   {uploadingPhoto ? (
                     <ActivityIndicator color={COLORS.textPrimary} />
-                  ) : user?.photoURL ? (
-                    <Image source={{ uri: user.photoURL }} style={styles.avatarImg} />
+                  ) : photoUri ? (
+                    <Image source={{ uri: photoUri }} style={styles.avatarImg} resizeMode="cover" />
                   ) : (
                     <Text style={styles.avatarText}>
                       {user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
@@ -622,7 +622,7 @@ export default function SettingsScreen() {
                 </View>
               ))}
             </ScrollView>
-            <TouchableOpacity style={[styles.confirmBtn, { alignSelf: 'stretch', marginTop: SPACING.md }]} onPress={() => setWhatsNewVisible(false)}>
+            <TouchableOpacity style={[styles.confirmBtn, { flex: 0, alignSelf: 'stretch', marginTop: SPACING.md }]} onPress={() => setWhatsNewVisible(false)}>
               <Text style={styles.confirmBtnText}>Awesome</Text>
             </TouchableOpacity>
           </View>
@@ -877,7 +877,7 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     borderColor: 'transparent',
   },
   rowIcon: { marginRight: SPACING.md },
-  rowLabel: { fontSize: TYPOGRAPHY.md },
+  rowLabel: { fontSize: TYPOGRAPHY.md, color: COLORS.textPrimary },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, flexShrink: 0 },
   rowValue: { fontSize: TYPOGRAPHY.sm, color: COLORS.textMuted },
 
@@ -1053,6 +1053,7 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   confirmBtnText: { color: '#fff', fontSize: TYPOGRAPHY.md, fontWeight: TYPOGRAPHY.bold },
 });

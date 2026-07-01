@@ -12,20 +12,17 @@ export function generateId(): string {
 
 export async function saveHabitLocally(habit: Habit): Promise<void> {
     const db = await getDatabase();
-    // Conflict resolution: only update if the new habit is newer than the existing one
     const existing = await db.getFirstAsync<any>(
         `SELECT updated_at FROM local_habits WHERE id = ?`,
         [habit.id]
     );
-
-    if (existing && new Date(existing.updated_at) > new Date(habit.updated_at)) {
-        return; // Existing is newer
-    }
+    if (existing && new Date(existing.updated_at) > new Date(habit.updated_at)) return;
 
     await db.runAsync(
         `INSERT OR REPLACE INTO local_habits
-     (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time, frequency, smart_reminder, stack_after, created_at, updated_at, archived_at, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+     (id, user_id, title, monthly_goal, color, icon, notifications_enabled, reminder_time,
+      frequency, smart_reminder, stack_after, schedule_days, "order", created_at, updated_at, archived_at, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
             habit.id,
             habit.user_id,
@@ -38,6 +35,8 @@ export async function saveHabitLocally(habit: Habit): Promise<void> {
             habit.frequency ?? 'daily',
             habit.smart_reminder ? 1 : 0,
             habit.stack_after ?? null,
+            habit.schedule_days ? JSON.stringify(habit.schedule_days) : null,
+            habit.order ?? 0,
             habit.created_at,
             habit.updated_at,
             habit.archived_at ?? null,
@@ -48,7 +47,16 @@ export async function saveHabitLocally(habit: Habit): Promise<void> {
 export async function getLocalHabits(userId: string): Promise<Habit[]> {
     const db = await getDatabase();
     const rows = await db.getAllAsync<any>(
-        `SELECT * FROM local_habits WHERE user_id = ? AND archived_at IS NULL ORDER BY created_at DESC`,
+        `SELECT * FROM local_habits WHERE user_id = ? AND archived_at IS NULL ORDER BY "order" ASC, created_at DESC`,
+        [userId]
+    );
+    return rows.map(rowToHabit);
+}
+
+export async function getArchivedLocalHabits(userId: string): Promise<Habit[]> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<any>(
+        `SELECT * FROM local_habits WHERE user_id = ? AND archived_at IS NOT NULL ORDER BY archived_at DESC`,
         [userId]
     );
     return rows.map(rowToHabit);
@@ -59,12 +67,23 @@ export async function deleteLocalHabit(id: string): Promise<void> {
     await db.runAsync(`DELETE FROM local_habits WHERE id = ?`, [id]);
 }
 
+export async function reorderHabitsLocally(orderedIds: string[]): Promise<void> {
+    const db = await getDatabase();
+    await db.withTransactionAsync(async () => {
+        for (let i = 0; i < orderedIds.length; i++) {
+            await db.runAsync(`UPDATE local_habits SET "order" = ? WHERE id = ?`, [i, orderedIds[i]]);
+        }
+    });
+}
+
 function rowToHabit(row: any): Habit {
     return {
         ...row,
         notifications_enabled: row.notifications_enabled === 1,
         smart_reminder: row.smart_reminder === 1,
         frequency: row.frequency === 'weekly' ? 'weekly' : 'daily',
+        schedule_days: row.schedule_days ? JSON.parse(row.schedule_days) : null,
+        order: row.order ?? 0,
     };
 }
 
@@ -72,13 +91,18 @@ function rowToHabit(row: any): Habit {
 
 export async function saveCompletionLocally(completion: Completion): Promise<void> {
     const db = await getDatabase();
-    // For completions, we usually just want to make sure we don't overwrite a manual local edit
-    // with an older server state, but usually date is enough. 
-    // Here we use INSERT OR REPLACE to ensure we have the latest server ID if it changed.
     await db.runAsync(
-        `INSERT OR REPLACE INTO local_completions (id, habit_id, user_id, date, completed_at, synced)
-     VALUES (?, ?, ?, ?, ?, 1)`,
-        [completion.id, completion.habit_id, completion.user_id, completion.date, completion.completed_at]
+        `INSERT OR REPLACE INTO local_completions (id, habit_id, user_id, date, completed_at, note, synced)
+     VALUES (?, ?, ?, ?, ?, ?, 1)`,
+        [completion.id, completion.habit_id, completion.user_id, completion.date, completion.completed_at, completion.note ?? null]
+    );
+}
+
+export async function saveCompletionNoteLocally(habitId: string, date: string, note: string): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync(
+        `UPDATE local_completions SET note = ? WHERE id = ?`,
+        [note, `${habitId}_${date}`]
     );
 }
 
@@ -107,8 +131,6 @@ export async function getAllLocalCompletions(userId: string): Promise<Completion
 }
 
 // ─── Completion time log (smart reminders) ──────────────────────────────────
-// The Firestore daily docs only store which habits were completed, not when,
-// so the time of day is recorded locally at check-off time.
 
 export async function logCompletionTime(
     habitId: string,

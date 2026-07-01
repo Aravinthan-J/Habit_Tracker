@@ -20,14 +20,14 @@ interface HabitCardProps {
   streak: number;
   onToggle: () => void;
   onPress: () => void;
+  onLongPress?: () => void;
+  /** Drag handle callback from DraggableFlatList — activates drag when called. */
+  drag?: () => void;
+  isActive?: boolean;
   monthlyCount: number;
   monthlyGoal: number;
-  /** Last 7 days as '1'/'0' chars (oldest→newest, today last). Passed as a
-   *  string so React.memo stays effective. */
   weekStatus?: string;
-  /** Weekday initials for the 7 days, e.g. "SMTWTFS" aligned with weekStatus. */
   weekLabels?: string;
-  /** Habit stacking: title of the habit this one follows, if any. */
   stackAfterTitle?: string;
 }
 
@@ -37,6 +37,9 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
   streak,
   onToggle,
   onPress,
+  onLongPress,
+  drag,
+  isActive,
   monthlyCount,
   monthlyGoal,
   weekStatus,
@@ -67,6 +70,8 @@ export const HabitCard: React.FC<HabitCardProps> = React.memo(({
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity
         onPress={onPress}
+        onLongPress={onLongPress ?? drag}
+        delayLongPress={400}
         activeOpacity={0.9}
         accessibilityLabel={`${habit.title}, ${weekly ? 'weekly habit, ' : ''}${isCompleted ? 'completed' : 'not completed'}, ${streak} ${weekly ? 'week' : 'day'} streak`}
       >

@@ -17,6 +17,7 @@ import { validateHabitTitle, validateMonthlyGoal } from '@/utils/validators';
 import { Habit, HabitFrequency } from '@/types/habit.types';
 import { useHabits } from '@/hooks/useHabits';
 import { resolveIcon } from '@/utils/iconHelpers';
+import { DAY_LABELS } from '@/utils/scheduleHelpers';
 
 const HABIT_ICONS = ['✨', '💪', '📚', '🏃', '🧘', '🥗', '💧', '🎯', '🏋️', '🎨', '🎵', '🌿', '😴', '🚴', '🧠'];
 const GOAL_PRESETS = [10, 15, 20, 25, 30];
@@ -34,6 +35,7 @@ interface HabitFormProps {
     frequency: HabitFrequency;
     smart_reminder: boolean;
     stack_after: string | null;
+    schedule_days: number[] | null;
   }) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -58,6 +60,8 @@ export const HabitForm: React.FC<HabitFormProps> = ({
   const [icon, setIcon] = useState(initialValues?.icon ?? '✨');
   const [smartReminder, setSmartReminder] = useState(initialValues?.smart_reminder ?? false);
   const [stackAfter, setStackAfter] = useState<string | null>(initialValues?.stack_after ?? null);
+  // null = every day; array = specific days (0=Sun…6=Sat)
+  const [scheduleDays, setScheduleDays] = useState<number[] | null>(initialValues?.schedule_days ?? null);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [goalError, setGoalError] = useState<string | null>(null);
 
@@ -104,6 +108,7 @@ export const HabitForm: React.FC<HabitFormProps> = ({
       frequency,
       smart_reminder: smartReminder,
       stack_after: stackAfter,
+      schedule_days: isWeekly ? null : scheduleDays,
     });
   };
 
@@ -212,6 +217,51 @@ export const HabitForm: React.FC<HabitFormProps> = ({
           );
         })}
       </View>
+
+      {/* Schedule days — only for daily habits */}
+      {!isWeekly && (
+        <>
+          <Text style={styles.sectionLabel}>Repeat On</Text>
+          <View style={styles.dayRow}>
+            {DAY_LABELS.map((label, dow) => {
+              const allDays = !scheduleDays || scheduleDays.length === 0;
+              const active = allDays || scheduleDays!.includes(dow);
+              const toggleDay = () => {
+                if (allDays) {
+                  // switch from "every day" to "every day except this one"
+                  const next = [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== dow);
+                  setScheduleDays(next);
+                } else {
+                  const next = active
+                    ? scheduleDays!.filter((d) => d !== dow)
+                    : [...scheduleDays!, dow].sort();
+                  setScheduleDays(next.length === 7 || next.length === 0 ? null : next);
+                }
+              };
+              return (
+                <TouchableOpacity
+                  key={dow}
+                  onPress={toggleDay}
+                  style={[
+                    styles.dayChip,
+                    { backgroundColor: active ? color : COLORS.surface, borderColor: active ? color : COLORS.cardBorder },
+                  ]}
+                  accessibilityLabel={`${label} ${active ? 'selected' : 'not selected'}`}
+                >
+                  <Text style={[styles.dayChipText, { color: active ? '#fff' : COLORS.textMuted }]}>
+                    {label.charAt(0)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {scheduleDays && scheduleDays.length > 0 && scheduleDays.length < 7 && (
+            <Text style={[styles.settingHint, { marginBottom: SPACING.md }]}>
+              {scheduleDays.map((d) => DAY_LABELS[d]).join(', ')}
+            </Text>
+          )}
+        </>
+      )}
 
       {/* Monthly goal quick picks */}
       <Text style={styles.sectionLabel}>{isWeekly ? 'Monthly Goal (weeks)' : 'Monthly Goal'}</Text>
@@ -400,6 +450,20 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     borderWidth: 3,
     borderColor: COLORS.textPrimary,
   },
+  dayRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  dayChip: {
+    flex: 1,
+    height: 38,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayChipText: { fontSize: TYPOGRAPHY.sm, fontWeight: TYPOGRAPHY.bold },
   freqRow: {
     flexDirection: 'row',
     gap: SPACING.sm,

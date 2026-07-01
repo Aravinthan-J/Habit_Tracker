@@ -29,6 +29,8 @@ import { calculateCurrentStreakWithFreezes } from '@/utils/streakCalculator';
 import { inWeekCompletion, calculateWeeklyStreak, weeksCompletedInMonth } from '@/utils/frequency';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { getVacationDates, isVacationActive } from '@/utils/vacation';
+import { isScheduledOn, getUnscheduledDates } from '@/utils/scheduleHelpers';
+import { CheckInNoteSheet } from '@/components/habits/CheckInNoteSheet';
 import { useAuthStore } from '@/store/authStore';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
 import { useStreakFreeze } from '@/hooks/useStreakFreeze';
@@ -47,6 +49,7 @@ export default function HomeScreen() {
   const { recentAchievements, focusSessions, isLoading: advancedLoading, refetch: refetchAdvanced } = useAdvancedFeatures();
   const { balance: freezeBalance, maxFreezes, freezeDates } = useStreakFreeze();
   const [freezeModalVisible, setFreezeModalVisible] = useState(false);
+  const [noteSheet, setNoteSheet] = useState<{ habitId: string; habitTitle: string } | null>(null);
 
   const vacationStart = usePreferencesStore((s) => s.vacationStart);
   const vacationEnd = usePreferencesStore((s) => s.vacationEnd);
@@ -115,11 +118,11 @@ export default function HomeScreen() {
     if (habit?.frequency === 'weekly') {
       const inWeek = inWeekCompletion(completionDatesByHabitId.get(habitId) ?? []);
       if (inWeek) {
-        // Undo this week's completion.
         await toggleCompletion.mutateAsync({ habitId, date: inWeek, isCompleted: true });
       } else {
         await toggleCompletion.mutateAsync({ habitId, date: todayStr, isCompleted: false });
         await checkForNewBadges(habitId);
+        setNoteSheet({ habitId, habitTitle: habit.title });
       }
       return;
     }
@@ -127,6 +130,7 @@ export default function HomeScreen() {
     await toggleCompletion.mutateAsync({ habitId, date: todayStr, isCompleted });
     if (!isCompleted) {
       await checkForNewBadges(habitId);
+      setNoteSheet({ habitId, habitTitle: habit?.title ?? '' });
     }
   }, [habits, completionDatesByHabitId, completedTodayIds, todayStr, toggleCompletion, checkForNewBadges]);
 
@@ -139,7 +143,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.background }]}>
       <FlatList
-        data={habits}
+        data={habits.filter((h) => h.frequency === 'weekly' || isScheduledOn(h.schedule_days, todayStr))}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl refreshing={habitsLoading || advancedLoading} onRefresh={handleRefresh} tintColor={COLORS.primary} />
@@ -267,13 +271,16 @@ export default function HomeScreen() {
           const monthlyCount = weekly
             ? weeksCompletedInMonth(completionDates, currentMonth)
             : (monthlyCountByHabitId.get(item.id) ?? 0);
+          const itemBridgeDates = weekly
+            ? bridgeDates
+            : [...bridgeDates, ...getUnscheduledDates(item.schedule_days, todayStr)];
           return (
             <HabitCard
               habit={item}
               isCompleted={doneHabitIds.has(item.id)}
               streak={weekly
                 ? calculateWeeklyStreak(completionDates)
-                : calculateCurrentStreakWithFreezes(completionDates, bridgeDates)}
+                : calculateCurrentStreakWithFreezes(completionDates, itemBridgeDates)}
               onToggle={() => handleToggle(item.id)}
               onPress={() => { }}
               monthlyCount={monthlyCount}
@@ -300,6 +307,15 @@ export default function HomeScreen() {
         maxFreezes={maxFreezes}
         freezeDates={freezeDates}
       />
+      {noteSheet && (
+        <CheckInNoteSheet
+          visible={!!noteSheet}
+          habitId={noteSheet.habitId}
+          habitTitle={noteSheet.habitTitle}
+          date={todayStr}
+          onDone={() => setNoteSheet(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
