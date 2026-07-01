@@ -12,6 +12,7 @@ import { resolveIcon } from '@/utils/iconHelpers';
 import { MOODS } from '@/hooks/useMood';
 import MetricLogger from '@/components/MetricLogger';
 import { useAdvancedFeatures } from '@/hooks/useAdvancedFeatures';
+import { useWeight } from '@/hooks/useWeight';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TYPOGRAPHY, SPACING, RADIUS, ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -22,6 +23,7 @@ export default function AnalyticsScreen() {
   const router = useRouter();
   const { data, isLoading, refetch } = useAnalytics();
   const { metrics, logMetric } = useAdvancedFeatures();
+  const { entries: weightEntries } = useWeight();
 
   if (isLoading || !data) return <LoadingSpinner />;
 
@@ -203,6 +205,42 @@ export default function AnalyticsScreen() {
           </View>
         )}
 
+        {/* Weight Trend */}
+        {weightEntries.length >= 2 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Weight Trend</Text>
+            <LineChart
+              data={{
+                labels: weightEntries.map((e, i) =>
+                  i % Math.max(1, Math.floor(weightEntries.length / 5)) === 0 ? e.date.slice(8, 10) : ''
+                ),
+                datasets: [{ data: weightEntries.map((e) => e.weight) }],
+              }}
+              color={COLORS.secondary}
+            />
+            <View style={styles.weightSummaryRow}>
+              <View style={styles.weightStat}>
+                <Text style={[styles.weightStatVal, { color: COLORS.secondary }]}>
+                  {weightEntries[weightEntries.length - 1].weight} kg
+                </Text>
+                <Text style={[styles.weightStatLabel, { color: COLORS.textMuted }]}>Latest</Text>
+              </View>
+              <View style={styles.weightStat}>
+                <Text style={[styles.weightStatVal, { color: COLORS.textPrimary }]}>
+                  {Math.min(...weightEntries.map((e) => e.weight))} kg
+                </Text>
+                <Text style={[styles.weightStatLabel, { color: COLORS.textMuted }]}>Lowest</Text>
+              </View>
+              <View style={styles.weightStat}>
+                <Text style={[styles.weightStatVal, { color: COLORS.textPrimary }]}>
+                  {Math.max(...weightEntries.map((e) => e.weight))} kg
+                </Text>
+                <Text style={[styles.weightStatLabel, { color: COLORS.textMuted }]}>Highest</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Custom Metrics */}
         {metrics && metrics.length > 0 && (
           <View style={styles.section}>
@@ -368,4 +406,14 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
   },
   moodInsightEmoji: { fontSize: 22 },
   moodInsightText: { flex: 1, fontSize: TYPOGRAPHY.sm, lineHeight: 19 },
+
+  weightSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  weightStat: { alignItems: 'center' },
+  weightStatVal: { fontSize: TYPOGRAPHY.lg, fontWeight: TYPOGRAPHY.bold },
+  weightStatLabel: { fontSize: TYPOGRAPHY.xs, marginTop: 2 },
 });

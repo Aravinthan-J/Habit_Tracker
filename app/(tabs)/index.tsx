@@ -15,6 +15,7 @@ import { useBadges } from '@/hooks/useBadges';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { StepProgressRing } from '@/components/steps/StepProgressRing';
 import { WaterTracker } from '@/components/water/WaterTracker';
+import { WeightLogger } from '@/components/weight/WeightLogger';
 import { HabitPet } from '@/components/pet/HabitPet';
 import { BadgeNudgeCard } from '@/components/badges/BadgeNudgeCard';
 import AchievementPreview from '@/components/home/AchievementPreview';
@@ -248,6 +249,9 @@ export default function HomeScreen() {
 
             {/* Water Tracker */}
             <WaterTracker />
+
+            {/* Weight Logger */}
+            <WeightLogger />
 
             {/* Achievement Preview */}
             <AchievementPreview achievements={recentAchievements as any} />

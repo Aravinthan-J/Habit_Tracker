@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useHabits } from '@/hooks/useHabits';
 import { useCompletions } from '@/hooks/useCompletions';
+import { useHabitNotes } from '@/hooks/useHabitNotes';
 import { HabitForm } from '@/components/habits/HabitForm';
 import { HabitStats } from '@/components/habits/HabitStats';
 import { HabitMonthHeatmap } from '@/components/habits/HabitMonthHeatmap';
@@ -31,6 +32,7 @@ export default function HabitDetailScreen() {
   const router = useRouter();
   const { habits, updateHabit, deleteHabit } = useHabits();
   const { completions } = useCompletions();
+  const notesQuery = useHabitNotes(id ?? '');
   const [editing, setEditing] = useState(false);
 
   const habit = habits.find((h) => h.id === id);
@@ -125,6 +127,20 @@ export default function HabitDetailScreen() {
 
             <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>History</Text>
             <HabitMonthHeatmap completionDates={habitCompletionDates} color={habit.color} />
+
+            {notesQuery.data && notesQuery.data.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>Check-in Notes</Text>
+                <View style={[styles.notesCard, { backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }]}>
+                  {notesQuery.data.map((n, i) => (
+                    <View key={n.date} style={[styles.noteRow, i > 0 && { borderTopWidth: 1, borderTopColor: COLORS.cardBorder }]}>
+                      <Text style={[styles.noteDate, { color: COLORS.textMuted }]}>{n.date}</Text>
+                      <Text style={[styles.noteText, { color: COLORS.textPrimary }]}>{n.note}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
 
             <TouchableOpacity
               style={styles.deleteBtn}
@@ -221,5 +237,23 @@ const makeStyles = (COLORS: ThemeColors) => StyleSheet.create({
     color: COLORS.error,
     fontSize: TYPOGRAPHY.md,
     fontWeight: TYPOGRAPHY.medium,
+  },
+  notesCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  noteRow: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  noteDate: {
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.medium,
+    marginBottom: 3,
+  },
+  noteText: {
+    fontSize: TYPOGRAPHY.sm,
+    lineHeight: 20,
   },
 });
